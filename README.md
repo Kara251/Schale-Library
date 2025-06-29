@@ -9,3 +9,5 @@
 [页面设计](./PAGE-DESIGN.md)
 
 [技术栈](./TECH.md)
+
+[笔记](./NOTE.md)
