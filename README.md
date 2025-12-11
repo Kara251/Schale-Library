@@ -16,3 +16,4 @@
 - **CMS:** [Strapi](https://github.com/strapi/strapi)
 - **API通信:** Strapi REST API
 - **数据处理:** Next.js Route Handlers（API Routes）
+- **媒体数据:** [Cloudinary](https://cloudinary.com) + [OpenList](https://github.com/OpenListTeam/OpenList) + OneDrive
