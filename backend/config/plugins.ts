@@ -14,4 +14,11 @@ export default ({ env }) => ({
       },
     },
   },
+  i18n: {
+    enabled: true,
+    config: {
+      locales: ['zh-Hans', 'en', 'ja'],
+      defaultLocale: 'zh-Hans',
+    },
+  },
 });
