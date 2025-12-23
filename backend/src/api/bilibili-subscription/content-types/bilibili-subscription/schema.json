@@ -1,0 +1,49 @@
+{
+    "kind": "collectionType",
+    "collectionName": "bilibili_subscriptions",
+    "info": {
+        "singularName": "bilibili-subscription",
+        "pluralName": "bilibili-subscriptions",
+        "displayName": "B站订阅",
+        "description": "订阅B站UP主以自动获取视频"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "attributes": {
+        "upName": {
+            "type": "string",
+            "required": true
+        },
+        "uid": {
+            "type": "string",
+            "required": true,
+            "unique": true
+        },
+        "isActive": {
+            "type": "boolean",
+            "default": true
+        },
+        "defaultNature": {
+            "type": "enumeration",
+            "enum": [
+                "official",
+                "fanmade"
+            ],
+            "default": "fanmade"
+        },
+        "autoPublishKeywords": {
+            "type": "text"
+        },
+        "lastSyncAt": {
+            "type": "datetime"
+        },
+        "syncCount": {
+            "type": "integer",
+            "default": 0
+        },
+        "notes": {
+            "type": "text"
+        }
+    }
+}

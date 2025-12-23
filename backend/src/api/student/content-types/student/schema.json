@@ -4,32 +4,57 @@
   "info": {
     "singularName": "student",
     "pluralName": "students",
-    "displayName": "Student"
+    "displayName": "学生",
+    "description": "蔚蓝档案学生信息"
   },
   "options": {
     "draftAndPublish": true
   },
-  "pluginOptions": {},
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
   "attributes": {
     "name": {
       "type": "string",
       "required": true
     },
     "school": {
+      "type": "enumeration",
+      "enum": [
+        "abydos",
+        "gehenna",
+        "millennium",
+        "trinity",
+        "hyakkiyako",
+        "shanhaijing",
+        "redwinter",
+        "valkyrie",
+        "arius",
+        "srt",
+        "tokiwadai",
+        "other"
+      ]
+    },
+    "organization": {
       "type": "string"
     },
     "avatar": {
       "type": "media",
       "multiple": false,
       "allowedTypes": [
-        "images",
-        "files",
-        "videos",
-        "audios"
+        "images"
       ]
     },
     "bio": {
-      "type": "blocks"
+      "type": "richtext"
+    },
+    "works": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::work.work",
+      "mappedBy": "students"
     }
   }
 }

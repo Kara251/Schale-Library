@@ -543,6 +543,46 @@ export interface ApiAnnouncementAnnouncement
   };
 }
 
+export interface ApiBilibiliSubscriptionBilibiliSubscription
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'bilibili_subscriptions';
+  info: {
+    description: '\u8BA2\u9605B\u7AD9UP\u4E3B\u4EE5\u81EA\u52A8\u83B7\u53D6\u89C6\u9891';
+    displayName: 'B\u7AD9\u8BA2\u9605';
+    pluralName: 'bilibili-subscriptions';
+    singularName: 'bilibili-subscription';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    autoPublishKeywords: Schema.Attribute.Text;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    defaultNature: Schema.Attribute.Enumeration<['official', 'fanmade']> &
+      Schema.Attribute.DefaultTo<'fanmade'>;
+    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    lastSyncAt: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::bilibili-subscription.bilibili-subscription'
+    > &
+      Schema.Attribute.Private;
+    notes: Schema.Attribute.Text;
+    publishedAt: Schema.Attribute.DateTime;
+    syncCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    uid: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    upName: Schema.Attribute.String & Schema.Attribute.Required;
+  };
+}
+
 export interface ApiOfflineEventOfflineEvent
   extends Struct.CollectionTypeSchema {
   collectionName: 'offline_events';
@@ -732,31 +772,186 @@ export interface ApiOnlineEventOnlineEvent extends Struct.CollectionTypeSchema {
 export interface ApiStudentStudent extends Struct.CollectionTypeSchema {
   collectionName: 'students';
   info: {
-    displayName: 'Student';
+    description: '\u851A\u84DD\u6863\u6848\u5B66\u751F\u4FE1\u606F';
+    displayName: '\u5B66\u751F';
     pluralName: 'students';
     singularName: 'student';
   };
   options: {
     draftAndPublish: true;
   };
+  pluginOptions: {
+    i18n: {
+      localized: true;
+    };
+  };
   attributes: {
-    avatar: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
-    bio: Schema.Attribute.Blocks;
+    avatar: Schema.Attribute.Media<'images'>;
+    bio: Schema.Attribute.RichText;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    locale: Schema.Attribute.String;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
       'api::student.student'
-    > &
-      Schema.Attribute.Private;
+    >;
     name: Schema.Attribute.String & Schema.Attribute.Required;
+    organization: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
-    school: Schema.Attribute.String;
+    school: Schema.Attribute.Enumeration<
+      [
+        'abydos',
+        'gehenna',
+        'millennium',
+        'trinity',
+        'hyakkiyako',
+        'shanhaijing',
+        'redwinter',
+        'valkyrie',
+        'arius',
+        'srt',
+        'tokiwadai',
+        'other',
+      ]
+    >;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    works: Schema.Attribute.Relation<'manyToMany', 'api::work.work'>;
+  };
+}
+
+export interface ApiWorkWork extends Struct.CollectionTypeSchema {
+  collectionName: 'works';
+  info: {
+    description: '\u63A8\u8350\u4F5C\u54C1\u7BA1\u7406\uFF0C\u652F\u6301RSS\u81EA\u52A8\u5BFC\u5165';
+    displayName: '\u63A8\u8350\u4F5C\u54C1';
+    pluralName: 'works';
+    singularName: 'work';
+  };
+  options: {
+    comment: '';
+    draftAndPublish: true;
+  };
+  pluginOptions: {
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    author: Schema.Attribute.String &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    coverImage: Schema.Attribute.Media<'images'> &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
+    coverImageUrl: Schema.Attribute.String &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.RichText &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    importedAt: Schema.Attribute.DateTime &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
+    isActive: Schema.Attribute.Boolean &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }> &
+      Schema.Attribute.DefaultTo<true>;
+    isAutoImported: Schema.Attribute.Boolean &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }> &
+      Schema.Attribute.DefaultTo<false>;
+    link: Schema.Attribute.String &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::work.work'>;
+    nature: Schema.Attribute.Enumeration<['official', 'fanmade']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }> &
+      Schema.Attribute.DefaultTo<'fanmade'>;
+    originalPublishDate: Schema.Attribute.DateTime &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    sourceId: Schema.Attribute.String &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
+    sourcePlatform: Schema.Attribute.Enumeration<
+      ['bilibili', 'twitter', 'pixiv', 'youtube', 'other', 'manual']
+    > &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }> &
+      Schema.Attribute.DefaultTo<'manual'>;
+    sourceUrl: Schema.Attribute.String &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
+    students: Schema.Attribute.Relation<'manyToMany', 'api::student.student'>;
+    title: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    workType: Schema.Attribute.Enumeration<
+      ['video', 'image', 'text', 'other']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }> &
+      Schema.Attribute.DefaultTo<'video'>;
   };
 }
 
@@ -1272,9 +1467,11 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::announcement.announcement': ApiAnnouncementAnnouncement;
+      'api::bilibili-subscription.bilibili-subscription': ApiBilibiliSubscriptionBilibiliSubscription;
       'api::offline-event.offline-event': ApiOfflineEventOfflineEvent;
       'api::online-event.online-event': ApiOnlineEventOnlineEvent;
       'api::student.student': ApiStudentStudent;
+      'api::work.work': ApiWorkWork;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;

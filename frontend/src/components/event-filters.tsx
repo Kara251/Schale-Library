@@ -1,9 +1,8 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Calendar, Filter, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useLocale } from '@/contexts/locale-context'
+import type { Locale } from '@/lib/i18n'
 
 export type EventNature = 'all' | 'official' | 'fanmade'
 export type EventStatus = 'all' | 'upcoming' | 'ongoing' | 'ended'
@@ -18,8 +17,54 @@ interface EventFiltersProps {
   showStatusFilter?: boolean
 }
 
+const labels: Record<Locale, {
+  nature: string
+  status: string
+  all: string
+  official: string
+  fanmade: string
+  upcoming: string
+  ongoing: string
+  ended: string
+  clearFilters: string
+}> = {
+  'zh-Hans': {
+    nature: '性质',
+    status: '状态',
+    all: '全部',
+    official: '官方',
+    fanmade: '同人',
+    upcoming: '未开始',
+    ongoing: '进行中',
+    ended: '已结束',
+    clearFilters: '清除筛选',
+  },
+  'en': {
+    nature: 'Nature',
+    status: 'Status',
+    all: 'All',
+    official: 'Official',
+    fanmade: 'Fan-made',
+    upcoming: 'Upcoming',
+    ongoing: 'Ongoing',
+    ended: 'Ended',
+    clearFilters: 'Clear filters',
+  },
+  'ja': {
+    nature: '性質',
+    status: 'ステータス',
+    all: 'すべて',
+    official: '公式',
+    fanmade: '二次創作',
+    upcoming: '未開始',
+    ongoing: '開催中',
+    ended: '終了',
+    clearFilters: 'フィルターをクリア',
+  },
+}
+
 /**
- * 活动筛选组件
+ * 活动筛选组件 - 简洁风格
  */
 export function EventFilters({
   nature,
@@ -30,113 +75,65 @@ export function EventFilters({
   showNatureFilter = true,
   showStatusFilter = true,
 }: EventFiltersProps) {
+  const { locale } = useLocale()
+  const t = labels[locale] || labels['zh-Hans']
   const hasActiveFilters = nature !== 'all' || status !== 'all'
 
   return (
-    <div className="space-y-4">
-      {/* 筛选标题 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">筛选</span>
-        </div>
-        {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onReset}
-            className="h-7 text-xs"
-          >
-            <X className="h-3 w-3 mr-1" />
-            清除
-          </Button>
-        )}
-      </div>
-
+    <div className="space-y-3 mb-6">
       {/* 性质筛选 */}
       {showNatureFilter && (
-        <div className="space-y-2">
-          <label className="text-sm text-muted-foreground">活动性质</label>
-          <div className="flex flex-wrap gap-2">
-            <FilterButton
-              active={nature === 'all'}
-              onClick={() => onNatureChange('all')}
-            >
-              全部
-            </FilterButton>
-            <FilterButton
-              active={nature === 'official'}
-              onClick={() => onNatureChange('official')}
-            >
-              官方
-            </FilterButton>
-            <FilterButton
-              active={nature === 'fanmade'}
-              onClick={() => onNatureChange('fanmade')}
-            >
-              同人
-            </FilterButton>
+        <div>
+          <div className="text-sm font-bold text-foreground mb-2">{t.nature}</div>
+          <div className="flex flex-wrap gap-1">
+            <FilterTag active={nature === 'all'} onClick={() => onNatureChange('all')}>{t.all}</FilterTag>
+            <FilterTag active={nature === 'official'} onClick={() => onNatureChange('official')}>{t.official}</FilterTag>
+            <FilterTag active={nature === 'fanmade'} onClick={() => onNatureChange('fanmade')}>{t.fanmade}</FilterTag>
           </div>
         </div>
       )}
 
       {/* 状态筛选 */}
       {showStatusFilter && (
-        <div className="space-y-2">
-          <label className="text-sm text-muted-foreground">活动状态</label>
-          <div className="flex flex-wrap gap-2">
-            <FilterButton
-              active={status === 'all'}
-              onClick={() => onStatusChange('all')}
-            >
-              全部
-            </FilterButton>
-            <FilterButton
-              active={status === 'upcoming'}
-              onClick={() => onStatusChange('upcoming')}
-            >
-              <Calendar className="h-3 w-3 mr-1" />
-              未开始
-            </FilterButton>
-            <FilterButton
-              active={status === 'ongoing'}
-              onClick={() => onStatusChange('ongoing')}
-            >
-              <Calendar className="h-3 w-3 mr-1" />
-              进行中
-            </FilterButton>
-            <FilterButton
-              active={status === 'ended'}
-              onClick={() => onStatusChange('ended')}
-            >
-              <Calendar className="h-3 w-3 mr-1" />
-              已结束
-            </FilterButton>
+        <div>
+          <div className="text-sm font-bold text-foreground mb-2">{t.status}</div>
+          <div className="flex flex-wrap gap-1">
+            <FilterTag active={status === 'all'} onClick={() => onStatusChange('all')}>{t.all}</FilterTag>
+            <FilterTag active={status === 'upcoming'} onClick={() => onStatusChange('upcoming')}>{t.upcoming}</FilterTag>
+            <FilterTag active={status === 'ongoing'} onClick={() => onStatusChange('ongoing')}>{t.ongoing}</FilterTag>
+            <FilterTag active={status === 'ended'} onClick={() => onStatusChange('ended')}>{t.ended}</FilterTag>
           </div>
         </div>
+      )}
+
+      {/* 清除筛选 */}
+      {hasActiveFilters && (
+        <button onClick={onReset} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+          {t.clearFilters}
+        </button>
       )}
     </div>
   )
 }
 
-interface FilterButtonProps {
+interface FilterTagProps {
   active: boolean
   onClick: () => void
   children: React.ReactNode
 }
 
-function FilterButton({ active, onClick, children }: FilterButtonProps) {
+function FilterTag({ active, onClick, children }: FilterTagProps) {
   return (
-    <Button
-      variant={active ? 'default' : 'outline'}
-      size="sm"
+    <button
       onClick={onClick}
       className={cn(
-        'h-8 text-xs',
-        !active && 'hover:bg-primary/10'
+        'px-3 py-1.5 text-sm rounded transition-colors whitespace-nowrap cursor-pointer',
+        active
+          ? 'text-primary font-medium'
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
       )}
     >
       {children}
-    </Button>
+    </button>
   )
 }

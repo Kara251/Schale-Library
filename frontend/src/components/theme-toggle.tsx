@@ -17,10 +17,10 @@ export function ThemeToggle() {
     // 从 localStorage 读取主题设置
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    
+
     const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light')
     setTheme(initialTheme)
-    
+
     if (initialTheme === 'dark') {
       document.documentElement.classList.add('dark')
     }
@@ -30,7 +30,7 @@ export function ThemeToggle() {
     const newTheme = theme === 'light' ? 'dark' : 'light'
     setTheme(newTheme)
     localStorage.setItem('theme', newTheme)
-    
+
     if (newTheme === 'dark') {
       document.documentElement.classList.add('dark')
     } else {
@@ -53,6 +53,7 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       aria-label="切换主题"
       title={theme === 'light' ? '切换到暗色模式' : '切换到亮色模式'}
+      className="cursor-pointer"
     >
       {theme === 'light' ? (
         <Moon className="h-5 w-5" />

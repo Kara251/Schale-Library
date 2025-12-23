@@ -4,9 +4,13 @@ import { Loading } from '@/components/loading'
 
 export default function LoadingPage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Header />
-      <Loading fullScreen />
+      <main className="relative flex-1 container mx-auto px-4 pt-6 pb-12">
+        <div className="content-panel flex items-center justify-center min-h-[60vh]">
+          <Loading fullScreen />
+        </div>
+      </main>
       <Footer />
     </div>
   )
