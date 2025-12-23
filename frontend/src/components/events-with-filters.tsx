@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { EventCard } from '@/components/event-card'
 import { SearchBar } from '@/components/search-bar'
 import { EventFilters, type EventNature, type EventStatus } from '@/components/event-filters'
@@ -69,7 +69,8 @@ export function EventsWithFilters({ events, type, title, initialSearchQuery = ''
     return filteredEvents.slice(startIndex, endIndex)
   }, [filteredEvents, currentPage])
 
-  useMemo(() => {
+  // 筛选条件变化时重置页码
+  React.useEffect(() => {
     setCurrentPage(1)
   }, [searchQuery, nature, status])
 
