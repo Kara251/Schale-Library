@@ -48,7 +48,7 @@ const labels: Record<Locale, {
 }
 
 /**
- * 活动卡片组件 - kivo.wiki 风格
+ * 活动卡片组件 - 蔚蓝档案风格
  * 使用 memo 优化列表渲染性能
  */
 export const EventCard = memo(function EventCard({ event, type }: EventCardProps) {
@@ -85,48 +85,51 @@ export const EventCard = memo(function EventCard({ event, type }: EventCardProps
   return (
     <LocaleLink
       href={`/${type}-events/${event.id}`}
-      className="block group"
+      className="block group ba-card p-4"
     >
-      {/* 封面图 */}
-      <div className="relative aspect-video rounded overflow-hidden bg-muted mb-3">
-        {event.coverImage ? (
-          <OptimizedImage
-            src={event.coverImage.url}
-            alt={event.title}
-            aspectRatio="16/9"
-            className="group-hover:scale-102 transition-transform duration-200"
-          />
-        ) : (
-          <div className="w-full h-full bg-secondary flex items-center justify-center">
-            <Calendar className="w-8 h-8 text-muted-foreground/30" />
-          </div>
-        )}
-      </div>
-
-      {/* 内容区 */}
-      <div>
-        {/* 标题 */}
-        <h3 className="text-sm font-medium line-clamp-2 mb-1 group-hover:text-primary transition-colors">
-          {event.title}
-        </h3>
-
-        {/* 信息行 */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{natureLabel}</span>
-          <span>·</span>
-          <span>{status}</span>
-          <span>·</span>
-          <span>{formatDate(event.startTime)}</span>
+      <div className="ba-card-content">
+        {/* 封面图 */}
+        <div className="relative aspect-video rounded overflow-hidden bg-muted mb-3">
+          {event.coverImage ? (
+            <OptimizedImage
+              src={event.coverImage.url}
+              alt={event.title}
+              aspectRatio="16/9"
+              className="group-hover:scale-102 transition-transform duration-200"
+            />
+          ) : (
+            <div className="w-full h-full bg-secondary flex items-center justify-center">
+              <Calendar className="w-8 h-8 text-muted-foreground/30" />
+            </div>
+          )}
         </div>
 
-        {/* 地点（线下） */}
-        {isOffline && offlineEvent?.location && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-            <MapPin className="w-3 h-3" />
-            <span className="line-clamp-1">{offlineEvent.location}</span>
+        {/* 内容区 */}
+        <div>
+          {/* 标题 */}
+          <h3 className="ba-title line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+            {event.title}
+          </h3>
+
+          {/* 信息行 */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>{natureLabel}</span>
+            <span>·</span>
+            <span>{status}</span>
+            <span>·</span>
+            <span>{formatDate(event.startTime)}</span>
           </div>
-        )}
+
+          {/* 地点（线下） */}
+          {isOffline && offlineEvent?.location && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+              <MapPin className="w-3 h-3" />
+              <span className="line-clamp-1">{offlineEvent.location}</span>
+            </div>
+          )}
+        </div>
       </div>
     </LocaleLink>
   )
 })
+

@@ -18,6 +18,9 @@ const content: Record<Locale, {
     assetNote: string
     guidelinesNote: string
     nonprofitNote: string
+    fontNote: string
+    fontLinkText: string
+    fontLinkUrl: string
 }> = {
     'zh-Hans': {
         title: '关于图书馆',
@@ -30,6 +33,9 @@ const content: Record<Locale, {
         assetNote: '素材版权：本项目中使用的所有游戏原始或官方衍生素材的知识产权均归属于 Nexon Games、Yostar 及相关版权方所有。',
         guidelinesNote: '本项目尊重官方二次创作指引。',
         nonprofitNote: '非盈利声明：本项目为粉丝自制的非盈利性二创项目，不用于任何商业用途。',
+        fontNote: '字体声明：本站使用 BlueakaBeta2GBK 字体（中英文），日文使用 Noto Sans JP。',
+        fontLinkText: '字体来源：基沃托斯古书馆',
+        fontLinkUrl: 'https://kivo.wiki',
     },
     'en': {
         title: 'About the Library',
@@ -42,6 +48,9 @@ const content: Record<Locale, {
         assetNote: 'Asset Copyright: All game assets and official derivative materials belong to Nexon Games, Yostar, and respective copyright holders.',
         guidelinesNote: 'This project respects official fan creation guidelines.',
         nonprofitNote: 'Non-profit: This is a fan-made, non-commercial project and is not used for any commercial purposes.',
+        fontNote: 'Font: BlueakaBeta2GBK (Chinese/English) and Noto Sans JP (Japanese).',
+        fontLinkText: 'Font source: Kivotos Archive',
+        fontLinkUrl: 'https://kivo.wiki',
     },
     'ja': {
         title: '図書館について',
@@ -54,6 +63,9 @@ const content: Record<Locale, {
         assetNote: '素材の著作権：本プロジェクトで使用されるすべてのゲーム素材および公式派生素材の知的財産権はNexon Games、Yostar、および関連する著作権者に帰属します。',
         guidelinesNote: '本プロジェクトは公式の二次創作ガイドラインを尊重しています。',
         nonprofitNote: '非営利宣言：本プロジェクトはファンメイドの非営利二次創作であり、商業目的では使用されません。',
+        fontNote: 'フォント：BlueakaBeta2GBK（中国語/英語）と Noto Sans JP（日本語）を使用しています。',
+        fontLinkText: 'フォント提供：キヴォトス古書館',
+        fontLinkUrl: 'https://kivo.wiki',
     },
 }
 
@@ -76,7 +88,7 @@ export default async function AboutPage({ params }: AboutPageProps) {
                         <div className="space-y-6">
                             <Card>
                                 <CardContent className="pt-6">
-                                    <h2 className="text-2xl font-bold mb-4">{t.projectTitle}</h2>
+                                    <h2 className="text-2xl font-semibold mb-4">{t.projectTitle}</h2>
                                     <p className="text-muted-foreground leading-relaxed mb-4">{t.projectDesc1}</p>
                                     <p className="text-muted-foreground leading-relaxed">{t.projectDesc2}</p>
                                 </CardContent>
@@ -84,12 +96,18 @@ export default async function AboutPage({ params }: AboutPageProps) {
 
                             <Card>
                                 <CardContent className="pt-6">
-                                    <h2 className="text-2xl font-bold mb-4">{t.copyrightTitle}</h2>
+                                    <h2 className="text-2xl font-semibold mb-4">{t.copyrightTitle}</h2>
                                     <div className="space-y-4 text-muted-foreground">
                                         <p>{t.codeNote}</p>
                                         <p>{t.assetNote}</p>
                                         <p>{t.guidelinesNote}</p>
                                         <p>{t.nonprofitNote}</p>
+                                        <p>
+                                            {t.fontNote}{' '}
+                                            <a href={t.fontLinkUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                                {t.fontLinkText}
+                                            </a>
+                                        </p>
                                     </div>
                                 </CardContent>
                             </Card>

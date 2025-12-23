@@ -63,7 +63,7 @@ export function SearchBar({ onSearch, placeholder, className }: SearchBarProps) 
         <Button
           type="submit"
           size="sm"
-          className="absolute right-1 top-1/2 -translate-y-1/2"
+          className="absolute right-1 top-1/2 -translate-y-1/2 cursor-pointer"
         >
           {t.search}
         </Button>

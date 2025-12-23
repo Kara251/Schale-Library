@@ -3,80 +3,105 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* BlueakaBeta2GBK 蓝色档案字体 - 中英文共用 */
+@font-face {
+  font-family: 'BlueakaBeta2GBK';
+  src: url('/fonts/BlueakaBeta2GBK-DemiBold.ttf') format('truetype');
+  font-weight: 400 500 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'BlueakaBeta2GBK';
+  src: url('/fonts/BlueakaBeta2GBK-Bold.ttf') format('truetype');
+  font-weight: 700 800 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  /* 清新青春主题 - 柔和蓝青色系 */
-  --background: oklch(0.98 0.008 210);
-  --foreground: oklch(0.25 0.015 230);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.25 0.015 230);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.25 0.015 230);
-  --primary: oklch(0.55 0.14 230);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.96 0.015 210);
-  --secondary-foreground: oklch(0.3 0.015 230);
-  --muted: oklch(0.94 0.008 210);
-  --muted-foreground: oklch(0.5 0.015 230);
-  --accent: oklch(0.65 0.12 200);
-  --accent-foreground: oklch(1 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.01 210);
-  --input: oklch(0.96 0.008 210);
-  --ring: oklch(0.55 0.14 230);
-  --chart-1: oklch(0.55 0.14 230);
-  --chart-2: oklch(0.65 0.12 200);
-  --chart-3: oklch(0.6 0.1 260);
-  --chart-4: oklch(0.65 0.12 160);
-  --chart-5: oklch(0.5 0.15 280);
-  --radius: 0.375rem;
-  --sidebar: oklch(0.99 0.005 210);
-  --sidebar-foreground: oklch(0.25 0.015 230);
-  --sidebar-primary: oklch(0.55 0.14 230);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.96 0.015 210);
-  --sidebar-accent-foreground: oklch(0.25 0.015 230);
-  --sidebar-border: oklch(0.92 0.01 210);
-  --sidebar-ring: oklch(0.55 0.14 230);
+  /* 蔚蓝档案核心色板 */
+  --ba-blue: #1289F0;
+  --ba-cyan: #2DF3E0;
+  --ba-pink: #F32D90;
+  --ba-yellow: #FFD700;
+  --ba-dark: #2B333E;
+
+  /* 主题色映射 */
+  --background: #F7F9FB;
+  --foreground: #2B333E;
+  --card: #FFFFFF;
+  --card-foreground: #2B333E;
+  --popover: #FFFFFF;
+  --popover-foreground: #2B333E;
+  --primary: #1289F0;
+  --primary-foreground: #FFFFFF;
+  --secondary: #E8F4FD;
+  --secondary-foreground: #2B333E;
+  --muted: #F0F4F8;
+  --muted-foreground: #5A6A7A;
+  --accent: #2DF3E0;
+  --accent-foreground: #2B333E;
+  --destructive: #E53E3E;
+  --destructive-foreground: #FFFFFF;
+  --border: #D6E4F0;
+  --input: #E8F4FD;
+  --ring: #1289F0;
+  --chart-1: #1289F0;
+  --chart-2: #2DF3E0;
+  --chart-3: #F32D90;
+  --chart-4: #FFD700;
+  --chart-5: #2B333E;
+  --radius: 0.5rem;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #2B333E;
+  --sidebar-primary: #1289F0;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E8F4FD;
+  --sidebar-accent-foreground: #2B333E;
+  --sidebar-border: #D6E4F0;
+  --sidebar-ring: #1289F0;
 }
 
 .dark {
-  --background: oklch(0.16 0.015 230);
-  --foreground: oklch(0.95 0.008 210);
-  --card: oklch(0.2 0.015 230);
-  --card-foreground: oklch(0.95 0.008 210);
-  --popover: oklch(0.2 0.015 230);
-  --popover-foreground: oklch(0.95 0.008 210);
-  --primary: oklch(0.6 0.14 230);
-  --primary-foreground: oklch(0.12 0.015 230);
-  --secondary: oklch(0.25 0.015 230);
-  --secondary-foreground: oklch(0.95 0.008 210);
-  --muted: oklch(0.25 0.015 230);
-  --muted-foreground: oklch(0.65 0.015 210);
-  --accent: oklch(0.6 0.12 200);
-  --accent-foreground: oklch(0.12 0.015 230);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.28 0.015 230);
-  --input: oklch(0.25 0.015 230);
-  --ring: oklch(0.5 0.1 230);
-  --chart-1: oklch(0.6 0.14 230);
-  --chart-2: oklch(0.6 0.12 200);
-  --chart-3: oklch(0.55 0.1 260);
-  --chart-4: oklch(0.6 0.12 160);
-  --chart-5: oklch(0.5 0.15 280);
-  --sidebar: oklch(0.18 0.015 230);
-  --sidebar-foreground: oklch(0.95 0.008 210);
-  --sidebar-primary: oklch(0.6 0.14 230);
-  --sidebar-primary-foreground: oklch(0.12 0.015 230);
-  --sidebar-accent: oklch(0.25 0.015 230);
-  --sidebar-accent-foreground: oklch(0.95 0.008 210);
-  --sidebar-border: oklch(0.28 0.015 230);
-  --sidebar-ring: oklch(0.5 0.1 230);
+  --background: #1A1F2E;
+  --foreground: #E8F4FD;
+  --card: #242B3D;
+  --card-foreground: #E8F4FD;
+  --popover: #242B3D;
+  --popover-foreground: #E8F4FD;
+  --primary: #3A9FF0;
+  --primary-foreground: #1A1F2E;
+  --secondary: #2B333E;
+  --secondary-foreground: #E8F4FD;
+  --muted: #2B333E;
+  --muted-foreground: #8A9AAA;
+  --accent: #2DF3E0;
+  --accent-foreground: #1A1F2E;
+  --destructive: #E53E3E;
+  --destructive-foreground: #FFFFFF;
+  --border: #3A4555;
+  --input: #2B333E;
+  --ring: #3A9FF0;
+  --chart-1: #3A9FF0;
+  --chart-2: #2DF3E0;
+  --chart-3: #F32D90;
+  --chart-4: #FFD700;
+  --chart-5: #E8F4FD;
+  --sidebar: #1A1F2E;
+  --sidebar-foreground: #E8F4FD;
+  --sidebar-primary: #3A9FF0;
+  --sidebar-primary-foreground: #1A1F2E;
+  --sidebar-accent: #2B333E;
+  --sidebar-accent-foreground: #E8F4FD;
+  --sidebar-border: #3A4555;
+  --sidebar-ring: #3A9FF0;
 }
 
 @theme inline {
-  --font-sans: "Noto Sans SC", "Geist", "Geist Fallback", sans-serif;
+  /* BA 风格字体栈：BlueakaBeta2GBK 作为主字体（中英文），日文用 Noto Sans JP */
+  --font-sans: 'BlueakaBeta2GBK', 'Noto Sans JP', 'Microsoft YaHei', 'Hiragino Sans', sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback", monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -123,18 +148,163 @@
 
   body {
     @apply text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 }
 
-/* 内容面板 - 95%不透明度的半透明背景 */
+/* =========================================
+   蔚蓝档案 UI 样式
+   ========================================= */
+
+/* BA 风格网格背景 */
+.ba-grid-bg {
+  background-image:
+    linear-gradient(rgba(18, 137, 240, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(18, 137, 240, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.dark .ba-grid-bg {
+  background-image:
+    linear-gradient(rgba(58, 159, 240, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(58, 159, 240, 0.08) 1px, transparent 1px);
+}
+
+/* BA 风格卡片 - 左边框 + 阴影（移除斜切避免文字模糊） */
+.ba-card {
+  background: var(--card);
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(18, 137, 240, 0.1);
+  border-left: 4px solid var(--ba-blue);
+  transition: all 0.2s ease;
+}
+
+.ba-card:hover {
+  box-shadow: 0 6px 20px rgba(18, 137, 240, 0.15);
+  transform: translateY(-2px);
+}
+
+/* 卡片内容 */
+.ba-card-content {
+  /* 无需反斜切 */
+}
+
+/* BA 风格卡片标题 - 使用 BlueakaBeta2GBK DemiBold */
+.ba-title {
+  font-family: 'BlueakaBeta2GBK', 'Noto Sans JP', sans-serif;
+  font-weight: 600;
+  font-style: italic;
+  font-size: 1rem;
+  line-height: 1.4;
+  letter-spacing: 0.5px;
+  color: #3A4555;
+}
+
+.dark .ba-title {
+  color: #E8F4FD;
+}
+
+.dark .ba-title {
+  color: var(--foreground);
+}
+
+/* BA 风格按钮 */
+.ba-btn {
+  background: var(--ba-blue);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transform: skewX(-5deg);
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.ba-btn:hover {
+  background: #0A6FCC;
+  transform: skewX(-5deg) translateY(-1px);
+}
+
+.ba-btn:active {
+  transform: skewX(-5deg) scale(0.97);
+  background: var(--ba-dark);
+}
+
+/* BA 风格按钮文字反斜切 */
+.ba-btn-text {
+  display: inline-block;
+  transform: skewX(5deg);
+}
+
+/* 内容面板 - BA 风格 */
 .content-panel {
-  background-color: rgba(255, 255, 255, 0.95);
-  border-radius: 0.5rem;
-  padding: 1.5rem;
+  background-color: rgb(255, 255, 255);
+  border-radius: 12px;
+  padding: 2.7rem;
   margin-top: 5%;
   margin-bottom: 5%;
+  box-shadow: 0 4px 15px rgba(18, 137, 240, 0.08);
 }
 
 .dark .content-panel {
-  background-color: rgba(25, 30, 45, 0.95);
+  background-color: rgba(36, 43, 61, 0.95);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* BA 强调色文字 */
+.ba-text-blue {
+  color: var(--ba-blue);
+}
+
+.ba-text-cyan {
+  color: var(--ba-cyan);
+}
+
+.ba-text-pink {
+  color: var(--ba-pink);
+}
+
+.ba-text-yellow {
+  color: var(--ba-yellow);
+}
+
+/* BA 背景色 */
+.ba-bg-blue {
+  background-color: var(--ba-blue);
+}
+
+.ba-bg-cyan {
+  background-color: var(--ba-cyan);
+}
+
+.ba-bg-pink {
+  background-color: var(--ba-pink);
+}
+
+/* BA 数字优化 - 用于等级、AP、信用点等 */
+.ba-number {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* BA 装饰性标题 - 斜切效果 */
+.ba-header-deco {
+  transform: skewX(-10deg);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+/* BA 正文颜色 - 深灰黑减少视觉疲劳 */
+.ba-text-body {
+  color: #2B333E;
+}
+
+.dark .ba-text-body {
+  color: #E8F4FD;
 }

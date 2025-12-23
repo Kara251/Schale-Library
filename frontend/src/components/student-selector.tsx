@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useLocale } from '@/contexts/locale-context'
 import type { Student, SchoolType } from '@/lib/api'
-import { schoolNames } from '@/lib/api'
+import { schoolNames, schoolNamesLocalized } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 
 interface StudentSelectorProps {
@@ -71,51 +71,7 @@ const labels: Record<Locale, {
     },
 }
 
-// 学校名翻译
-const schoolNamesLocalized: Record<Locale, Record<string, string>> = {
-    'zh-Hans': {
-        abydos: '阿拜多斯',
-        gehenna: '格黑娜',
-        trinity: '圣三一',
-        millennium: '千年',
-        hyakkiyako: '百鬼夜行',
-        shanhaijing: '山海经',
-        redwinter: '红冬',
-        valkyrie: '瓦尔基里',
-        arius: '阿里乌斯',
-        srt: 'SRT',
-        kronos: '克洛诺斯',
-        etc: '其他',
-    },
-    'en': {
-        abydos: 'Abydos',
-        gehenna: 'Gehenna',
-        trinity: 'Trinity',
-        millennium: 'Millennium',
-        hyakkiyako: 'Hyakkiyako',
-        shanhaijing: 'Shanhaijing',
-        redwinter: 'Red Winter',
-        valkyrie: 'Valkyrie',
-        arius: 'Arius',
-        srt: 'SRT',
-        kronos: 'Kronos',
-        etc: 'Other',
-    },
-    'ja': {
-        abydos: 'アビドス',
-        gehenna: 'ゲヘナ',
-        trinity: 'トリニティ',
-        millennium: 'ミレニアム',
-        hyakkiyako: '百鬼夜行',
-        shanhaijing: '山海経',
-        redwinter: 'レッドウィンター',
-        valkyrie: 'ヴァルキューレ',
-        arius: 'アリウス',
-        srt: 'SRT',
-        kronos: 'クロノス',
-        etc: 'その他',
-    },
-}
+// schoolNamesLocalized 现在从 @/lib/api 导入
 
 /**
  * 学生选择器弹窗组件

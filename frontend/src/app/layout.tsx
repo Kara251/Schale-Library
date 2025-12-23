@@ -28,6 +28,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
+      <head>
+        {/* 字体 - 使用 loli.net 国内 CDN 镜像（全球可用） */}
+        <link rel="preconnect" href="https://fonts.loli.net" crossOrigin="anonymous" />
+        {/* Nunito - 英文圆润字体 */}
+        <link
+          href="https://fonts.loli.net/css2?family=Nunito:wght@400;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+        {/* Noto Sans SC - 中文思源黑体 */}
+        <link
+          href="https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap"
+          rel="stylesheet"
+        />
+        {/* Noto Sans JP - 日文思源黑体 */}
+        <link
+          href="https://fonts.loli.net/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="font-sans antialiased">
         <BackgroundImage />
         <LocaleProvider>

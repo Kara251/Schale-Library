@@ -52,7 +52,9 @@ export const translations = {
     // 首页
     'home.title': '欢迎来到夏莱图书馆',
     'home.latestEvents': '最新活动',
+    'home.latestWorks': '最新推荐作品',
     'home.noEvents': '暂无活动',
+    'home.noWorks': '暂无推荐作品',
     'home.loadMore': '加载更多',
 
     // 活动
@@ -109,7 +111,9 @@ export const translations = {
     // Home
     'home.title': 'Welcome to Schale Library',
     'home.latestEvents': 'Latest Events',
+    'home.latestWorks': 'Latest Recommended Works',
     'home.noEvents': 'No events',
+    'home.noWorks': 'No recommended works yet',
     'home.loadMore': 'Load More',
 
     // Events
@@ -166,7 +170,9 @@ export const translations = {
     // ホーム
     'home.title': 'シャーレ図書館へようこそ',
     'home.latestEvents': '最新イベント',
+    'home.latestWorks': '最新おすすめ作品',
     'home.noEvents': 'イベントはありません',
+    'home.noWorks': 'おすすめ作品がありません',
     'home.loadMore': 'もっと見る',
 
     // イベント

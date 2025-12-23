@@ -14,7 +14,7 @@ import { LocaleLink, useLocalePath } from "@/components/locale-link"
 import { UserMenu } from "@/components/user-menu"
 import { useAuth } from "@/contexts/auth-context"
 import { useLocale } from "@/contexts/locale-context"
-import { translations, type Locale } from "@/lib/i18n"
+import { type Locale } from "@/lib/i18n"
 
 // 导航项 - 按语言
 const getNavItems = (locale: Locale) => {

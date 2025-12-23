@@ -325,7 +325,7 @@ export interface Work {
 /**
  * 学生类型
  */
-export type SchoolType = 'abydos' | 'gehenna' | 'millennium' | 'trinity' | 'hyakkiyako' | 'shanhaijing' | 'redwinter' | 'valkyrie' | 'arius' | 'srt' | 'tokiwadai' | 'other';
+export type SchoolType = 'abydos' | 'gehenna' | 'millennium' | 'trinity' | 'hyakkiyako' | 'shanhaijing' | 'redwinter' | 'valkyrie' | 'arius' | 'srt' | 'tokiwadai' | 'kronos' | 'other';
 
 export interface Student {
   id: number;
@@ -396,7 +396,7 @@ export async function getStudents(locale: string = 'zh-Hans') {
 }
 
 /**
- * 学校名称映射
+ * 学校名称映射（中文默认）
  */
 export const schoolNames: Record<SchoolType, string> = {
   abydos: '阿拜多斯',
@@ -410,6 +410,58 @@ export const schoolNames: Record<SchoolType, string> = {
   arius: '阿里乌斯',
   srt: 'SRT',
   tokiwadai: '常盘台',
+  kronos: '克洛诺斯',
   other: '其他',
+};
+
+/**
+ * 多语言学校名称映射
+ */
+export const schoolNamesLocalized: Record<string, Record<string, string>> = {
+  'zh-Hans': {
+    abydos: '阿拜多斯',
+    gehenna: '格赫娜',
+    trinity: '圣三一',
+    millennium: '千年',
+    hyakkiyako: '百鬼夜行',
+    shanhaijing: '山海经',
+    redwinter: '红冬',
+    valkyrie: '瓦尔基里',
+    arius: '阿里乌斯',
+    srt: 'SRT',
+    tokiwadai: '常盘台',
+    kronos: '克洛诺斯',
+    other: '其他',
+  },
+  'en': {
+    abydos: 'Abydos',
+    gehenna: 'Gehenna',
+    trinity: 'Trinity',
+    millennium: 'Millennium',
+    hyakkiyako: 'Hyakkiyako',
+    shanhaijing: 'Shanhaijing',
+    redwinter: 'Red Winter',
+    valkyrie: 'Valkyrie',
+    arius: 'Arius',
+    srt: 'SRT',
+    tokiwadai: 'Tokiwadai',
+    kronos: 'Kronos',
+    other: 'Other',
+  },
+  'ja': {
+    abydos: 'アビドス',
+    gehenna: 'ゲヘナ',
+    trinity: 'トリニティ',
+    millennium: 'ミレニアム',
+    hyakkiyako: '百鬼夜行',
+    shanhaijing: '山海経',
+    redwinter: 'レッドウィンター',
+    valkyrie: 'ヴァルキューレ',
+    arius: 'アリウス',
+    srt: 'SRT',
+    tokiwadai: '常盤台',
+    kronos: 'クロノス',
+    other: 'その他',
+  },
 };
 

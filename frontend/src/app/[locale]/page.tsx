@@ -58,7 +58,7 @@ export default async function HomePage({ params }: HomePageProps) {
                     <section>
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-3xl font-bold">
-                                {locale === 'en' ? 'Latest Recommended Works' : locale === 'ja' ? '最新おすすめ作品' : '最新推荐作品'}
+                                {t['home.latestWorks'] || '最新推荐作品'}
                             </h2>
                         </div>
                         {works.length > 0 ? (
@@ -70,7 +70,7 @@ export default async function HomePage({ params }: HomePageProps) {
                         ) : (
                             <div className="text-center py-8">
                                 <p className="text-muted-foreground">
-                                    {locale === 'en' ? 'No recommended works yet' : locale === 'ja' ? 'おすすめ作品がありません' : '暂无推荐作品'}
+                                    {t['home.noWorks'] || '暂无推荐作品'}
                                 </p>
                             </div>
                         )}

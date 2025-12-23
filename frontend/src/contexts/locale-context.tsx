@@ -2,10 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Locale, defaultLocale } from '@/lib/i18n'
-
-// 支持的语言列表
-const locales: Locale[] = ['zh-Hans', 'en', 'ja']
+import { Locale, defaultLocale, locales } from '@/lib/i18n'
 
 interface LocaleContextType {
   locale: Locale

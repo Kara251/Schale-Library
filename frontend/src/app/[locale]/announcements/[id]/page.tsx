@@ -77,7 +77,7 @@ export default async function AnnouncementDetailPage({ params }: PageProps) {
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                 {announcement.priority > 5 && (
                                     <div className="absolute top-4 left-4">
-                                        <Badge className="font-bold bg-accent">{t.important}</Badge>
+                                        <Badge className="font-bold bg-primary">{t.important}</Badge>
                                     </div>
                                 )}
                             </div>

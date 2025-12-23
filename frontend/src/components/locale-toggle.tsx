@@ -46,7 +46,7 @@ export function LocaleToggle() {
             onClick={() => setLocale(loc)}
             className={cn(
               'cursor-pointer',
-              locale === loc && 'bg-accent'
+              locale === loc && 'bg-primary/20 text-primary font-medium'
             )}
           >
             {localeNames[loc]}
