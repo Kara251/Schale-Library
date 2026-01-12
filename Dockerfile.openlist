@@ -1,4 +1,4 @@
-# Start directly from the official image (ensures all libraries/dependencies are correct)
+# Start directly from the official image
 FROM openlistteam/openlist:latest
 
 # Force switch to Root user to fix Render permission issues
@@ -7,14 +7,16 @@ USER root
 # Create/Fix permission for data directory
 RUN mkdir -p /opt/openlist/data && chmod -R 777 /opt/openlist/data
 
-# Set working directory to the app root (so ./data resolves correctly)
+# Set working directory to the app root
 WORKDIR /opt/openlist
 
 # Expose the default port
 EXPOSE 5244
 
-# Bypass the official entrypoint (which might switch user back) and run directly
-ENTRYPOINT ["/opt/openlist/openlist"]
+# Override ENTRYPOINT to ensuring we start with a shell
+# This helps with environment variable expansion and signal handling
+ENTRYPOINT []
 
-# Standard start command
-CMD ["server", "--no-prefix"]
+# Run the server using a shell wrapper to catch standard error
+# and force it to stay in foreground
+CMD ["/bin/sh", "-c", "./openlist server --no-prefix"]
