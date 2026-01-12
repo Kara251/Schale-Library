@@ -2,11 +2,9 @@
 FROM openlistteam/openlist:latest AS source
 
 # 2. Run it in a clean, root-controlled Alpine environment
-# (Creating a compatibility match since the binary is compiled for Alpine)
 FROM alpine:latest
 
-# Install CA certificates (needed for HTTPS/OneDrive connections)
-# Also install bash/curl just in case debugging is needed
+# Install CA certificates
 RUN apk update && apk add --no-cache ca-certificates bash curl && rm -rf /var/cache/apk/*
 
 # Copy the binary
@@ -14,10 +12,12 @@ COPY --from=source /opt/openlist/openlist /usr/bin/openlist
 
 # Create data directory with root permissions
 RUN mkdir -p /opt/openlist/data
-WORKDIR /opt/openlist/data
 
-# Expose port
+# Correct WORKDIR so it finds ./data correctly
+WORKDIR /opt/openlist
+
+# Expose port (OpenList default)
 EXPOSE 5244
 
-# Run as Root (bypassing all permission issues)
+# Run as Root
 CMD ["openlist", "server", "--no-prefix"]
