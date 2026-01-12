@@ -1,11 +1,13 @@
 # 1. Get OpenList binary from the official image
 FROM openlistteam/openlist:latest AS source
 
-# 2. Run it in a clean, root-controlled Ubuntu environment
-FROM ubuntu:22.04
+# 2. Run it in a clean, root-controlled Alpine environment
+# (Creating a compatibility match since the binary is compiled for Alpine)
+FROM alpine:latest
 
 # Install CA certificates (needed for HTTPS/OneDrive connections)
-RUN apt-get update && apt-get install -y ca-certificates &rm -rf /var/lib/apt/lists/*
+# Also install bash/curl just in case debugging is needed
+RUN apk update && apk add --no-cache ca-certificates bash curl && rm -rf /var/cache/apk/*
 
 # Copy the binary
 COPY --from=source /opt/openlist/openlist /usr/bin/openlist
