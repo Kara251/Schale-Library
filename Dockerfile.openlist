@@ -1,23 +1,20 @@
-# 1. Get OpenList binary from the official image
-FROM openlistteam/openlist:latest AS source
+# Start directly from the official image (ensures all libraries/dependencies are correct)
+FROM openlistteam/openlist:latest
 
-# 2. Run it in a clean, root-controlled Alpine environment
-FROM alpine:latest
+# Force switch to Root user to fix Render permission issues
+USER root
 
-# Install CA certificates
-RUN apk update && apk add --no-cache ca-certificates bash curl && rm -rf /var/cache/apk/*
+# Create/Fix permission for data directory
+RUN mkdir -p /opt/openlist/data && chmod -R 777 /opt/openlist/data
 
-# Copy the binary
-COPY --from=source /opt/openlist/openlist /usr/bin/openlist
-
-# Create data directory with root permissions
-RUN mkdir -p /opt/openlist/data
-
-# Correct WORKDIR so it finds ./data correctly
+# Set working directory to the app root (so ./data resolves correctly)
 WORKDIR /opt/openlist
 
-# Expose port (OpenList default)
+# Expose the default port
 EXPOSE 5244
 
-# Run as Root
-CMD ["openlist", "server", "--no-prefix"]
+# Bypass the official entrypoint (which might switch user back) and run directly
+ENTRYPOINT ["/opt/openlist/openlist"]
+
+# Standard start command
+CMD ["server", "--no-prefix"]
