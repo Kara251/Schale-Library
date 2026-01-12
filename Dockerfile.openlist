@@ -1,4 +1,4 @@
-# FINAL DEBUG STRATEGY: The "Catch & Sleep"
+# FINAL DEBUG STRATEGY: The "Log Hunter"
 FROM ubuntu:22.04
 
 # Basic setup
@@ -21,9 +21,11 @@ RUN chmod -R 777 /opt/openlist
 ENV PUID=0 PGID=0 UMASK=022
 EXPOSE 5244
 
-# THE TRAP:
-# 1. Print Version (Prove binary works)
-# 2. Run Server
-# 3. IF it crashes, print message and SLEEP.
-# This keeps the container ALIVE so you can see the error log involved.
-CMD ["/bin/sh", "-c", "./openlist version; echo 'Starting Server...'; ./openlist server --no-prefix || { echo '================ CRASHED ================'; echo 'Sleeping 1 hour to allow log inspection...'; sleep 3600; }"]
+# THE TRAP V2:
+# 1. Start Server
+# 2. On CRASH:
+#    - List all files in data/ to see layout
+#    - Print content of ANY log file found in data/log/
+#    - Print the generated config.json to see what it thought it should do
+#    - Sleep so Render doesn't kill it immediately
+CMD ["/bin/sh", "-c", "./openlist server --no-prefix || { echo 'CRASHED! Extracting logs...'; ls -R data/; echo '--- CONFIG.JSON ---'; cat data/config.json; echo '--- LOG FILES ---'; find data -name '*.log' -exec cat {} +; sleep 3600; }"]
