@@ -1,39 +1,29 @@
-# FINAL FIX: Clean Slate Strategy (Corrected Filename)
+# FINAL DEBUG STRATEGY: The "Catch & Sleep"
 FROM ubuntu:22.04
 
-# Set non-interactive to avoid prompts
+# Basic setup
 ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y curl ca-certificates tar && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    ca-certificates \
-    tar \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create directory structure
-RUN mkdir -p /opt/openlist/data
-
-# Set working directory
+# Setup App
 WORKDIR /opt/openlist
+RUN mkdir -p data
 
-# Download and extract
-# FIX: The binary inside the tar.gz is named "openlist", NOT "openlist-linux-amd64"
+# Download Binary (Correct Filename)
 RUN curl -L https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-linux-amd64.tar.gz -o openlist.tar.gz \
     && tar -xzf openlist.tar.gz \
     && rm openlist.tar.gz \
     && chmod +x openlist
 
-# Grant FULL PERMISSIONS (777) to the directory
+# Permissions
 RUN chmod -R 777 /opt/openlist
 
-# Environment Variables
-ENV PUID=0
-ENV PGID=0
-ENV UMASK=022
-
-# Expose Port
+ENV PUID=0 PGID=0 UMASK=022
 EXPOSE 5244
 
-# Default Command
-CMD ["./openlist", "server", "--no-prefix"]
+# THE TRAP:
+# 1. Print Version (Prove binary works)
+# 2. Run Server
+# 3. IF it crashes, print message and SLEEP.
+# This keeps the container ALIVE so you can see the error log involved.
+CMD ["/bin/sh", "-c", "./openlist version; echo 'Starting Server...'; ./openlist server --no-prefix || { echo '================ CRASHED ================'; echo 'Sleeping 1 hour to allow log inspection...'; sleep 3600; }"]
