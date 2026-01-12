@@ -1,22 +1,46 @@
-# Start directly from the official image
-FROM openlistteam/openlist:latest
+# FINAL ATTEMPT: Clean Slate Strategy
+# Use a standard, clean Ubuntu image to guarantee environment compatibility.
+FROM ubuntu:22.04
 
-# Force switch to Root user to fix Render permission issues
-USER root
+# Set non-interactive installation to verify no prompts block the build
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Create/Fix permission for data directory
-RUN mkdir -p /opt/openlist/data && chmod -R 777 /opt/openlist/data
+# Install dependencies:
+# - curl: to download the binary
+# - ca-certificates: for HTTPS support
+# - tar: to extract the archive
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    tar \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set working directory to the app root
+# Create directory structure
+RUN mkdir -p /opt/openlist/data
+
+# Set working directory
 WORKDIR /opt/openlist
 
-# Expose the default port
+# Download and extract the OpenList binary manually
+# This guarantees we get the raw binary without any Docker-specific wrapper scripts
+RUN curl -L https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-linux-amd64.tar.gz -o openlist.tar.gz \
+    && tar -xzf openlist.tar.gz \
+    && rm openlist.tar.gz \
+    && mv openlist-linux-amd64 openlist \
+    && chmod +x openlist
+
+# Grant FULL PERMISSIONS (777) to the directory
+# This ensures ANY user (Root or otherwise) can write to it.
+RUN chmod -R 777 /opt/openlist
+
+# Set Environment Variables to force Root behavior (just in case)
+ENV PUID=0
+ENV PGID=0
+ENV UMASK=022
+
+# Expose Port
 EXPOSE 5244
 
-# Override ENTRYPOINT to ensuring we start with a shell
-# This helps with environment variable expansion and signal handling
-ENTRYPOINT []
-
-# Run the server using a shell wrapper to catch standard error
-# and force it to stay in foreground
-CMD ["/bin/sh", "-c", "./openlist server --no-prefix"]
+# Default Command: Run the binary directly
+# No entrypoint script, no user switching, just raw execution.
+CMD ["./openlist", "server", "--no-prefix"]
