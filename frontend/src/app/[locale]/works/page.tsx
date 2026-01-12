@@ -4,6 +4,8 @@ import { WorksWithFilters } from "@/components/works-with-filters"
 import { getWorks, getStudents } from "@/lib/api"
 import type { Locale } from "@/lib/i18n"
 
+export const dynamic = 'force-dynamic';
+
 interface WorksPageProps {
     params: Promise<{ locale: string }>
 }

@@ -1,0 +1,21 @@
+# 1. Get OpenList binary from the official image
+FROM openlistteam/openlist:latest AS source
+
+# 2. Run it in a clean, root-controlled Ubuntu environment
+FROM ubuntu:22.04
+
+# Install CA certificates (needed for HTTPS/OneDrive connections)
+RUN apt-get update && apt-get install -y ca-certificates &rm -rf /var/lib/apt/lists/*
+
+# Copy the binary
+COPY --from=source /opt/openlist/openlist /usr/bin/openlist
+
+# Create data directory with root permissions
+RUN mkdir -p /opt/openlist/data
+WORKDIR /opt/openlist/data
+
+# Expose port
+EXPOSE 5244
+
+# Run as Root (bypassing all permission issues)
+CMD ["openlist", "server", "--no-prefix"]

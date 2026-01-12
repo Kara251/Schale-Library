@@ -10,6 +10,8 @@ import { zhCN, enUS, ja } from 'date-fns/locale'
 import { LocaleLink } from '@/components/locale-link'
 import type { Locale } from '@/lib/i18n'
 
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
     params: Promise<{ id: string; locale: string }>
 }

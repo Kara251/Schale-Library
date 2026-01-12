@@ -4,6 +4,8 @@ import { EventsWithFilters } from "@/components/events-with-filters"
 import { getOnlineEvents } from "@/lib/api"
 import type { Locale } from "@/lib/i18n"
 
+export const dynamic = 'force-dynamic';
+
 interface OnlineEventsPageProps {
     params: Promise<{ locale: string }>
 }
