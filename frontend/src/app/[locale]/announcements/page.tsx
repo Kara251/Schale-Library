@@ -4,7 +4,7 @@ import { getAnnouncements } from "@/lib/api"
 import { AnnouncementCard } from "@/components/announcement-card"
 import type { Locale } from "@/lib/i18n"
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 interface AnnouncementsPageProps {
     params: Promise<{ locale: string }>

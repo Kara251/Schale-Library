@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { useAuth } from '@/contexts/auth-context'
 import { useLocale } from '@/contexts/locale-context'
 import { useLocalePath } from '@/components/locale-link'
-import { login, setAuthToken } from '@/lib/auth'
+import { login } from '@/lib/auth'
 import { Loader2, AlertCircle } from 'lucide-react'
 import type { Locale } from '@/lib/i18n'
 
@@ -57,6 +57,7 @@ const content: Record<Locale, {
 
 export default function LoginPage() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const { setUser } = useAuth()
     const { locale } = useLocale()
     const getLocalePath = useLocalePath()
@@ -67,6 +68,9 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState('')
 
+    const nextPath = searchParams.get('next')
+    const safeNextPath = nextPath && nextPath.startsWith(`/${locale}/manage`) ? nextPath : getLocalePath('/manage')
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError('')
@@ -74,9 +78,8 @@ export default function LoginPage() {
 
         try {
             const response = await login({ identifier, password })
-            setAuthToken(response.jwt)
             setUser(response.user)
-            router.push(getLocalePath('/'))
+            router.push(safeNextPath)
             router.refresh()
         } catch (err) {
             setError(err instanceof Error ? err.message : t.errorDefault)

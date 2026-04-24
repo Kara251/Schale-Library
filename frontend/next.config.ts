@@ -76,26 +76,6 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      {
-        // Next.js 优化的图片缓存 7 天
-        source: '/_next/image/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=604800, stale-while-revalidate=86400',
-          },
-        ],
-      },
-      {
-        // 静态文件缓存 1 年
-        source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
     ];
   },
 };

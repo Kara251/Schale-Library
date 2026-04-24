@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { Languages } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -10,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useLocale } from '@/contexts/locale-context'
-import { locales, localeNames, type Locale } from '@/lib/i18n'
+import { locales, localeNames } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 /**
@@ -18,19 +17,6 @@ import { cn } from '@/lib/utils'
  */
 export function LocaleToggle() {
   const { locale, setLocale } = useLocale()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return (
-      <Button variant="ghost" size="icon" aria-label="切换语言" disabled className="cursor-pointer">
-        <Languages className="h-5 w-5" />
-      </Button>
-    )
-  }
 
   return (
     <DropdownMenu>

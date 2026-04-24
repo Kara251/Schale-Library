@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
@@ -45,13 +44,7 @@ const content: Record<Locale, {
 
 export default function NotFound() {
   const { locale } = useLocale()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const t = mounted ? (content[locale] || content['zh-Hans']) : content['zh-Hans']
+  const t = content[locale] || content['zh-Hans']
 
   return (
     <div className="min-h-screen flex flex-col">

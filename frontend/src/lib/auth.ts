@@ -2,11 +2,16 @@
  * 认证相关工具函数
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083';
-
 export interface LoginCredentials {
   identifier: string; // email or username
   password: string;
+}
+
+export interface UserRole {
+  id?: number;
+  name?: string;
+  type?: string;
+  description?: string;
 }
 
 export interface User {
@@ -15,10 +20,10 @@ export interface User {
   email: string;
   confirmed: boolean;
   blocked: boolean;
+  role?: UserRole | null;
 }
 
 export interface AuthResponse {
-  jwt: string;
   user: User;
 }
 
@@ -26,80 +31,50 @@ export interface AuthResponse {
  * 登录
  */
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/api/auth/local`, {
+  const response = await fetch('/api/admin/auth/login', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(credentials),
+    credentials: 'same-origin',
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || '登录失败');
+    throw new Error(error.error || '登录失败');
   }
 
   return response.json();
 }
 
 /**
- * 获取当前用户信息
+ * 获取当前会话信息
  */
-export async function getCurrentUser(token: string): Promise<User> {
-  const response = await fetch(`${API_URL}/api/users/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+export async function fetchSession(): Promise<User | null> {
+  const response = await fetch('/api/admin/auth/session', {
+    credentials: 'same-origin',
+    cache: 'no-store',
   });
 
+  if (response.status === 401) {
+    return null;
+  }
+
   if (!response.ok) {
-    throw new Error('获取用户信息失败');
+    throw new Error('获取会话失败');
   }
 
-  return response.json();
-}
-
-/**
- * 存储 token 到 localStorage
- */
-export function setAuthToken(token: string): void {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('auth_token', token);
-  }
-}
-
-/**
- * 从 localStorage 获取 token
- */
-export function getAuthToken(): string | null {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('auth_token');
-  }
-  return null;
-}
-
-/**
- * 删除 token
- */
-export function removeAuthToken(): void {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('auth_token');
-  }
-}
-
-/**
- * 检查是否已登录
- */
-export function isAuthenticated(): boolean {
-  return !!getAuthToken();
+  const data = (await response.json()) as { user: User | null };
+  return data.user;
 }
 
 /**
  * 登出
  */
-export function logout(): void {
-  removeAuthToken();
-  if (typeof window !== 'undefined') {
-    window.location.href = '/';
-  }
+export async function logout(): Promise<void> {
+  await fetch('/api/admin/auth/logout', {
+    method: 'POST',
+    credentials: 'same-origin',
+  });
 }

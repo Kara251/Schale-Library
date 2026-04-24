@@ -1,10 +1,10 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { WorksWithFilters } from "@/components/works-with-filters"
-import { getWorks, getStudents } from "@/lib/api"
+import { getStudents, getWorks } from "@/lib/api"
 import type { Locale } from "@/lib/i18n"
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 interface WorksPageProps {
     params: Promise<{ locale: string }>
@@ -21,7 +21,7 @@ export default async function WorksPage({ params }: WorksPageProps) {
     const title = titles[locale as Locale] || titles['zh-Hans']
 
     const [worksRes, studentsRes] = await Promise.all([
-        getWorks(100).catch(() => ({ data: [] })),
+        getWorks(100, locale).catch(() => ({ data: [] })),
         getStudents(locale).catch(() => ({ data: [] })),
     ])
     const works = worksRes.data || []

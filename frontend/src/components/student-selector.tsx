@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useMemo } from 'react'
 import { X, Search, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -223,7 +224,7 @@ export function StudentSelector({
                                     >
                                         <div className="relative w-12 h-12 rounded-full overflow-hidden bg-secondary mb-2">
                                             {student.avatar ? (
-                                                <img src={student.avatar.url} alt={student.name} className="w-full h-full object-cover" />
+                                                <Image src={student.avatar.url} alt={student.name} fill sizes="48px" className="object-cover" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-muted-foreground text-lg font-bold">
                                                     {student.name.charAt(0)}
@@ -311,7 +312,7 @@ export function StudentSelectorTrigger({
                                 {selectedStudentInfo.slice(0, 3).map(student => (
                                     <div key={student.id} className="w-6 h-6 rounded-full border-2 border-background overflow-hidden bg-secondary">
                                         {student.avatar ? (
-                                            <img src={student.avatar.url} alt={student.name} className="w-full h-full object-cover" />
+                                            <Image src={student.avatar.url} alt={student.name} fill sizes="24px" className="object-cover" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-xs font-bold">
                                                 {student.name.charAt(0)}

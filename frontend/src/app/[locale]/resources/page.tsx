@@ -5,7 +5,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
 export default function ResourcesPage() {
-    const { locale } = useLocale()
+    useLocale()
 
     // 资源库地址
     const driveUrl = "https://drive.bakivo.com"

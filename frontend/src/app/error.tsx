@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import Link from 'next/link'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
@@ -55,19 +56,19 @@ export default function Error({
                 重试
               </Button>
               <Button asChild variant="outline" size="lg">
-                <a href="/">
+                <Link href="/">
                   <Home className="mr-2 h-4 w-4" />
                   返回首页
-                </a>
+                </Link>
               </Button>
             </div>
 
             {/* 提示信息 */}
             <div className="pt-4 text-sm text-muted-foreground">
               <p>如果问题持续存在，请</p>
-              <a href="/contact" className="text-primary hover:underline">
+              <Link href="/contact" className="text-primary hover:underline">
                 联系图书馆
-              </a>
+              </Link>
             </div>
           </div>
         </div>

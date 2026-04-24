@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +12,7 @@ import { zhCN, enUS, ja } from 'date-fns/locale'
 import { LocaleLink } from '@/components/locale-link'
 import type { Locale } from '@/lib/i18n'
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 interface PageProps {
     params: Promise<{ id: string; locale: string }>
@@ -82,8 +83,8 @@ const content: Record<Locale, {
 }
 
 export async function generateMetadata({ params }: PageProps) {
-    const { id } = await params
-    const workRes = await getWorkById(Number(id)).catch(() => null)
+    const { id, locale } = await params
+    const workRes = await getWorkById(id, locale).catch(() => null)
 
     if (!workRes || !workRes.data) {
         return { title: 'Work not found - Schale Library' }
@@ -100,7 +101,7 @@ export default async function WorkDetailPage({ params }: PageProps) {
     const t = content[locale as Locale] || content['zh-Hans']
     const dateLocale = dateLocales[locale as Locale] || zhCN
 
-    const workRes = await getWorkById(Number(id)).catch(() => null)
+    const workRes = await getWorkById(id, locale).catch(() => null)
 
     if (!workRes || !workRes.data) {
         notFound()
@@ -119,6 +120,8 @@ export default async function WorkDetailPage({ params }: PageProps) {
     const natureLabel = work.nature === 'official' ? t.official : t.fanmade
     const typeLabels = { video: t.video, image: t.image, text: t.text, other: t.other }
     const typeLabel = typeLabels[work.workType as keyof typeof typeLabels] || t.other
+    const coverImageSrc = work.coverImage?.url || `/api/image-proxy?url=${encodeURIComponent(work.coverImageUrl || '')}`
+    const isProxyImage = coverImageSrc.startsWith('/api/image-proxy?')
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -134,11 +137,23 @@ export default async function WorkDetailPage({ params }: PageProps) {
                     <div className="max-w-4xl mx-auto">
                         {(work.coverImage || work.coverImageUrl) && (
                             <div className="relative h-64 md:h-96 rounded-lg overflow-hidden mb-8">
-                                <img
-                                    src={work.coverImage?.url || `/api/image-proxy?url=${encodeURIComponent(work.coverImageUrl || '')}`}
-                                    alt={work.title}
-                                    className="w-full h-full object-cover"
-                                />
+                                {isProxyImage ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                        src={coverImageSrc}
+                                        alt={work.title}
+                                        className="absolute inset-0 h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    <Image
+                                        src={coverImageSrc}
+                                        alt={work.title}
+                                        fill
+                                        priority
+                                        sizes="(max-width: 768px) 100vw, 896px"
+                                        className="object-cover"
+                                    />
+                                )}
                             </div>
                         )}
 

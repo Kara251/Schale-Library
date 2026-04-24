@@ -1,14 +1,14 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { User, getAuthToken, removeAuthToken, getCurrentUser } from '@/lib/auth'
+import { createContext, useCallback, useContext, useState, useEffect, ReactNode, useMemo } from 'react'
+import { User, fetchSession, logout as logoutRequest } from '@/lib/auth'
 
 interface AuthContextType {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
   setUser: (user: User | null) => void
-  logout: () => void
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -18,40 +18,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // 检查是否有 token
-    const token = getAuthToken()
-    if (token) {
-      // 获取用户信息
-      getCurrentUser(token)
-        .then(setUser)
-        .catch(() => {
-          // token 无效，清除
-          removeAuthToken()
-        })
-        .finally(() => {
+    let cancelled = false
+
+    fetchSession()
+      .then((currentUser) => {
+        if (!cancelled) {
+          setUser(currentUser)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUser(null)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
           setIsLoading(false)
-        })
-    } else {
-      setIsLoading(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
     }
   }, [])
 
-  const logout = () => {
+  const logout = useCallback(async () => {
     setUser(null)
-    removeAuthToken()
-    window.location.href = '/'
-  }
+
+    try {
+      await logoutRequest()
+    } catch {
+      // ignore network logout failure and continue clearing local state
+    }
+
+    const localeMatch = window.location.pathname.match(/^\/(zh-Hans|en|ja)(?:\/|$)/)
+    const nextPath = localeMatch ? `/${localeMatch[1]}` : '/'
+    window.location.href = nextPath
+  }, [])
+
+  const value = useMemo(
+    () => ({
+      user,
+      isLoading,
+      isAuthenticated: !!user,
+      setUser,
+      logout,
+    }),
+    [user, isLoading, logout]
+  )
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isAuthenticated: !!user,
-        setUser,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )
@@ -66,7 +83,7 @@ export function useAuth() {
       isLoading: false,
       isAuthenticated: false,
       setUser: () => {},
-      logout: () => {},
+      logout: async () => {},
     }
   }
   return context

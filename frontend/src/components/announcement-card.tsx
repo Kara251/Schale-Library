@@ -1,11 +1,12 @@
 'use client'
 
+import { OptimizedImage } from '@/components/optimized-image'
 import { LocaleLink } from '@/components/locale-link'
 import { Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN, enUS, ja } from 'date-fns/locale'
 import { useLocale } from '@/contexts/locale-context'
-import type { Announcement } from '@/lib/api'
+import { getContentEntryPathId, type Announcement } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 
 interface AnnouncementCardProps {
@@ -38,17 +39,18 @@ export function AnnouncementCard({ announcement }: AnnouncementCardProps) {
 
   return (
     <LocaleLink
-      href={`/announcements/${announcement.id}`}
+      href={`/announcements/${getContentEntryPathId(announcement)}`}
       className="block group ba-card p-4"
     >
       <div className="ba-card-content">
         {/* 封面图 */}
         <div className="relative aspect-video rounded overflow-hidden bg-muted mb-3">
           {announcement.coverImage ? (
-            <img
+            <OptimizedImage
               src={announcement.coverImage.url}
               alt={announcement.title}
-              className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-200"
+              aspectRatio="16/9"
+              className="group-hover:scale-102 transition-transform duration-200"
             />
           ) : (
             <div className="w-full h-full bg-secondary flex items-center justify-center">

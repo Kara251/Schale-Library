@@ -2,9 +2,8 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, Calendar, MapPin } from 'lucide-react'
+import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { Announcement, OnlineEvent, OfflineEvent } from '@/lib/api'
 
@@ -94,17 +93,17 @@ export function Carousel({
     setCurrentIndex(index)
   }
 
-  const goToPrevious = () => {
+  const goToPrevious = React.useCallback(() => {
     setCurrentIndex((prev) =>
       prev === 0 ? items.length - 1 : prev - 1
     )
-  }
+  }, [items.length])
 
-  const goToNext = () => {
+  const goToNext = React.useCallback(() => {
     setCurrentIndex((prev) =>
       prev === items.length - 1 ? 0 : prev + 1
     )
-  }
+  }, [items.length])
 
   // 自动播放
   React.useEffect(() => {
@@ -115,7 +114,7 @@ export function Carousel({
     }, autoPlayInterval)
 
     return () => clearInterval(interval)
-  }, [currentIndex, isAutoPlaying, items.length, autoPlayInterval])
+  }, [goToNext, isAutoPlaying, items.length, autoPlayInterval])
 
   if (!items || items.length === 0) {
     return (
@@ -124,8 +123,6 @@ export function Carousel({
       </div>
     )
   }
-
-  const currentItem = items[currentIndex]
 
   return (
     <div

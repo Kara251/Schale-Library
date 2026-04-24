@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { LocaleLink } from "@/components/locale-link"
 import { useLocale } from "@/contexts/locale-context"
@@ -38,13 +37,7 @@ const content: Record<Locale, {
 
 export function Footer() {
   const { locale } = useLocale()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const t = mounted ? (content[locale] || content['zh-Hans']) : content['zh-Hans']
+  const t = content[locale] || content['zh-Hans']
 
   return (
     <footer className="bg-card border-t border-border py-8">

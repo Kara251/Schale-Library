@@ -7,7 +7,7 @@ import { zhCN, enUS, ja } from 'date-fns/locale'
 import { OptimizedImage } from '@/components/optimized-image'
 import { LocaleLink } from '@/components/locale-link'
 import { useLocale } from '@/contexts/locale-context'
-import type { OnlineEvent, OfflineEvent } from '@/lib/api'
+import { getContentEntryPathId, type OnlineEvent, type OfflineEvent } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 
 interface EventCardProps {
@@ -84,7 +84,7 @@ export const EventCard = memo(function EventCard({ event, type }: EventCardProps
 
   return (
     <LocaleLink
-      href={`/${type}-events/${event.id}`}
+      href={`/${type}-events/${getContentEntryPathId(event)}`}
       className="block group ba-card p-4"
     >
       <div className="ba-card-content">

@@ -31,6 +31,41 @@ interface SyncResult {
     errors: string[];
 }
 
+type WorkNature = 'official' | 'fanmade';
+
+interface BilibiliSubscription {
+    id: number;
+    uid: string;
+    upName: string;
+    isActive: boolean;
+    defaultNature?: WorkNature;
+    autoPublishKeywords?: string;
+    syncCount?: number;
+}
+
+interface CreatedWorkEntity {
+    id: number;
+    [key: string]: unknown;
+}
+
+function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+        return error.message;
+    }
+
+    return String(error);
+}
+
+function decodeHtmlEntities(value: string): string {
+    return value
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ');
+}
+
 // RSS 缓存（5分钟有效期）
 const rssCache = new Map<string, { data: RSSItem[]; expires: number }>();
 const RSS_CACHE_TTL = 5 * 60 * 1000; // 5分钟
@@ -104,7 +139,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                 }
             } catch (error) {
                 lastError = error as Error;
-                strapi.log.warn(`RSSHub 实例 ${instance} 失败: ${(error as Error).message}`);
+                strapi.log.warn(`RSSHub 实例 ${instance} 失败: ${getErrorMessage(error)}`);
                 continue;
             }
         }
@@ -168,12 +203,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
      */
     extractCoverFromDescription(description: string): string {
         // 先解码 HTML 实体
-        let decoded = description
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&quot;/g, '"')
-            .replace(/&amp;/g, '&')
-            .replace(/&#39;/g, "'");
+        const decoded = decodeHtmlEntities(description);
 
         // 匹配 img 标签的 src 属性
         const imgMatch = decoded.match(/<img[^>]+src=["']([^"']+)["']/i);
@@ -191,13 +221,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
      */
     stripHtml(html: string): string {
         // 先解码 HTML 实体
-        let text = html
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&amp;/g, '&')
-            .replace(/&quot;/g, '"')
-            .replace(/&#39;/g, "'")
-            .replace(/&nbsp;/g, ' ');
+        let text = decodeHtmlEntities(html);
 
         // 移除所有 HTML 标签（包括 img, iframe 等）
         text = text.replace(/<[^>]*>/g, ' ');
@@ -254,9 +278,9 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
      */
     async createWork(
         item: RSSItem,
-        subscription: any,
+        subscription: BilibiliSubscription,
         autoPublish: boolean
-    ): Promise<any> {
+    ): Promise<CreatedWorkEntity> {
         const bvid = this.extractBVID(item.link);
 
         // 先创建 Work 条目
@@ -284,13 +308,13 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
 
         strapi.log.info(`创建视频: ${item.title} (${autoPublish ? '已发布' : '待审核'})`);
 
-        return created;
+        return created as CreatedWorkEntity;
     },
 
     /**
      * 同步单个订阅
      */
-    async syncSubscription(subscription: any): Promise<SyncResult> {
+    async syncSubscription(subscription: BilibiliSubscription): Promise<SyncResult> {
         const result: SyncResult = {
             created: 0,
             skipped: 0,
@@ -327,7 +351,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                     await this.createWork(item, subscription, autoPublish);
                     result.created++;
                 } catch (error) {
-                    const errorMsg = `处理视频失败 "${item.title}": ${(error as Error).message}`;
+                    const errorMsg = `处理视频失败 "${item.title}": ${getErrorMessage(error)}`;
                     strapi.log.error(errorMsg);
                     result.errors.push(errorMsg);
                 }
@@ -346,7 +370,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
             );
 
         } catch (error) {
-            const errorMsg = `同步订阅失败 "${subscription.upName}": ${(error as Error).message}`;
+            const errorMsg = `同步订阅失败 "${subscription.upName}": ${getErrorMessage(error)}`;
             strapi.log.error(errorMsg);
             result.errors.push(errorMsg);
         }
@@ -365,7 +389,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                     isActive: true,
                 },
             }
-        );
+        ) as BilibiliSubscription[];
 
         const totalResult = {
             total: subscriptions.length,
@@ -374,7 +398,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
             errors: [] as string[],
         };
 
-        const failedSubscriptions: any[] = [];
+        const failedSubscriptions: BilibiliSubscription[] = [];
 
         // 并发同步所有订阅
         const results = await Promise.allSettled(
@@ -393,7 +417,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                     failedSubscriptions.push(subscriptions[index]);
                 }
             } else {
-                const sub = subscriptions[index] as any;
+                const sub = subscriptions[index];
                 const errorMsg = `同步订阅失败 "${sub.upName}": ${result.reason}`;
                 strapi.log.error(errorMsg);
                 totalResult.errors.push(errorMsg);

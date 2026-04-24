@@ -1,6 +1,8 @@
 'use client'
 
-import { User, LogOut, Settings } from 'lucide-react'
+import { useLocalePath } from '@/components/locale-link'
+import Link from 'next/link'
+import { User, LogOut, Settings, LayoutDashboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -17,6 +19,7 @@ import { useAuth } from '@/contexts/auth-context'
  */
 export function UserMenu() {
   const { user, logout } = useAuth()
+  const getLocalePath = useLocalePath()
 
   if (!user) return null
 
@@ -36,6 +39,13 @@ export function UserMenu() {
             </p>
           </div>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href={getLocalePath('/manage')}>
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            <span>后台面板</span>
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled>
           <Settings className="mr-2 h-4 w-4" />

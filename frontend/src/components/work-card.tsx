@@ -1,11 +1,12 @@
 'use client'
 
 import { memo } from 'react'
+import Image from 'next/image'
 import { Play, Image as ImageIcon, FileText, MoreHorizontal } from 'lucide-react'
 import { OptimizedImage } from '@/components/optimized-image'
 import { LocaleLink } from '@/components/locale-link'
 import { useLocale } from '@/contexts/locale-context'
-import type { Work } from '@/lib/api'
+import { getContentEntryPathId, type Work } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 
 interface WorkCardProps {
@@ -73,7 +74,7 @@ export const WorkCard = memo(function WorkCard({ work }: WorkCardProps) {
 
     return (
         <LocaleLink
-            href={`/works/${work.id}`}
+            href={`/works/${getContentEntryPathId(work)}`}
             className="block group ba-card p-4"
         >
             <div className="ba-card-content">
@@ -87,10 +88,11 @@ export const WorkCard = memo(function WorkCard({ work }: WorkCardProps) {
                             className="group-hover:scale-102 transition-transform duration-200"
                         />
                     ) : work.coverImageUrl ? (
-                        <img
+                        <OptimizedImage
                             src={`/api/image-proxy?url=${encodeURIComponent(work.coverImageUrl)}`}
                             alt={work.title}
-                            className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-200"
+                            aspectRatio="16/9"
+                            className="group-hover:scale-102 transition-transform duration-200"
                         />
                     ) : (
                         <div className="w-full h-full bg-secondary flex items-center justify-center">
@@ -113,10 +115,12 @@ export const WorkCard = memo(function WorkCard({ work }: WorkCardProps) {
                                     title={student.name}
                                 >
                                     {student.avatar ? (
-                                        <img
+                                        <Image
                                             src={student.avatar.url}
                                             alt={student.name}
-                                            className="w-full h-full object-cover"
+                                            fill
+                                            sizes="28px"
+                                            className="object-cover"
                                         />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-xs font-bold text-muted-foreground">

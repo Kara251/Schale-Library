@@ -5,6 +5,7 @@ import { BackToTop } from "@/components/back-to-top"
 import { BackgroundImage } from "@/components/background-image"
 import { AuthProvider } from "@/contexts/auth-context"
 import { LocaleProvider } from "@/contexts/locale-context"
+import { GoogleAnalytics, Clarity } from "@/components/third-party-analytics"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -54,6 +55,8 @@ export default function RootLayout({
             {children}
             <BackToTop />
             <Analytics />
+            <GoogleAnalytics />
+            <Clarity />
           </AuthProvider>
         </LocaleProvider>
       </body>

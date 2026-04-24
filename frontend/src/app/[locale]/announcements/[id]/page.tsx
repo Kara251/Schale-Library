@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Badge } from "@/components/ui/badge"
@@ -10,7 +11,7 @@ import { zhCN, enUS, ja } from 'date-fns/locale'
 import { LocaleLink } from '@/components/locale-link'
 import type { Locale } from '@/lib/i18n'
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 interface PageProps {
     params: Promise<{ id: string; locale: string }>
@@ -45,7 +46,7 @@ export default async function AnnouncementDetailPage({ params }: PageProps) {
     const t = content[locale as Locale] || content['zh-Hans']
     const dateLocale = dateLocales[locale as Locale] || zhCN
 
-    const announcementRes = await getAnnouncementById(Number(id)).catch(() => null)
+    const announcementRes = await getAnnouncementById(id, locale).catch(() => null)
 
     if (!announcementRes || !announcementRes.data) {
         notFound()
@@ -75,7 +76,7 @@ export default async function AnnouncementDetailPage({ params }: PageProps) {
                     <div className="max-w-4xl mx-auto">
                         {announcement.coverImage && (
                             <div className="relative h-64 md:h-96 rounded-lg overflow-hidden mb-8">
-                                <img src={announcement.coverImage.url} alt={announcement.title} className="w-full h-full object-cover" />
+                                <Image src={announcement.coverImage.url} alt={announcement.title} fill priority sizes="(max-width: 768px) 100vw, 896px" className="object-cover" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                 {announcement.priority > 5 && (
                                     <div className="absolute top-4 left-4">

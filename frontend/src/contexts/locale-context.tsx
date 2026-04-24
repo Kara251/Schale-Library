@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Locale, defaultLocale, locales } from '@/lib/i18n'
 
@@ -43,20 +43,7 @@ function replaceLocaleInPath(pathname: string, newLocale: Locale): string {
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [locale, setLocaleState] = useState<Locale>(defaultLocale)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // 从 URL 路径读取语言
-  useEffect(() => {
-    if (pathname) {
-      const pathLocale = getLocaleFromPath(pathname)
-      setLocaleState(pathLocale)
-    }
-  }, [pathname])
+  const locale = pathname ? getLocaleFromPath(pathname) : defaultLocale
 
   const setLocale = (newLocale: Locale) => {
     if (newLocale === locale) return
@@ -68,10 +55,6 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     const newPath = replaceLocaleInPath(pathname, newLocale)
     router.push(newPath)
     router.refresh()
-  }
-
-  if (!mounted) {
-    return <>{children}</>
   }
 
   return (
@@ -87,7 +70,7 @@ export function useLocale() {
     // 返回默认值而不是抛出错误，以支持错误页面等特殊场景
     return {
       locale: defaultLocale,
-      setLocale: () => { },
+      setLocale: () => {},
     }
   }
   return context

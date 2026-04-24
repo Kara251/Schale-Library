@@ -3,7 +3,17 @@ import { Footer } from "@/components/footer"
 import { LocaleLink } from "@/components/locale-link"
 import { Search, Globe, MapPin, Bell, Star } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { searchAnnouncements, searchOnlineEvents, searchOfflineEvents, searchWorks } from "@/lib/api"
+import {
+    getContentEntryPathId,
+    searchAnnouncements,
+    searchOnlineEvents,
+    searchOfflineEvents,
+    searchWorks,
+    type Announcement,
+    type OnlineEvent,
+    type OfflineEvent,
+    type Work,
+} from "@/lib/api"
 import type { Locale } from "@/lib/i18n"
 
 interface GlobalSearchPageProps {
@@ -106,15 +116,15 @@ export default async function GlobalSearchPage({ params, searchParams }: GlobalS
     const { q: searchQuery = '' } = await searchParams
     const t = content[locale as Locale] || content['zh-Hans']
 
-    let announcements: any[] = []
-    let works: any[] = []
-    let onlineEvents: any[] = []
-    let offlineEvents: any[] = []
+    let announcements: Announcement[] = []
+    let works: Work[] = []
+    let onlineEvents: OnlineEvent[] = []
+    let offlineEvents: OfflineEvent[] = []
 
     if (searchQuery) {
         const [announcementsRes, worksRes, onlineEventsRes, offlineEventsRes] = await Promise.all([
             searchAnnouncements(searchQuery, locale).catch(() => ({ data: [] })),
-            searchWorks(searchQuery).catch(() => ({ data: [] })),
+            searchWorks(searchQuery, locale).catch(() => ({ data: [] })),
             searchOnlineEvents(searchQuery, locale).catch(() => ({ data: [] })),
             searchOfflineEvents(searchQuery, locale).catch(() => ({ data: [] })),
         ])
@@ -143,7 +153,7 @@ export default async function GlobalSearchPage({ params, searchParams }: GlobalS
                             <h1 className="text-4xl font-bold mb-2">{t.title}</h1>
                             {searchQuery && (
                                 <p className="text-muted-foreground">
-                                    {t.searching}: <span className="text-foreground font-medium">"{searchQuery}"</span>
+                                    {t.searching}: <span className="text-foreground font-medium">&ldquo;{searchQuery}&rdquo;</span>
                                     {totalResults > 0 && (
                                         <span className="ml-2">· {t.results.replace('{count}', String(totalResults))}</span>
                                     )}
@@ -166,7 +176,7 @@ export default async function GlobalSearchPage({ params, searchParams }: GlobalS
                                                 {announcements.map((item) => (
                                                     <LocaleLink
                                                         key={item.id}
-                                                        href={`/announcements/${item.id}`}
+                                                        href={`/announcements/${getContentEntryPathId(item)}`}
                                                         className="block p-4 rounded-lg border bg-background hover:bg-secondary/50 transition-colors"
                                                     >
                                                         <h3 className="font-semibold">{item.title}</h3>
@@ -190,7 +200,7 @@ export default async function GlobalSearchPage({ params, searchParams }: GlobalS
                                                 {works.map((item) => (
                                                     <LocaleLink
                                                         key={item.id}
-                                                        href={`/works/${item.id}`}
+                                                        href={`/works/${getContentEntryPathId(item)}`}
                                                         className="block p-4 rounded-lg border bg-background hover:bg-secondary/50 transition-colors"
                                                     >
                                                         <div className="flex items-center gap-2 mb-1">
@@ -221,7 +231,7 @@ export default async function GlobalSearchPage({ params, searchParams }: GlobalS
                                                 {onlineEvents.map((item) => (
                                                     <LocaleLink
                                                         key={item.id}
-                                                        href={`/online-events/${item.id}`}
+                                                        href={`/online-events/${getContentEntryPathId(item)}`}
                                                         className="block p-4 rounded-lg border bg-background hover:bg-secondary/50 transition-colors"
                                                     >
                                                         <div className="flex items-center gap-2 mb-1">
@@ -251,7 +261,7 @@ export default async function GlobalSearchPage({ params, searchParams }: GlobalS
                                                 {offlineEvents.map((item) => (
                                                     <LocaleLink
                                                         key={item.id}
-                                                        href={`/offline-events/${item.id}`}
+                                                        href={`/offline-events/${getContentEntryPathId(item)}`}
                                                         className="block p-4 rounded-lg border bg-background hover:bg-secondary/50 transition-colors"
                                                     >
                                                         <div className="flex items-center gap-2 mb-1">

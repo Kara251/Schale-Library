@@ -5,6 +5,38 @@
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083';
 
+type ContentIdentifier = string | number;
+
+function toStrapiLocale(locale: string = 'zh-Hans') {
+  if (locale === 'zh-CN') {
+    return 'zh-Hans';
+  }
+
+  return locale || 'zh-Hans';
+}
+
+function isNumericIdentifier(identifier: ContentIdentifier) {
+  return /^\d+$/.test(String(identifier).trim());
+}
+
+function createCollectionQuery(params: Record<string, string | number | boolean | undefined>) {
+  const searchParams = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined) {
+      continue;
+    }
+
+    searchParams.set(key, String(value));
+  }
+
+  return searchParams.toString();
+}
+
+export function getContentEntryPathId(entry: { documentId?: string; id: number }) {
+  return entry.documentId || String(entry.id);
+}
+
 /**
  * 通用 API 请求函数
  * 支持 Next.js 服务端缓存和重验证
@@ -19,8 +51,8 @@ async function fetchAPI<T>(
     headers: {
       'Content-Type': 'application/json',
     },
-    // Next.js 缓存配置：10秒后重新验证（快速刷新新发布的内容）
-    next: { revalidate: 10 },
+    // Next.js 缓存配置：60秒后重新验证，减少不必要的重复请求
+    next: { revalidate: 60 },
   };
 
   const response = await fetch(url, {
@@ -36,12 +68,17 @@ async function fetchAPI<T>(
 }
 
 /**
- * 获取所有公告（用于轮播图）
- * 注：不按语言过滤，显示所有内容
+ * 获取所有公告（按当前语言过滤）
  */
-export async function getAnnouncements(locale?: string) {
+export async function getAnnouncements(locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
   return fetchAPI<StrapiResponse<Announcement[]>>(
-    `/announcements?filters[isActive][$eq]=true&sort=priority:desc&populate=*`
+    `/announcements?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[isActive][$eq]': true,
+      sort: 'priority:desc',
+      populate: '*',
+    })}`
   );
 }
 
@@ -51,10 +88,16 @@ export async function getAnnouncements(locale?: string) {
  */
 export async function getOnlineEvents(
   limit: number = 10,
-  locale?: string
+  locale: string = 'zh-Hans'
 ) {
+  const strapiLocale = toStrapiLocale(locale);
   return fetchAPI<StrapiResponse<OnlineEvent[]>>(
-    `/online-events?sort=startTime:desc&pagination[limit]=${limit}&populate=*`
+    `/online-events?${createCollectionQuery({
+      locale: strapiLocale,
+      sort: 'startTime:desc',
+      'pagination[limit]': limit,
+      populate: '*',
+    })}`
   );
 }
 
@@ -64,26 +107,35 @@ export async function getOnlineEvents(
  */
 export async function getOfflineEvents(
   limit: number = 10,
-  locale?: string
+  locale: string = 'zh-Hans'
 ) {
+  const strapiLocale = toStrapiLocale(locale);
   return fetchAPI<StrapiResponse<OfflineEvent[]>>(
-    `/offline-events?sort=startTime:desc&pagination[limit]=${limit}&populate=*`
+    `/offline-events?${createCollectionQuery({
+      locale: strapiLocale,
+      sort: 'startTime:desc',
+      'pagination[limit]': limit,
+      populate: '*',
+    })}`
   );
 }
 
 /**
- * 获取单个线上活动详情（通过数字ID）
+ * 获取单个线上活动详情（通过 documentId 或数字 ID）
  */
 export async function getOnlineEventById(
-  id: number,
+  id: ContentIdentifier,
   locale: string = 'zh-Hans'
 ) {
-  const strapiLocale = locale === 'zh-Hans' ? 'zh-CN' : locale
-  // 使用filter查询代替documentId路径，支持Strapi v5
+  const strapiLocale = toStrapiLocale(locale)
+  const identifier = String(id).trim()
   const response = await fetchAPI<StrapiResponse<OnlineEvent[]>>(
-    `/online-events?locale=${strapiLocale}&filters[id][$eq]=${id}&populate=*`
+    `/online-events?${createCollectionQuery({
+      locale: strapiLocale,
+      [isNumericIdentifier(identifier) ? 'filters[id][$eq]' : 'filters[documentId][$eq]']: identifier,
+      populate: '*',
+    })}`
   );
-  // 转换为单个响应格式
   return {
     data: response.data?.[0] || null,
     meta: {}
@@ -91,18 +143,21 @@ export async function getOnlineEventById(
 }
 
 /**
- * 获取单个线下活动详情（通过数字ID）
+ * 获取单个线下活动详情（通过 documentId 或数字 ID）
  */
 export async function getOfflineEventById(
-  id: number,
+  id: ContentIdentifier,
   locale: string = 'zh-Hans'
 ) {
-  const strapiLocale = locale === 'zh-Hans' ? 'zh-CN' : locale
-  // 使用filter查询代替documentId路径，支持Strapi v5
+  const strapiLocale = toStrapiLocale(locale)
+  const identifier = String(id).trim()
   const response = await fetchAPI<StrapiResponse<OfflineEvent[]>>(
-    `/offline-events?locale=${strapiLocale}&filters[id][$eq]=${id}&populate=*`
+    `/offline-events?${createCollectionQuery({
+      locale: strapiLocale,
+      [isNumericIdentifier(identifier) ? 'filters[id][$eq]' : 'filters[documentId][$eq]']: identifier,
+      populate: '*',
+    })}`
   );
-  // 转换为单个响应格式
   return {
     data: response.data?.[0] || null,
     meta: {}
@@ -110,18 +165,21 @@ export async function getOfflineEventById(
 }
 
 /**
- * 获取单个公告详情（通过数字ID）
+ * 获取单个公告详情（通过 documentId 或数字 ID）
  */
 export async function getAnnouncementById(
-  id: number,
+  id: ContentIdentifier,
   locale: string = 'zh-Hans'
 ) {
-  const strapiLocale = locale === 'zh-Hans' ? 'zh-CN' : locale
-  // 使用filter查询代替documentId路径，支持友好的数字ID URL
+  const strapiLocale = toStrapiLocale(locale)
+  const identifier = String(id).trim()
   const response = await fetchAPI<StrapiResponse<Announcement[]>>(
-    `/announcements?locale=${strapiLocale}&filters[id][$eq]=${id}&populate=*`
+    `/announcements?${createCollectionQuery({
+      locale: strapiLocale,
+      [isNumericIdentifier(identifier) ? 'filters[id][$eq]' : 'filters[documentId][$eq]']: identifier,
+      populate: '*',
+    })}`
   );
-  // 转换为单个响应格式
   return {
     data: response.data?.[0] || null,
     meta: {}
@@ -137,7 +195,7 @@ export async function searchAnnouncements(
   query: string,
   locale: string = 'zh-Hans'
 ) {
-  const strapiLocale = locale === 'zh-Hans' ? 'zh-CN' : locale
+  const strapiLocale = toStrapiLocale(locale)
   return fetchAPI<StrapiResponse<Announcement[]>>(
     `/announcements?locale=${strapiLocale}&filters[title][$containsi]=${encodeURIComponent(query)}&populate=*`
   );
@@ -152,7 +210,7 @@ export async function searchOnlineEvents(
   query: string,
   locale: string = 'zh-Hans'
 ) {
-  const strapiLocale = locale === 'zh-Hans' ? 'zh-CN' : locale
+  const strapiLocale = toStrapiLocale(locale)
   return fetchAPI<StrapiResponse<OnlineEvent[]>>(
     `/online-events?locale=${strapiLocale}&filters[title][$containsi]=${encodeURIComponent(query)}&populate=*`
   );
@@ -167,7 +225,7 @@ export async function searchOfflineEvents(
   query: string,
   locale: string = 'zh-Hans'
 ) {
-  const strapiLocale = locale === 'zh-Hans' ? 'zh-CN' : locale
+  const strapiLocale = toStrapiLocale(locale)
   return fetchAPI<StrapiResponse<OfflineEvent[]>>(
     `/offline-events?locale=${strapiLocale}&filters[title][$containsi]=${encodeURIComponent(query)}&populate=*`
   );
@@ -190,7 +248,7 @@ export interface StrapiResponse<T> {
 
 export interface StrapiSingleResponse<T> {
   data: T;
-  meta: {};
+  meta: Record<string, never>;
 }
 
 /**
@@ -344,25 +402,35 @@ export interface Student {
  * 获取推荐作品列表
  * @param limit 返回数量限制
  */
-export async function getWorks(limit: number = 20) {
+export async function getWorks(limit: number = 20, locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale)
   return fetchAPI<StrapiResponse<Work[]>>(
-    `/works?filters[isActive][$eq]=true&sort=publishedAt:desc&pagination[limit]=${limit}&populate=*`
+    `/works?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[isActive][$eq]': true,
+      sort: 'publishedAt:desc',
+      'pagination[limit]': limit,
+      populate: '*',
+    })}`
   );
 }
 
 /**
- * 获取单个推荐作品详情（通过数字ID）
+ * 获取单个推荐作品详情（通过 documentId 或数字 ID）
  */
 export async function getWorkById(
-  id: number,
+  id: ContentIdentifier,
   locale: string = 'zh-Hans'
 ) {
-  const strapiLocale = locale === 'zh-Hans' ? 'zh-CN' : locale
-  // 使用filter查询代替documentId路径，支持Strapi v5
+  const strapiLocale = toStrapiLocale(locale)
+  const identifier = String(id).trim()
   const response = await fetchAPI<StrapiResponse<Work[]>>(
-    `/works?locale=${strapiLocale}&filters[id][$eq]=${id}&populate=*`
+    `/works?${createCollectionQuery({
+      locale: strapiLocale,
+      [isNumericIdentifier(identifier) ? 'filters[id][$eq]' : 'filters[documentId][$eq]']: identifier,
+      populate: '*',
+    })}`
   );
-  // 转换为单个响应格式
   return {
     data: response.data?.[0] || null,
     meta: {}
@@ -378,7 +446,7 @@ export async function searchWorks(
   query: string,
   locale: string = 'zh-Hans'
 ) {
-  const strapiLocale = locale === 'zh-Hans' ? 'zh-CN' : locale
+  const strapiLocale = toStrapiLocale(locale)
   return fetchAPI<StrapiResponse<Work[]>>(
     `/works?locale=${strapiLocale}&filters[title][$containsi]=${encodeURIComponent(query)}&populate=*`
   );
@@ -389,7 +457,7 @@ export async function searchWorks(
  * @param locale 语言代码
  */
 export async function getStudents(locale: string = 'zh-Hans') {
-  const strapiLocale = locale === 'zh-Hans' ? 'zh-CN' : locale
+  const strapiLocale = toStrapiLocale(locale)
   return fetchAPI<StrapiResponse<Student[]>>(
     `/students?locale=${strapiLocale}&sort=name:asc&populate=avatar&pagination[limit]=500`
   );

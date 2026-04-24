@@ -10,7 +10,7 @@ interface HomePageProps {
     params: Promise<{ locale: string }>
 }
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export default async function HomePage({ params }: HomePageProps) {
     const { locale } = await params
@@ -21,7 +21,7 @@ export default async function HomePage({ params }: HomePageProps) {
         getAnnouncements(locale).catch(() => ({ data: [] })),
         getOnlineEvents(6, locale).catch(() => ({ data: [] })),
         getOfflineEvents(6, locale).catch(() => ({ data: [] })),
-        getWorks(6).catch(() => ({ data: [] })),
+        getWorks(6, locale).catch(() => ({ data: [] })),
     ]);
 
     const announcements = announcementsRes.data || [];
