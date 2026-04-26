@@ -181,6 +181,9 @@ export default async function StudentsManagePage({ params, searchParams }: Stude
                   delete: actionLabels.delete,
                   deleting: actionLabels.deleting,
                   confirm: actionLabels.deleteConfirm,
+                  cancel: actionLabels.cancel,
+                  confirmDelete: actionLabels.confirmDelete,
+                  deleted: actionLabels.deleteSuccess,
                   failed: actionLabels.createFailed,
                 }}
               />

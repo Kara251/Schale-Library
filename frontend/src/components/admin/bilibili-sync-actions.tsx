@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/contexts/toast-context'
 
 interface BilibiliSyncActionsProps {
   id?: number
@@ -17,6 +18,7 @@ interface BilibiliSyncActionsProps {
 
 export function BilibiliSyncActions({ id, labels }: BilibiliSyncActionsProps) {
   const router = useRouter()
+  const { showToast } = useToast()
   const [isPending, setIsPending] = useState(false)
 
   const handleSync = async () => {
@@ -38,12 +40,12 @@ export function BilibiliSyncActions({ id, labels }: BilibiliSyncActionsProps) {
       }
 
       if (payload?.message) {
-        window.alert(payload.message)
+        showToast({ message: payload.message, variant: 'success' })
       }
 
       router.refresh()
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : labels.failed)
+      showToast({ message: error instanceof Error ? error.message : labels.failed, variant: 'error' })
     } finally {
       setIsPending(false)
     }

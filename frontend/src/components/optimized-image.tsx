@@ -3,6 +3,7 @@
 import { useState, memo } from 'react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
+import { getMediaUrl } from '@/lib/media'
 
 interface OptimizedImageProps {
   src: string
@@ -23,7 +24,8 @@ export const OptimizedImage = memo(function OptimizedImage({
   priority = false,
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false)
-  const isProxyImage = src.startsWith('/api/image-proxy?')
+  const imageSrc = getMediaUrl(src)
+  const isProxyImage = imageSrc.startsWith('/api/image-proxy?')
 
   const handleLoad = () => {
     setIsLoaded(true)
@@ -41,7 +43,7 @@ export const OptimizedImage = memo(function OptimizedImage({
       {isProxyImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={src}
+          src={imageSrc}
           alt={alt}
           className={cn(
             'absolute inset-0 h-full w-full object-cover transition-opacity duration-300',
@@ -51,7 +53,7 @@ export const OptimizedImage = memo(function OptimizedImage({
         />
       ) : (
         <Image
-          src={src}
+          src={imageSrc}
           alt={alt}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"

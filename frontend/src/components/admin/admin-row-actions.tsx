@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/contexts/toast-context'
 import type { AdminCollectionKey } from '@/lib/admin-panel'
 
 interface AdminRowActionsProps {
@@ -16,16 +17,22 @@ interface AdminRowActionsProps {
     delete: string
     deleting: string
     confirm: string
+    cancel?: string
+    confirmDelete?: string
+    deleted?: string
     failed: string
   }
 }
 
 export function AdminRowActions({ locale, collection, id, labels }: AdminRowActionsProps) {
   const router = useRouter()
+  const { showToast } = useToast()
+  const [isConfirming, setIsConfirming] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleDelete = async () => {
-    if (!window.confirm(labels.confirm)) {
+    if (!isConfirming) {
+      setIsConfirming(true)
       return
     }
 
@@ -41,22 +48,38 @@ export function AdminRowActions({ locale, collection, id, labels }: AdminRowActi
         throw new Error(data?.error || labels.failed)
       }
 
+      showToast({ message: labels.deleted || labels.delete, variant: 'success' })
+      setIsConfirming(false)
       router.refresh()
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : labels.failed)
+      showToast({ message: error instanceof Error ? error.message : labels.failed, variant: 'error' })
     } finally {
       setIsDeleting(false)
     }
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Button asChild size="sm" variant="outline">
         <Link href={`/${locale}/manage/${collection}/${id}`}>{labels.edit}</Link>
       </Button>
+      {isConfirming ? (
+        <span className="max-w-52 text-xs leading-5 text-destructive">{labels.confirm}</span>
+      ) : null}
       <Button size="sm" variant="destructive" onClick={() => void handleDelete()} disabled={isDeleting}>
-        {isDeleting ? labels.deleting : labels.delete}
+        {isDeleting ? labels.deleting : isConfirming ? labels.confirmDelete || labels.delete : labels.delete}
       </Button>
+      {isConfirming ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => setIsConfirming(false)}
+          disabled={isDeleting}
+        >
+          {labels.cancel || 'Cancel'}
+        </Button>
+      ) : null}
     </div>
   )
 }

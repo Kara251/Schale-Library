@@ -7,6 +7,7 @@ export type AdminCollectionKey =
   | 'offline-events'
   | 'students'
   | 'bilibili-subscriptions'
+  | 'sync-logs'
 
 export type AdminFieldType =
   | 'text'
@@ -62,6 +63,22 @@ export interface AdminRelationOption {
 const commonNatureOptions: AdminFieldOption[] = [
   { value: 'official', label: 'official' },
   { value: 'fanmade', label: 'fanmade' },
+]
+
+const schoolOptions: AdminFieldOption[] = [
+  { value: 'abydos', label: 'Abydos' },
+  { value: 'gehenna', label: 'Gehenna' },
+  { value: 'millennium', label: 'Millennium' },
+  { value: 'trinity', label: 'Trinity' },
+  { value: 'hyakkiyako', label: 'Hyakkiyako' },
+  { value: 'shanhaijing', label: 'Shanhaijing' },
+  { value: 'redwinter', label: 'Red Winter' },
+  { value: 'valkyrie', label: 'Valkyrie' },
+  { value: 'arius', label: 'Arius' },
+  { value: 'srt', label: 'SRT' },
+  { value: 'tokiwadai', label: 'Tokiwadai' },
+  { value: 'kronos', label: 'Kronos' },
+  { value: 'other', label: 'Other' },
 ]
 
 export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMeta> = {
@@ -248,7 +265,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
     },
     fields: [
       { name: 'name', type: 'text', label: { 'zh-Hans': '姓名', en: 'Name', ja: '名前' } },
-      { name: 'school', type: 'text', label: { 'zh-Hans': '学校', en: 'School', ja: '学校' } },
+      { name: 'school', type: 'select', label: { 'zh-Hans': '学校', en: 'School', ja: '学校' }, options: schoolOptions },
       { name: 'organization', type: 'text', label: { 'zh-Hans': '组织', en: 'Organization', ja: '所属' } },
       { name: 'avatar', type: 'media', label: { 'zh-Hans': '头像', en: 'Avatar', ja: 'アイコン' } },
       { name: 'bio', type: 'textarea', label: { 'zh-Hans': '简介', en: 'Bio', ja: '紹介' } },
@@ -287,5 +304,31 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       { name: 'autoPublishKeywords', type: 'textarea', label: { 'zh-Hans': '自动发布关键词', en: 'Auto-publish keywords', ja: '自動公開キーワード' } },
       { name: 'notes', type: 'textarea', label: { 'zh-Hans': '备注', en: 'Notes', ja: 'メモ' } },
     ],
+  },
+  'sync-logs': {
+    endpoint: 'sync-logs',
+    localized: false,
+    supportsDraft: false,
+    title: {
+      'zh-Hans': '同步日志',
+      en: 'Sync logs',
+      ja: '同期ログ',
+    },
+    description: {
+      'zh-Hans': '查看 RSSHub 与自动导入任务的执行结果。',
+      en: 'Review RSSHub and auto-import execution results.',
+      ja: 'RSSHub と自動取込タスクの実行結果を確認します。',
+    },
+    createLabel: {
+      'zh-Hans': '新建日志',
+      en: 'New log',
+      ja: 'ログを新規作成',
+    },
+    editLabel: {
+      'zh-Hans': '查看日志',
+      en: 'View log',
+      ja: 'ログを表示',
+    },
+    fields: [],
   },
 }

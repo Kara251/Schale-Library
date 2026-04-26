@@ -1,13 +1,14 @@
 'use client'
 
 import Image from 'next/image'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { LoaderCircle, Upload } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { useToast } from '@/contexts/toast-context'
 import {
   ADMIN_COLLECTION_META,
   type AdminCollectionKey,
@@ -17,6 +18,7 @@ import {
 } from '@/lib/admin-panel'
 import type { AdminStrapiEntry } from '@/lib/server/admin-content'
 import type { Locale } from '@/lib/i18n'
+import { getMediaUrl } from '@/lib/media'
 import { cn } from '@/lib/utils'
 
 interface AdminEditorFormProps {
@@ -152,6 +154,7 @@ function getDisplayLabel(field: AdminEditorField, locale: Locale) {
 
 export function AdminEditorForm({ collection, locale, returnPath, initialData, relationOptions }: AdminEditorFormProps) {
   const router = useRouter()
+  const { showToast } = useToast()
   const [formValues, setFormValues] = useState<Record<string, unknown>>(() => buildInitialValues(collection, initialData))
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -159,16 +162,14 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
   const t = labels[locale] || labels['zh-Hans']
   const schema = ADMIN_COLLECTION_META[collection]
 
-  const primaryFieldValue = useMemo(() => {
-    const keys = ['title', 'name', 'upName']
-    for (const key of keys) {
-      const value = formValues[key]
-      if (typeof value === 'string' && value.trim()) {
-        return value.trim()
-      }
+  const primaryFieldValue = ['title', 'name', 'upName'].reduce((result, key) => {
+    if (result) {
+      return result
     }
-    return ''
-  }, [formValues])
+
+    const value = formValues[key]
+    return typeof value === 'string' && value.trim() ? value.trim() : ''
+  }, '')
 
   const updateField = (name: string, value: unknown) => {
     setFormValues((current) => ({ ...current, [name]: value }))
@@ -263,11 +264,13 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
         throw new Error(payload?.error || t.saveFailed)
       }
 
-      window.alert(t.saveSuccess)
+      showToast({ message: t.saveSuccess, variant: 'success' })
       router.push(returnPath)
       router.refresh()
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : t.saveFailed)
+      const message = saveError instanceof Error ? saveError.message : t.saveFailed
+      setError(message)
+      showToast({ message, variant: 'error' })
     } finally {
       setIsSaving(false)
     }
@@ -377,7 +380,7 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
                         <div className="space-y-3">
                           {media?.url ? (
                             <div className="relative h-48 overflow-hidden rounded-md border bg-secondary/20">
-                              <Image src={media.url} alt={media.name || label} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
+                              <Image src={getMediaUrl(media.url)} alt={media.name || label} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
                             </div>
                           ) : null}
                           <div className="flex flex-wrap items-center gap-3">

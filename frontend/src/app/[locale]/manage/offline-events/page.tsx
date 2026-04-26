@@ -209,6 +209,9 @@ export default async function OfflineEventsManagePage({ params, searchParams }: 
                   delete: actionLabels.delete,
                   deleting: actionLabels.deleting,
                   confirm: actionLabels.deleteConfirm,
+                  cancel: actionLabels.cancel,
+                  confirmDelete: actionLabels.confirmDelete,
+                  deleted: actionLabels.deleteSuccess,
                   failed: actionLabels.createFailed,
                 }}
               />

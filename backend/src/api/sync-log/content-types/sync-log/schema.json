@@ -1,0 +1,73 @@
+{
+  "kind": "collectionType",
+  "collectionName": "sync_logs",
+  "info": {
+    "singularName": "sync-log",
+    "pluralName": "sync-logs",
+    "displayName": "同步日志",
+    "description": "记录自动同步任务的执行结果"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "action": {
+      "type": "enumeration",
+      "enum": [
+        "bilibili-sync-one",
+        "bilibili-sync-all",
+        "bilibili-sync-cron"
+      ],
+      "required": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "success",
+        "partial",
+        "failed"
+      ],
+      "required": true
+    },
+    "message": {
+      "type": "text"
+    },
+    "targetId": {
+      "type": "integer"
+    },
+    "targetName": {
+      "type": "string"
+    },
+    "total": {
+      "type": "integer",
+      "default": 0
+    },
+    "created": {
+      "type": "integer",
+      "default": 0
+    },
+    "skipped": {
+      "type": "integer",
+      "default": 0
+    },
+    "errorCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "errors": {
+      "type": "json"
+    },
+    "startedAt": {
+      "type": "datetime",
+      "required": true
+    },
+    "finishedAt": {
+      "type": "datetime",
+      "required": true
+    },
+    "durationMs": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}

@@ -1,10 +1,33 @@
 import type { NextConfig } from "next";
 
+function getApiUploadPattern() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083';
+
+  try {
+    const parsed = new URL(apiUrl);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null;
+    }
+
+    return {
+      protocol: parsed.protocol.replace(':', '') as 'http' | 'https',
+      hostname: parsed.hostname,
+      port: parsed.port,
+      pathname: '/uploads/**',
+    };
+  } catch {
+    return null;
+  }
+}
+
+const apiUploadPattern = getApiUploadPattern();
+
 const nextConfig: NextConfig = {
   // 图片优化配置
   images: {
     // 远程图片域名（仅允许可信来源）
     remotePatterns: [
+      ...(apiUploadPattern ? [apiUploadPattern] : []),
       {
         protocol: 'http',
         hostname: 'localhost',

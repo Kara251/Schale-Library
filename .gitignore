@@ -3,6 +3,7 @@
 # ----------------------
 node_modules/
 .npm-cache/
+.pnpm-store/
 .DS_Store
 .AppleDouble
 .LSOverride

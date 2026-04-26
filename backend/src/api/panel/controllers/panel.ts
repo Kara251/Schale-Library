@@ -9,6 +9,7 @@ type PanelCollectionKey =
   | 'offline-events'
   | 'students'
   | 'bilibili-subscriptions'
+  | 'sync-logs'
 
 interface CollectionConfig {
   uid: any
@@ -98,9 +99,19 @@ const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
     searchFields: ['upName', 'uid'],
     defaultSort: 'updatedAt:desc',
     supportsDraft: false,
-    fields: ['upName', 'uid', 'isActive', 'defaultNature', 'autoPublishKeywords', 'lastSyncAt', 'syncCount', 'notes'],
+    fields: ['upName', 'uid', 'isActive', 'defaultNature', 'autoPublishKeywords', 'notes'],
+  },
+  'sync-logs': {
+    uid: 'api::sync-log.sync-log',
+    localized: false,
+    searchFields: ['targetName', 'message'],
+    defaultSort: 'startedAt:desc',
+    supportsDraft: false,
+    fields: [],
   },
 }
+
+const SUPPORTED_LOCALES = new Set(['zh-Hans', 'en', 'ja'])
 
 function isPanelCollectionKey(value: string): value is PanelCollectionKey {
   return value in COLLECTIONS
@@ -111,7 +122,7 @@ function mapLocale(locale?: string | null): string | undefined {
     return undefined
   }
 
-  return locale === 'zh-Hans' ? 'zh-CN' : locale
+  return SUPPORTED_LOCALES.has(locale) ? locale : undefined
 }
 
 function buildSearchFilters(fields: string[], search?: string) {
@@ -232,8 +243,22 @@ function getUploadCandidates(input: unknown) {
   return Array.isArray(input) ? input : [input]
 }
 
-function validateUploadFiles(input: unknown) {
-  const maxUploadMb = Math.max(1, Number(process.env.ADMIN_PANEL_MAX_UPLOAD_MB || '10'))
+function getUploadLimitMb(fieldName?: string) {
+  const defaultMaxMb = Math.max(1, Number(process.env.ADMIN_PANEL_MAX_UPLOAD_MB || '8'))
+
+  if (fieldName === 'avatar') {
+    return Math.max(1, Number(process.env.ADMIN_PANEL_AVATAR_MAX_UPLOAD_MB || '4'))
+  }
+
+  if (fieldName === 'coverImage') {
+    return Math.max(defaultMaxMb, Number(process.env.ADMIN_PANEL_COVER_MAX_UPLOAD_MB || '12'))
+  }
+
+  return defaultMaxMb
+}
+
+function validateUploadFiles(input: unknown, fieldName?: string) {
+  const maxUploadMb = getUploadLimitMb(fieldName)
   const maxUploadBytes = maxUploadMb * 1024 * 1024
   const files = getUploadCandidates(input)
 
@@ -447,7 +472,8 @@ async function deleteCollectionItem(ctx: any, collection: PanelCollectionKey) {
 
 async function uploadMedia(ctx: any) {
   const files = ctx.request.files?.files
-  validateUploadFiles(files)
+  const fieldName = typeof ctx.request.body?.fieldName === 'string' ? ctx.request.body.fieldName : undefined
+  validateUploadFiles(files, fieldName)
 
   const uploadedFiles = await strapi.plugin('upload').service('upload').upload(
     {

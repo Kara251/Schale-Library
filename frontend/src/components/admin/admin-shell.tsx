@@ -6,6 +6,7 @@ import {
   Bell,
   BookOpen,
   CalendarDays,
+  ClipboardList,
   LayoutDashboard,
   LogOut,
   Radio,
@@ -52,6 +53,7 @@ const navLabels: Record<Locale, Record<string, string>> = {
     offlineEvents: '线下活动',
     students: '学生',
     subscriptions: 'B站订阅',
+    syncLogs: '同步日志',
   },
   en: {
     dashboard: 'Dashboard',
@@ -61,6 +63,7 @@ const navLabels: Record<Locale, Record<string, string>> = {
     offlineEvents: 'Offline Events',
     students: 'Students',
     subscriptions: 'Bilibili Feeds',
+    syncLogs: 'Sync Logs',
   },
   ja: {
     dashboard: 'ダッシュボード',
@@ -70,6 +73,7 @@ const navLabels: Record<Locale, Record<string, string>> = {
     offlineEvents: 'オフラインイベント',
     students: '生徒',
     subscriptions: 'B站購読',
+    syncLogs: '同期ログ',
   },
 }
 
@@ -87,6 +91,7 @@ export function AdminShell({ children, locale, user }: AdminShellProps) {
     { href: `/${locale}/manage/offline-events`, label: nav.offlineEvents, icon: CalendarDays },
     { href: `/${locale}/manage/students`, label: nav.students, icon: Users },
     { href: `/${locale}/manage/bilibili-subscriptions`, label: nav.subscriptions, icon: Rss },
+    { href: `/${locale}/manage/sync-logs`, label: nav.syncLogs, icon: ClipboardList },
   ]
 
   return (

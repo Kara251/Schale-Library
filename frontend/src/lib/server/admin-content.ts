@@ -185,10 +185,18 @@ export async function deleteAdminCollectionItem(
 
 export async function uploadAdminMedia(
   session: AdminSession,
-  file: File
+  file: File,
+  fieldName?: string,
+  collection?: string
 ): Promise<AdminMediaAsset[]> {
   const formData = new FormData()
   formData.append('files', file)
+  if (fieldName) {
+    formData.append('fieldName', fieldName)
+  }
+  if (collection) {
+    formData.append('collection', collection)
+  }
   const data = await adminFetchJson<{ data: AdminMediaAsset[] }>(session, '/api/panel/upload', {
     method: 'POST',
     body: formData,
@@ -201,7 +209,9 @@ export interface AdminSyncResult {
   message?: string
   total?: number
   created?: number
+  skipped?: number
   failed?: number
+  errors?: string[]
 }
 
 export async function syncBilibiliSubscription(

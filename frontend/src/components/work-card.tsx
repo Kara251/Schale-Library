@@ -8,6 +8,7 @@ import { LocaleLink } from '@/components/locale-link'
 import { useLocale } from '@/contexts/locale-context'
 import { getContentEntryPathId, type Work } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
+import { getMediaUrl } from '@/lib/media'
 
 interface WorkCardProps {
     work: Work
@@ -116,7 +117,7 @@ export const WorkCard = memo(function WorkCard({ work }: WorkCardProps) {
                                 >
                                     {student.avatar ? (
                                         <Image
-                                            src={student.avatar.url}
+                                            src={getMediaUrl(student.avatar.url)}
                                             alt={student.name}
                                             fill
                                             sizes="28px"

@@ -18,6 +18,15 @@
 - **数据处理:** Next.js Route Handlers（API Routes）
 - **媒体数据:** [Cloudinary](https://cloudinary.com) + [OpenList](https://github.com/OpenListTeam/OpenList) + OneDrive
 
+### 本地开发
+
+- 本项目使用 pnpm workspace，不需要 Docker。
+- 安装依赖：`pnpm install`
+- 启动 Strapi：`pnpm dev:backend`
+- 启动前端：`pnpm dev:frontend`
+- B 站 RSS 同步默认优先读取本地 RSSHub：`http://localhost:1200`。如果需要本地 RSSHub，可在 `RSSHub/` 目录按 RSSHub 官方方式安装并启动，然后在 `backend/.env` 中保留 `RSSHUB_URL=http://localhost:1200`。
+- 自研后台位于 `/{locale}/manage`，通过同源 Next.js Route Handlers 与 HttpOnly Cookie 会话访问 Strapi，包含内容维护、B 站订阅同步、上传与同步日志查看。
+
 ### 版权声明
 
 - **代码版权**: 本项目仓库内的源代码遵循 [MIT License](./LICENSE) 开源协议。

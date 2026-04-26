@@ -227,6 +227,9 @@ export default async function WorksManagePage({ params, searchParams }: WorksMan
                   delete: actionLabels.delete,
                   deleting: actionLabels.deleting,
                   confirm: actionLabels.deleteConfirm,
+                  cancel: actionLabels.cancel,
+                  confirmDelete: actionLabels.confirmDelete,
+                  deleted: actionLabels.deleteSuccess,
                   failed: actionLabels.createFailed,
                 }}
               />

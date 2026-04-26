@@ -205,6 +205,9 @@ export default async function OnlineEventsManagePage({ params, searchParams }: O
                   delete: actionLabels.delete,
                   deleting: actionLabels.deleting,
                   confirm: actionLabels.deleteConfirm,
+                  cancel: actionLabels.cancel,
+                  confirmDelete: actionLabels.confirmDelete,
+                  deleted: actionLabels.deleteSuccess,
                   failed: actionLabels.createFailed,
                 }}
               />

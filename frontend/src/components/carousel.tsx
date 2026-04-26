@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Announcement, OnlineEvent, OfflineEvent } from '@/lib/api'
+import { getMediaUrl } from '@/lib/media'
 
 // 统一的轮播项类型
 interface CarouselItem {
@@ -149,7 +150,7 @@ export function Carousel({
               <div
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
                 style={{
-                  backgroundImage: `url(${item.coverImage.url})`,
+                  backgroundImage: `url(${getMediaUrl(item.coverImage.url)})`,
                 }}
               >
                 {/* 渐变遮罩 */}

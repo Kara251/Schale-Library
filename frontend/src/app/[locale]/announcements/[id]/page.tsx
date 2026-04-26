@@ -10,6 +10,7 @@ import { format } from 'date-fns'
 import { zhCN, enUS, ja } from 'date-fns/locale'
 import { LocaleLink } from '@/components/locale-link'
 import type { Locale } from '@/lib/i18n'
+import { getMediaUrl } from '@/lib/media'
 
 export const revalidate = 60;
 
@@ -76,7 +77,7 @@ export default async function AnnouncementDetailPage({ params }: PageProps) {
                     <div className="max-w-4xl mx-auto">
                         {announcement.coverImage && (
                             <div className="relative h-64 md:h-96 rounded-lg overflow-hidden mb-8">
-                                <Image src={announcement.coverImage.url} alt={announcement.title} fill priority sizes="(max-width: 768px) 100vw, 896px" className="object-cover" />
+                                <Image src={getMediaUrl(announcement.coverImage.url)} alt={announcement.title} fill priority sizes="(max-width: 768px) 100vw, 896px" className="object-cover" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                 {announcement.priority > 5 && (
                                     <div className="absolute top-4 left-4">

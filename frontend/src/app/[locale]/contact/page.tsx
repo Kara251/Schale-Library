@@ -1,7 +1,7 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Card, CardContent } from "@/components/ui/card"
-import { Mail, Github, Video } from "lucide-react"
+import { Code, Mail, Video } from "lucide-react"
 import type { Locale } from "@/lib/i18n"
 
 interface ContactPageProps {
@@ -99,7 +99,7 @@ export default async function ContactPage({ params }: ContactPageProps) {
                             <Card>
                                 <CardContent className="pt-6">
                                     <div className="flex items-start gap-4">
-                                        <Github className="h-6 w-6 text-primary mt-1" />
+                                        <Code className="h-6 w-6 text-primary mt-1" />
                                         <div>
                                             <h2 className="text-xl font-bold mb-2">{t.githubTitle}</h2>
                                             <p className="text-muted-foreground mb-2">{t.githubDesc}</p>

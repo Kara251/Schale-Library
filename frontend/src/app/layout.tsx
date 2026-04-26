@@ -5,6 +5,7 @@ import { BackToTop } from "@/components/back-to-top"
 import { BackgroundImage } from "@/components/background-image"
 import { AuthProvider } from "@/contexts/auth-context"
 import { LocaleProvider } from "@/contexts/locale-context"
+import { ToastProvider } from "@/contexts/toast-context"
 import { GoogleAnalytics, Clarity } from "@/components/third-party-analytics"
 import "./globals.css"
 
@@ -52,16 +53,17 @@ export default function RootLayout({
         <BackgroundImage />
         <LocaleProvider>
           <AuthProvider>
-            {children}
-            <BackToTop />
-            <Analytics />
-            <GoogleAnalytics />
-            <Clarity />
+            <ToastProvider>
+              {children}
+              <BackToTop />
+              <Analytics />
+              <GoogleAnalytics />
+              <Clarity />
+            </ToastProvider>
           </AuthProvider>
         </LocaleProvider>
       </body>
     </html>
   )
 }
-
 

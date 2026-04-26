@@ -1,0 +1,28 @@
+{
+  "name": "schale-library",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.29.3",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev:backend": "pnpm --dir backend dev",
+    "dev:frontend": "pnpm --dir frontend dev",
+    "lint": "pnpm --dir frontend lint"
+  },
+  "pnpm": {
+    "overrides": {
+      "@rushstack/node-core-library>ajv": "8.18.0",
+      "esbuild": "0.25.12",
+      "markdown-it": "14.1.1",
+      "next>postcss": "8.5.10"
+    },
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "better-sqlite3",
+      "core-js-pure",
+      "esbuild",
+      "sharp",
+      "unrs-resolver"
+    ]
+  }
+}

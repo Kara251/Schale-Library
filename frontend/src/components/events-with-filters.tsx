@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { EventCard } from '@/components/event-card'
 import { SearchBar } from '@/components/search-bar'
 import { EventFilters, type EventNature, type EventStatus } from '@/components/event-filters'
@@ -69,15 +69,11 @@ export function EventsWithFilters({ events, type, title, initialSearchQuery = ''
     return filteredEvents.slice(startIndex, endIndex)
   }, [filteredEvents, currentPage])
 
-  // 筛选条件变化时重置页码
-  React.useEffect(() => {
-    setCurrentPage(1)
-  }, [searchQuery, nature, status])
-
   const handleReset = () => {
     setSearchQuery('')
     setNature('all')
     setStatus('all')
+    setCurrentPage(1)
   }
 
   return (
@@ -89,7 +85,10 @@ export function EventsWithFilters({ events, type, title, initialSearchQuery = ''
       )}
 
       <SearchBar
-        onSearch={setSearchQuery}
+        onSearch={(value) => {
+          setSearchQuery(value)
+          setCurrentPage(1)
+        }}
         placeholder={t.searchPlaceholder}
         className="max-w-2xl mb-6"
       />
@@ -97,8 +96,14 @@ export function EventsWithFilters({ events, type, title, initialSearchQuery = ''
       <EventFilters
         nature={nature}
         status={status}
-        onNatureChange={setNature}
-        onStatusChange={setStatus}
+        onNatureChange={(value) => {
+          setNature(value)
+          setCurrentPage(1)
+        }}
+        onStatusChange={(value) => {
+          setStatus(value)
+          setCurrentPage(1)
+        }}
         onReset={handleReset}
       />
 

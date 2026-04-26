@@ -69,6 +69,7 @@ export async function POST(request: Request) {
     const formData = await request.formData()
     const file = formData.get('files')
     const fieldName = formData.get('fieldName')
+    const collection = formData.get('collection')
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: '未提供有效文件' }, { status: 400 })
@@ -88,7 +89,12 @@ export async function POST(request: Request) {
       )
     }
 
-    const data = await uploadAdminMedia(session, file)
+    const data = await uploadAdminMedia(
+      session,
+      file,
+      typeof fieldName === 'string' ? fieldName : undefined,
+      typeof collection === 'string' ? collection : undefined
+    )
     return NextResponse.json({ data }, { status: 200 })
   } catch (error) {
     return NextResponse.json(

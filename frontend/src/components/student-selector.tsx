@@ -9,6 +9,7 @@ import { useLocale } from '@/contexts/locale-context'
 import type { Student, SchoolType } from '@/lib/api'
 import { schoolNames, schoolNamesLocalized } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
+import { getMediaUrl } from '@/lib/media'
 
 interface StudentSelectorProps {
     students: Student[]
@@ -224,7 +225,7 @@ export function StudentSelector({
                                     >
                                         <div className="relative w-12 h-12 rounded-full overflow-hidden bg-secondary mb-2">
                                             {student.avatar ? (
-                                                <Image src={student.avatar.url} alt={student.name} fill sizes="48px" className="object-cover" />
+                                                <Image src={getMediaUrl(student.avatar.url)} alt={student.name} fill sizes="48px" className="object-cover" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-muted-foreground text-lg font-bold">
                                                     {student.name.charAt(0)}
@@ -312,7 +313,7 @@ export function StudentSelectorTrigger({
                                 {selectedStudentInfo.slice(0, 3).map(student => (
                                     <div key={student.id} className="w-6 h-6 rounded-full border-2 border-background overflow-hidden bg-secondary">
                                         {student.avatar ? (
-                                            <Image src={student.avatar.url} alt={student.name} fill sizes="24px" className="object-cover" />
+                                            <Image src={getMediaUrl(student.avatar.url)} alt={student.name} fill sizes="24px" className="object-cover" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-xs font-bold">
                                                 {student.name.charAt(0)}

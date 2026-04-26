@@ -11,30 +11,30 @@
     "develop": "strapi develop",
     "start": "strapi start",
     "strapi": "strapi",
-    "upgrade": "npx @strapi/upgrade latest",
-    "upgrade:dry": "npx @strapi/upgrade latest --dry"
+    "upgrade": "pnpm dlx @strapi/upgrade latest",
+    "upgrade:dry": "pnpm dlx @strapi/upgrade latest --dry"
   },
   "dependencies": {
-    "@strapi/plugin-cloud": "5.42.0",
-    "@strapi/plugin-users-permissions": "5.42.0",
-    "@strapi/provider-upload-cloudinary": "^5.31.3",
-    "@strapi/strapi": "5.42.0",
-    "better-sqlite3": "^12.8.0",
+    "@strapi/plugin-users-permissions": "5.43.0",
+    "@strapi/provider-upload-cloudinary": "^5.43.0",
+    "@strapi/strapi": "5.43.0",
+    "@strapi/utils": "5.43.0",
+    "better-sqlite3": "^12.9.0",
     "pg": "^8.20.0",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "react-router-dom": "^6.30.3",
-    "styled-components": "^6.4.0"
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.30.3",
+    "styled-components": "^6.4.1"
   },
   "devDependencies": {
-    "@types/node": "^20.19.39",
-    "@types/react": "^18.3.28",
-    "@types/react-dom": "^18",
+    "@types/node": "^24.12.2",
+    "@types/react": "18",
+    "@types/react-dom": "18",
     "typescript": "^5.9.3"
   },
   "engines": {
-    "node": ">=20.0.0 <=24.x.x",
-    "npm": ">=6.0.0"
+    "node": ">=20 <25",
+    "pnpm": ">=10.0.0"
   },
   "strapi": {
     "uuid": "c3fbaf57-dcb4-4a70-8ec0-8c1d17588868",

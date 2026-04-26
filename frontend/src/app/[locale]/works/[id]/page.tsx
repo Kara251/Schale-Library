@@ -11,6 +11,7 @@ import { format } from 'date-fns'
 import { zhCN, enUS, ja } from 'date-fns/locale'
 import { LocaleLink } from '@/components/locale-link'
 import type { Locale } from '@/lib/i18n'
+import { getMediaUrl } from '@/lib/media'
 
 export const revalidate = 60;
 
@@ -120,7 +121,9 @@ export default async function WorkDetailPage({ params }: PageProps) {
     const natureLabel = work.nature === 'official' ? t.official : t.fanmade
     const typeLabels = { video: t.video, image: t.image, text: t.text, other: t.other }
     const typeLabel = typeLabels[work.workType as keyof typeof typeLabels] || t.other
-    const coverImageSrc = work.coverImage?.url || `/api/image-proxy?url=${encodeURIComponent(work.coverImageUrl || '')}`
+    const coverImageSrc = work.coverImage?.url
+        ? getMediaUrl(work.coverImage.url)
+        : `/api/image-proxy?url=${encodeURIComponent(work.coverImageUrl || '')}`
     const isProxyImage = coverImageSrc.startsWith('/api/image-proxy?')
 
     return (

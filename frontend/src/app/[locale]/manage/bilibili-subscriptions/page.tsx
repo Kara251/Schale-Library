@@ -256,6 +256,9 @@ export default async function BilibiliSubscriptionsManagePage({ params, searchPa
                     delete: actionLabels.delete,
                     deleting: actionLabels.deleting,
                     confirm: actionLabels.deleteConfirm,
+                    cancel: actionLabels.cancel,
+                    confirmDelete: actionLabels.confirmDelete,
+                    deleted: actionLabels.deleteSuccess,
                     failed: actionLabels.createFailed,
                   }}
                 />

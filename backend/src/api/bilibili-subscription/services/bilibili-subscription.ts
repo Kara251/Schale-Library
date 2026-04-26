@@ -31,6 +31,23 @@ interface SyncResult {
     errors: string[];
 }
 
+type SyncLogAction = 'bilibili-sync-one' | 'bilibili-sync-all' | 'bilibili-sync-cron';
+type SyncLogStatus = 'success' | 'partial' | 'failed';
+
+interface SyncLogInput {
+    action: SyncLogAction;
+    message: string;
+    status?: SyncLogStatus;
+    targetId?: number;
+    targetName?: string;
+    total?: number;
+    created?: number;
+    skipped?: number;
+    errors?: string[];
+    startedAt: Date;
+    finishedAt: Date;
+}
+
 type WorkNature = 'official' | 'fanmade';
 
 interface BilibiliSubscription {
@@ -71,14 +88,43 @@ const rssCache = new Map<string, { data: RSSItem[]; expires: number }>();
 const RSS_CACHE_TTL = 5 * 60 * 1000; // 5分钟
 
 export default factories.createCoreService('api::bilibili-subscription.bilibili-subscription', ({ strapi }) => ({
+    async recordSyncLog(input: SyncLogInput): Promise<void> {
+        const errors = Array.isArray(input.errors) ? input.errors : [];
+        const status = input.status || (errors.length > 0 ? (input.created || input.skipped ? 'partial' : 'failed') : 'success');
+        const durationMs = Math.max(0, input.finishedAt.getTime() - input.startedAt.getTime());
+
+        try {
+            await strapi.entityService.create('api::sync-log.sync-log' as any, {
+                data: {
+                    action: input.action,
+                    status,
+                    message: input.message,
+                    targetId: input.targetId,
+                    targetName: input.targetName,
+                    total: input.total ?? 0,
+                    created: input.created ?? 0,
+                    skipped: input.skipped ?? 0,
+                    errorCount: errors.length,
+                    errors,
+                    startedAt: input.startedAt.toISOString(),
+                    finishedAt: input.finishedAt.toISOString(),
+                    durationMs,
+                },
+            });
+        } catch (error) {
+            strapi.log.warn(`同步日志写入失败: ${getErrorMessage(error)}`);
+        }
+    },
+
     /**
      * RSSHub 实例列表（按优先级排序）
      * 可通过环境变量 RSSHUB_URL 自定义
      */
     getRssHubInstances(): string[] {
-        const customUrl = process.env.RSSHUB_URL;
+        const customUrl = process.env.RSSHUB_URL?.replace(/\/+$/, '');
         const instances = [
-            'http://localhost:3200',  // 本地 RSSHub 优先
+            'http://localhost:1200',  // RSSHub 默认本地端口
+            'http://localhost:3200',  // 兼容旧本地端口
             'https://rsshub.app',
             'https://rsshub.rssforever.com',
             'https://hub.slarker.me',
