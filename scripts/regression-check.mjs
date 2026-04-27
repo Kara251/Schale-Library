@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 const root = new URL('..', import.meta.url).pathname
@@ -13,6 +14,27 @@ function assertContains(path, expected) {
     throw new Error(`${path} is missing expected content: ${expected}`)
   }
 }
+
+function assertExists(path) {
+  if (!existsSync(join(root, path))) {
+    throw new Error(`${path} does not exist`)
+  }
+}
+
+function assertMissing(path) {
+  if (existsSync(join(root, path))) {
+    throw new Error(`${path} should not exist`)
+  }
+}
+
+assertExists('docs/zh-Hans/README.md')
+assertExists('docs/zh-Hans/deployment.md')
+assertExists('docs/en/README.md')
+assertExists('docs/en/deployment.md')
+assertExists('docs/ja/README.md')
+assertExists('docs/ja/deployment.md')
+assertMissing('README_en.md')
+assertMissing('docs/deployment.md')
 
 assertContains('backend/.env.example', 'ADMIN_PANEL_ALLOWED_ROLES=')
 assertContains('backend/.env.example', 'PANEL_INTERNAL_TOKEN=')
