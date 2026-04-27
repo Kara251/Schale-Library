@@ -16,6 +16,7 @@ Library URL: [https://bakivo.com](https://bakivo.com)
 - **API:** Strapi REST API
 - **Data processing:** Next.js Route Handlers
 - **Media:** [Cloudinary](https://cloudinary.com) + [OpenList](https://github.com/OpenListTeam/OpenList) + OneDrive
+- **Development assistance:** Claude, ChatGPT, Gemini, and other AI tools were used during design, coding, review, and documentation work.
 
 ## Local Development
 
