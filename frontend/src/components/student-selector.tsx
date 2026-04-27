@@ -311,7 +311,7 @@ export function StudentSelectorTrigger({
                         <>
                             <div className="flex -space-x-2">
                                 {selectedStudentInfo.slice(0, 3).map(student => (
-                                    <div key={student.id} className="w-6 h-6 rounded-full border-2 border-background overflow-hidden bg-secondary">
+                                    <div key={student.id} className="relative w-6 h-6 rounded-full border-2 border-background overflow-hidden bg-secondary">
                                         {student.avatar ? (
                                             <Image src={getMediaUrl(student.avatar.url)} alt={student.name} fill sizes="24px" className="object-cover" />
                                         ) : (

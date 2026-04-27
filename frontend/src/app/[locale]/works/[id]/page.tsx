@@ -2,10 +2,11 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { WorkCard } from "@/components/work-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, ExternalLink } from 'lucide-react'
-import { getWorkById } from "@/lib/api"
+import { ArrowLeft, ExternalLink, Users } from 'lucide-react'
+import { getContentEntryPathId, getWorkById, getWorks } from "@/lib/api"
 import { sanitizeHtml } from "@/lib/sanitize"
 import { format } from 'date-fns'
 import { zhCN, enUS, ja } from 'date-fns/locale'
@@ -29,6 +30,12 @@ const content: Record<Locale, {
     originalPublishDate: string
     viewOriginal: string
     description: string
+    students: string
+    source: string
+    relatedWorks: string
+    sameAuthor: string
+    sameStudents: string
+    viewMoreByAuthor: string
     official: string
     fanmade: string
     video: string
@@ -44,6 +51,12 @@ const content: Record<Locale, {
         originalPublishDate: '原作发布于',
         viewOriginal: '查看原作',
         description: '作品简介',
+        students: '出场学生',
+        source: '来源',
+        relatedWorks: '相关作品',
+        sameAuthor: '同作者作品',
+        sameStudents: '同学生作品',
+        viewMoreByAuthor: '查看该作者作品',
         official: '官方',
         fanmade: '同人',
         video: '视频',
@@ -59,6 +72,12 @@ const content: Record<Locale, {
         originalPublishDate: 'Originally published',
         viewOriginal: 'View Original',
         description: 'Description',
+        students: 'Featured Students',
+        source: 'Source',
+        relatedWorks: 'Related Works',
+        sameAuthor: 'More by this author',
+        sameStudents: 'Works with the same students',
+        viewMoreByAuthor: 'View works by this author',
         official: 'Official',
         fanmade: 'Fan-made',
         video: 'Video',
@@ -74,6 +93,12 @@ const content: Record<Locale, {
         originalPublishDate: '元の公開日',
         viewOriginal: '原作を見る',
         description: '作品紹介',
+        students: '登場生徒',
+        source: '出典',
+        relatedWorks: '関連作品',
+        sameAuthor: '同じ作者の作品',
+        sameStudents: '同じ生徒の作品',
+        viewMoreByAuthor: 'この作者の作品を見る',
         official: '公式',
         fanmade: '二次創作',
         video: '動画',
@@ -102,13 +127,30 @@ export default async function WorkDetailPage({ params }: PageProps) {
     const t = content[locale as Locale] || content['zh-Hans']
     const dateLocale = dateLocales[locale as Locale] || zhCN
 
-    const workRes = await getWorkById(id, locale).catch(() => null)
+    const [workRes, worksRes] = await Promise.all([
+        getWorkById(id, locale).catch(() => null),
+        getWorks(100, locale).catch(() => ({ data: [] })),
+    ])
 
     if (!workRes || !workRes.data) {
         notFound()
     }
 
     const work = workRes.data
+    const allWorks = worksRes.data || []
+    const sameAuthorWorks = allWorks
+        .filter((item) => item.id !== work.id && work.author && item.author === work.author)
+        .slice(0, 4)
+    const sameStudentWorks = allWorks
+        .filter((item) => {
+            if (item.id === work.id || !work.students?.length) return false
+            const currentStudentIds = new Set(work.students.map((student) => student.id))
+            return item.students?.some((student) => currentStudentIds.has(student.id))
+        })
+        .slice(0, 4)
+    const relatedWorks = [...sameStudentWorks, ...sameAuthorWorks]
+        .filter((item, index, items) => items.findIndex((candidate) => candidate.id === item.id) === index)
+        .slice(0, 4)
 
     const formatDate = (dateString: string) => {
         try {
@@ -169,13 +211,38 @@ export default async function WorkDetailPage({ params }: PageProps) {
                             <h1 className="text-3xl md:text-4xl font-bold mb-4">{work.title}</h1>
 
                             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                                {work.author && <div>{t.author}: {work.author}</div>}
+                                {work.author && (
+                                    <LocaleLink href={`/works?q=${encodeURIComponent(work.author)}`} className="hover:text-primary">
+                                        {t.author}: {work.author}
+                                    </LocaleLink>
+                                )}
                                 {work.originalPublishDate && (
                                     <div>{t.originalPublishDate}: {formatDate(work.originalPublishDate)}</div>
                                 )}
                                 <div>{t.publishedAt}: {formatDate(work.publishedAt)}</div>
+                                {work.sourcePlatform ? <div>{t.source}: {work.sourcePlatform}</div> : null}
                             </div>
                         </div>
+
+                        {work.students?.length ? (
+                            <div className="mb-8 rounded-lg border bg-card p-5">
+                                <div className="mb-3 flex items-center gap-2 text-sm font-bold">
+                                    <Users className="h-4 w-4 text-primary" />
+                                    {t.students}
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {work.students.map((student) => (
+                                        <LocaleLink
+                                            key={student.id}
+                                            href={`/students/${getContentEntryPathId(student)}`}
+                                            className="rounded-full border bg-secondary px-3 py-1.5 text-sm transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+                                        >
+                                            {student.name}
+                                        </LocaleLink>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
 
                         {work.link && (
                             <div className="mb-8">
@@ -193,6 +260,21 @@ export default async function WorkDetailPage({ params }: PageProps) {
                                 <div className="bg-card border rounded-lg p-6" dangerouslySetInnerHTML={{ __html: sanitizeHtml(work.description) }} />
                             </div>
                         )}
+
+                        {relatedWorks.length > 0 ? (
+                            <section className="mt-10">
+                                <h2 className="mb-4 text-2xl font-bold">{t.relatedWorks}</h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    {relatedWorks.map((item) => (
+                                        <WorkCard key={item.id} work={item} />
+                                    ))}
+                                </div>
+                                <div className="mt-4 flex flex-wrap gap-2 text-sm text-muted-foreground">
+                                    {sameStudentWorks.length > 0 ? <span>{t.sameStudents}: {sameStudentWorks.length}</span> : null}
+                                    {sameAuthorWorks.length > 0 ? <span>{t.sameAuthor}: {sameAuthorWorks.length}</span> : null}
+                                </div>
+                            </section>
+                        ) : null}
                     </div>
                 </div>
             </main>

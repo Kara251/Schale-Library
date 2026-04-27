@@ -1,10 +1,11 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { LocaleLink } from "@/components/locale-link"
-import { Search, Globe, MapPin, Bell, Star } from "lucide-react"
+import { Search, Globe, MapPin, Bell, Star, Users } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
     getContentEntryPathId,
+    getStudents,
     searchAnnouncements,
     searchOnlineEvents,
     searchOfflineEvents,
@@ -12,9 +13,12 @@ import {
     type Announcement,
     type OnlineEvent,
     type OfflineEvent,
+    type Student,
     type Work,
 } from "@/lib/api"
+import { getMediaUrl } from "@/lib/media"
 import type { Locale } from "@/lib/i18n"
+import Image from "next/image"
 
 interface GlobalSearchPageProps {
     params: Promise<{ locale: string }>
@@ -29,10 +33,12 @@ const content: Record<Locale, {
     works: string
     onlineEvents: string
     offlineEvents: string
+    students: string
     noAnnouncements: string
     noWorks: string
     noOnlineEvents: string
     noOfflineEvents: string
+    noStudents: string
     enterSearch: string
     author: string
     organizer: string
@@ -51,10 +57,12 @@ const content: Record<Locale, {
         works: '推荐作品',
         onlineEvents: '线上活动',
         offlineEvents: '线下活动',
+        students: '学生',
         noAnnouncements: '暂无匹配的公告',
         noWorks: '暂无匹配的推荐作品',
         noOnlineEvents: '暂无匹配的线上活动',
         noOfflineEvents: '暂无匹配的线下活动',
+        noStudents: '暂无匹配的学生',
         enterSearch: '请在顶部搜索框输入关键词进行搜索',
         author: '作者',
         organizer: '主办',
@@ -73,10 +81,12 @@ const content: Record<Locale, {
         works: 'Recommended Works',
         onlineEvents: 'Online Events',
         offlineEvents: 'Offline Events',
+        students: 'Students',
         noAnnouncements: 'No matching announcements',
         noWorks: 'No matching works',
         noOnlineEvents: 'No matching online events',
         noOfflineEvents: 'No matching offline events',
+        noStudents: 'No matching students',
         enterSearch: 'Enter keywords in the search box above',
         author: 'Author',
         organizer: 'Organizer',
@@ -95,10 +105,12 @@ const content: Record<Locale, {
         works: 'おすすめ作品',
         onlineEvents: 'オンラインイベント',
         offlineEvents: 'オフラインイベント',
+        students: '生徒',
         noAnnouncements: '該当するお知らせはありません',
         noWorks: '該当する作品はありません',
         noOnlineEvents: '該当するオンラインイベントはありません',
         noOfflineEvents: '該当するオフラインイベントはありません',
+        noStudents: '該当する生徒はありません',
         enterSearch: '上部の検索ボックスにキーワードを入力してください',
         author: '作者',
         organizer: '主催',
@@ -120,21 +132,46 @@ export default async function GlobalSearchPage({ params, searchParams }: GlobalS
     let works: Work[] = []
     let onlineEvents: OnlineEvent[] = []
     let offlineEvents: OfflineEvent[] = []
+    let students: Student[] = []
 
     if (searchQuery) {
-        const [announcementsRes, worksRes, onlineEventsRes, offlineEventsRes] = await Promise.all([
+        const [announcementsRes, worksRes, onlineEventsRes, offlineEventsRes, studentsRes] = await Promise.all([
             searchAnnouncements(searchQuery, locale).catch(() => ({ data: [] })),
             searchWorks(searchQuery, locale).catch(() => ({ data: [] })),
             searchOnlineEvents(searchQuery, locale).catch(() => ({ data: [] })),
             searchOfflineEvents(searchQuery, locale).catch(() => ({ data: [] })),
+            getStudents(locale).catch(() => ({ data: [] })),
         ])
         announcements = announcementsRes.data || []
         works = worksRes.data || []
         onlineEvents = onlineEventsRes.data || []
         offlineEvents = offlineEventsRes.data || []
+        const normalizedQuery = searchQuery.toLowerCase()
+        students = (studentsRes.data || []).filter((student) => {
+            return [
+                student.name,
+                student.organization,
+                student.school,
+                student.bio,
+            ].some((value) => value?.toLowerCase().includes(normalizedQuery))
+        })
     }
 
-    const totalResults = announcements.length + works.length + onlineEvents.length + offlineEvents.length
+    const sortByFreshness = <T extends { publishedAt?: string; updatedAt?: string; createdAt?: string }>(items: T[]) => {
+        return [...items].sort((a, b) => {
+            const aTime = new Date(a.publishedAt || a.updatedAt || a.createdAt || 0).getTime()
+            const bTime = new Date(b.publishedAt || b.updatedAt || b.createdAt || 0).getTime()
+            return bTime - aTime
+        })
+    }
+
+    announcements = sortByFreshness(announcements)
+    works = sortByFreshness(works)
+    onlineEvents = sortByFreshness(onlineEvents)
+    offlineEvents = sortByFreshness(offlineEvents)
+    students = sortByFreshness(students)
+
+    const totalResults = announcements.length + works.length + onlineEvents.length + offlineEvents.length + students.length
     const workTypeLabels: Record<string, string> = {
         video: t.video,
         image: t.image,
@@ -158,6 +195,15 @@ export default async function GlobalSearchPage({ params, searchParams }: GlobalS
                                         <span className="ml-2">· {t.results.replace('{count}', String(totalResults))}</span>
                                     )}
                                 </p>
+                            )}
+                            {searchQuery && (
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    <Badge variant="secondary">{t.announcements} {announcements.length}</Badge>
+                                    <Badge variant="secondary">{t.works} {works.length}</Badge>
+                                    <Badge variant="secondary">{t.students} {students.length}</Badge>
+                                    <Badge variant="secondary">{t.onlineEvents} {onlineEvents.length}</Badge>
+                                    <Badge variant="secondary">{t.offlineEvents} {offlineEvents.length}</Badge>
+                                </div>
                             )}
                         </div>
 
@@ -185,6 +231,42 @@ export default async function GlobalSearchPage({ params, searchParams }: GlobalS
                                             </div>
                                         ) : (
                                             <p className="text-muted-foreground">{t.noAnnouncements}</p>
+                                        )}
+                                    </section>
+
+                                    {/* Students */}
+                                    <section className="bg-card border rounded-lg p-6">
+                                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                            <Users className="h-5 w-5" />
+                                            {t.students}
+                                            <Badge variant="secondary" className="ml-2">{students.length}</Badge>
+                                        </h2>
+                                        {students.length > 0 ? (
+                                            <div className="grid gap-3 sm:grid-cols-2">
+                                                {students.map((item) => (
+                                                    <LocaleLink
+                                                        key={item.id}
+                                                        href={`/students/${getContentEntryPathId(item)}`}
+                                                        className="flex items-center gap-3 rounded-lg border bg-background p-4 transition-colors hover:bg-secondary/50"
+                                                    >
+                                                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-secondary">
+                                                            {item.avatar ? (
+                                                                <Image src={getMediaUrl(item.avatar.url)} alt={item.name} fill sizes="48px" className="object-cover" />
+                                                            ) : (
+                                                                <div className="flex h-full w-full items-center justify-center font-bold text-muted-foreground">
+                                                                    {item.name.charAt(0)}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <h3 className="font-semibold">{item.name}</h3>
+                                                            {item.organization ? <p className="text-sm text-muted-foreground">{item.organization}</p> : null}
+                                                        </div>
+                                                    </LocaleLink>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-muted-foreground">{t.noStudents}</p>
                                         )}
                                     </section>
 

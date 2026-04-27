@@ -197,7 +197,12 @@ export async function searchAnnouncements(
 ) {
   const strapiLocale = toStrapiLocale(locale)
   return fetchAPI<StrapiResponse<Announcement[]>>(
-    `/announcements?locale=${strapiLocale}&filters[title][$containsi]=${encodeURIComponent(query)}&populate=*`
+    `/announcements?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[$or][0][title][$containsi]': query,
+      'filters[$or][1][content][$containsi]': query,
+      populate: '*',
+    })}`
   );
 }
 
@@ -212,7 +217,13 @@ export async function searchOnlineEvents(
 ) {
   const strapiLocale = toStrapiLocale(locale)
   return fetchAPI<StrapiResponse<OnlineEvent[]>>(
-    `/online-events?locale=${strapiLocale}&filters[title][$containsi]=${encodeURIComponent(query)}&populate=*`
+    `/online-events?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[$or][0][title][$containsi]': query,
+      'filters[$or][1][organizer][$containsi]': query,
+      'filters[$or][2][description][$containsi]': query,
+      populate: '*',
+    })}`
   );
 }
 
@@ -227,7 +238,15 @@ export async function searchOfflineEvents(
 ) {
   const strapiLocale = toStrapiLocale(locale)
   return fetchAPI<StrapiResponse<OfflineEvent[]>>(
-    `/offline-events?locale=${strapiLocale}&filters[title][$containsi]=${encodeURIComponent(query)}&populate=*`
+    `/offline-events?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[$or][0][title][$containsi]': query,
+      'filters[$or][1][organizer][$containsi]': query,
+      'filters[$or][2][location][$containsi]': query,
+      'filters[$or][3][guests][$containsi]': query,
+      'filters[$or][4][description][$containsi]': query,
+      populate: '*',
+    })}`
   );
 }
 
@@ -448,7 +467,14 @@ export async function searchWorks(
 ) {
   const strapiLocale = toStrapiLocale(locale)
   return fetchAPI<StrapiResponse<Work[]>>(
-    `/works?locale=${strapiLocale}&filters[title][$containsi]=${encodeURIComponent(query)}&populate=*`
+    `/works?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[$or][0][title][$containsi]': query,
+      'filters[$or][1][author][$containsi]': query,
+      'filters[$or][2][description][$containsi]': query,
+      'filters[$or][3][students][name][$containsi]': query,
+      populate: '*',
+    })}`
   );
 }
 
@@ -461,6 +487,28 @@ export async function getStudents(locale: string = 'zh-Hans') {
   return fetchAPI<StrapiResponse<Student[]>>(
     `/students?locale=${strapiLocale}&sort=name:asc&populate=avatar&pagination[limit]=500`
   );
+}
+
+/**
+ * 获取单个学生详情（通过 documentId 或数字 ID）
+ */
+export async function getStudentById(
+  id: ContentIdentifier,
+  locale: string = 'zh-Hans'
+) {
+  const strapiLocale = toStrapiLocale(locale)
+  const identifier = String(id).trim()
+  const response = await fetchAPI<StrapiResponse<Student[]>>(
+    `/students?${createCollectionQuery({
+      locale: strapiLocale,
+      [isNumericIdentifier(identifier) ? 'filters[id][$eq]' : 'filters[documentId][$eq]']: identifier,
+      populate: '*',
+    })}`
+  );
+  return {
+    data: response.data?.[0] || null,
+    meta: {}
+  } as StrapiSingleResponse<Student | null>;
 }
 
 /**
@@ -532,4 +580,3 @@ export const schoolNamesLocalized: Record<string, Record<string, string>> = {
     other: 'その他',
   },
 };
-

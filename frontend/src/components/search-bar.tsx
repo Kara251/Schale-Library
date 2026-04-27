@@ -12,6 +12,7 @@ interface SearchBarProps {
   onSearch: (query: string) => void
   placeholder?: string
   className?: string
+  initialValue?: string
 }
 
 const labels: Record<Locale, { search: string; defaultPlaceholder: string }> = {
@@ -23,10 +24,10 @@ const labels: Record<Locale, { search: string; defaultPlaceholder: string }> = {
 /**
  * 搜索栏组件
  */
-export function SearchBar({ onSearch, placeholder, className }: SearchBarProps) {
+export function SearchBar({ onSearch, placeholder, className, initialValue }: SearchBarProps) {
   const { locale } = useLocale()
   const t = labels[locale] || labels['zh-Hans']
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(initialValue || '')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

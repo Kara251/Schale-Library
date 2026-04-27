@@ -74,13 +74,10 @@ export const WorkCard = memo(function WorkCard({ work }: WorkCardProps) {
     const overflowCount = students.length - 3
 
     return (
-        <LocaleLink
-            href={`/works/${getContentEntryPathId(work)}`}
-            className="block group ba-card p-4"
-        >
+        <article className="group ba-card p-4">
             <div className="ba-card-content">
                 {/* 封面图 */}
-                <div className="relative aspect-video rounded overflow-hidden bg-muted mb-3">
+                <LocaleLink href={`/works/${getContentEntryPathId(work)}`} className="relative block aspect-video rounded overflow-hidden bg-muted mb-3">
                     {work.coverImage ? (
                         <OptimizedImage
                             src={work.coverImage.url}
@@ -112,7 +109,7 @@ export const WorkCard = memo(function WorkCard({ work }: WorkCardProps) {
                             {visibleStudents.map((student) => (
                                 <div
                                     key={student.id}
-                                    className="w-7 h-7 rounded-full border-2 border-background overflow-hidden bg-secondary"
+                                    className="relative w-7 h-7 rounded-full border-2 border-background overflow-hidden bg-secondary"
                                     title={student.name}
                                 >
                                     {student.avatar ? (
@@ -137,14 +134,16 @@ export const WorkCard = memo(function WorkCard({ work }: WorkCardProps) {
                             )}
                         </div>
                     )}
-                </div>
+                </LocaleLink>
 
                 {/* 内容区 */}
                 <div>
                     {/* 标题 */}
-                    <h3 className="ba-title line-clamp-2 mb-2 group-hover:text-primary transition-colors">
-                        {work.title}
-                    </h3>
+                    <LocaleLink href={`/works/${getContentEntryPathId(work)}`}>
+                        <h3 className="ba-title line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+                            {work.title}
+                        </h3>
+                    </LocaleLink>
 
                     {/* 信息行 */}
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -159,13 +158,21 @@ export const WorkCard = memo(function WorkCard({ work }: WorkCardProps) {
 
                     {/* 出场学生名字 */}
                     {students.length > 0 && (
-                        <div className="mt-1 text-xs text-muted-foreground line-clamp-1">
-                            {visibleStudents.map(s => s.name).join('、')}
+                        <div className="mt-2 flex flex-wrap gap-1 text-xs">
+                            {visibleStudents.map((student) => (
+                                <LocaleLink
+                                    key={student.id}
+                                    href={`/students/${getContentEntryPathId(student)}`}
+                                    className="rounded-full bg-secondary px-2 py-0.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                                >
+                                    {student.name}
+                                </LocaleLink>
+                            ))}
                             {overflowCount > 0 && ` +${overflowCount}`}
                         </div>
                     )}
                 </div>
             </div>
-        </LocaleLink>
+        </article>
     )
 })

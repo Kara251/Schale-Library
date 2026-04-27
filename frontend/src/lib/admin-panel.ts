@@ -81,6 +81,15 @@ const schoolOptions: AdminFieldOption[] = [
   { value: 'other', label: 'Other' },
 ]
 
+const sourcePlatformOptions: AdminFieldOption[] = [
+  { value: 'manual', label: 'manual' },
+  { value: 'bilibili', label: 'bilibili' },
+  { value: 'twitter', label: 'twitter' },
+  { value: 'pixiv', label: 'pixiv' },
+  { value: 'youtube', label: 'youtube' },
+  { value: 'other', label: 'other' },
+]
+
 export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMeta> = {
   announcements: {
     endpoint: 'announcements',
@@ -154,7 +163,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       { name: 'link', type: 'url', label: { 'zh-Hans': '作品链接', en: 'Work link', ja: '作品リンク' } },
       { name: 'isActive', type: 'boolean', label: { 'zh-Hans': '启用', en: 'Active', ja: '有効' } },
       { name: 'sourceUrl', type: 'url', label: { 'zh-Hans': '源地址', en: 'Source URL', ja: '元 URL' } },
-      { name: 'sourcePlatform', type: 'text', label: { 'zh-Hans': '来源平台', en: 'Source platform', ja: '元プラットフォーム' } },
+      { name: 'sourcePlatform', type: 'select', label: { 'zh-Hans': '来源平台', en: 'Source platform', ja: '元プラットフォーム' }, options: sourcePlatformOptions },
       { name: 'sourceId', type: 'text', label: { 'zh-Hans': '来源 ID', en: 'Source ID', ja: '元 ID' } },
       { name: 'isAutoImported', type: 'boolean', label: { 'zh-Hans': '自动导入', en: 'Auto imported', ja: '自動取込' } },
       { name: 'importedAt', type: 'datetime-local', label: { 'zh-Hans': '导入时间', en: 'Imported at', ja: '取込日時' } },

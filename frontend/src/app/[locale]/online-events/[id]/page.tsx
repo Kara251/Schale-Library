@@ -21,6 +21,15 @@ interface PageProps {
 
 const dateLocales = { 'zh-Hans': zhCN, 'en': enUS, 'ja': ja }
 
+function getSourceHost(link?: string) {
+    if (!link) return null
+    try {
+        return new URL(link).hostname.replace(/^www\./, '')
+    } catch {
+        return null
+    }
+}
+
 const content: Record<Locale, {
     back: string
     upcoming: string
@@ -30,6 +39,11 @@ const content: Record<Locale, {
     fanmade: string
     organizer: string
     eventPeriod: string
+    timeNote: string
+    startsIn: string
+    endsIn: string
+    endedAgo: string
+    source: string
     visitLink: string
     description: string
 }> = {
@@ -42,6 +56,11 @@ const content: Record<Locale, {
         fanmade: '同人',
         organizer: '主办方',
         eventPeriod: '活动时间',
+        timeNote: '时间提示',
+        startsIn: '距离开始约 {days} 天',
+        endsIn: '距离结束约 {days} 天',
+        endedAgo: '已结束约 {days} 天',
+        source: '来源',
         visitLink: '访问活动',
         description: '活动详情',
     },
@@ -54,6 +73,11 @@ const content: Record<Locale, {
         fanmade: 'Fan-made',
         organizer: 'Organizer',
         eventPeriod: 'Event Period',
+        timeNote: 'Timing',
+        startsIn: 'Starts in about {days} days',
+        endsIn: 'Ends in about {days} days',
+        endedAgo: 'Ended about {days} days ago',
+        source: 'Source',
         visitLink: 'Visit Event',
         description: 'Details',
     },
@@ -66,6 +90,11 @@ const content: Record<Locale, {
         fanmade: '二次創作',
         organizer: '主催者',
         eventPeriod: '開催期間',
+        timeNote: '時間メモ',
+        startsIn: '開始まで約{days}日',
+        endsIn: '終了まで約{days}日',
+        endedAgo: '終了から約{days}日',
+        source: '出典',
         visitLink: 'イベントを見る',
         description: '詳細',
     },
@@ -104,6 +133,17 @@ export default async function OnlineEventDetailPage({ params }: PageProps) {
 
     const status = getEventStatus()
     const natureLabel = event.nature === 'official' ? t.official : t.fanmade
+    const formatDayDistance = () => {
+        const now = new Date()
+        const start = new Date(event.startTime)
+        const end = new Date(event.endTime)
+        const dayMs = 24 * 60 * 60 * 1000
+
+        if (now < start) return t.startsIn.replace('{days}', String(Math.max(1, Math.ceil((start.getTime() - now.getTime()) / dayMs))))
+        if (now <= end) return t.endsIn.replace('{days}', String(Math.max(1, Math.ceil((end.getTime() - now.getTime()) / dayMs))))
+        return t.endedAgo.replace('{days}', String(Math.max(1, Math.ceil((now.getTime() - end.getTime()) / dayMs))))
+    }
+    const sourceHost = getSourceHost(event.link)
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -144,6 +184,18 @@ export default async function OnlineEventDetailPage({ params }: PageProps) {
                                     <span className="text-muted-foreground">{t.eventPeriod}:</span>
                                     <span>{formatDate(event.startTime)} - {formatDate(event.endTime)}</span>
                                 </div>
+                                <div className="flex items-center gap-2">
+                                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-muted-foreground">{t.timeNote}:</span>
+                                    <span>{formatDayDistance()}</span>
+                                </div>
+                                {sourceHost ? (
+                                    <div className="flex items-center gap-2">
+                                        <Globe className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-muted-foreground">{t.source}:</span>
+                                        <span>{sourceHost}</span>
+                                    </div>
+                                ) : null}
                             </div>
                         </div>
 
