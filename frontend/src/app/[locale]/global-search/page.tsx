@@ -5,10 +5,10 @@ import { Search, Globe, MapPin, Bell, Star, Users } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
     getContentEntryPathId,
-    getStudents,
     searchAnnouncements,
     searchOnlineEvents,
     searchOfflineEvents,
+    searchStudents,
     searchWorks,
     type Announcement,
     type OnlineEvent,
@@ -136,25 +136,32 @@ export default async function GlobalSearchPage({ params, searchParams }: GlobalS
 
     if (searchQuery) {
         const [announcementsRes, worksRes, onlineEventsRes, offlineEventsRes, studentsRes] = await Promise.all([
-            searchAnnouncements(searchQuery, locale).catch(() => ({ data: [] })),
-            searchWorks(searchQuery, locale).catch(() => ({ data: [] })),
-            searchOnlineEvents(searchQuery, locale).catch(() => ({ data: [] })),
-            searchOfflineEvents(searchQuery, locale).catch(() => ({ data: [] })),
-            getStudents(locale).catch(() => ({ data: [] })),
+            searchAnnouncements(searchQuery, locale).catch((error) => {
+                console.error('Failed to search announcements:', error)
+                return { data: [] }
+            }),
+            searchWorks(searchQuery, locale).catch((error) => {
+                console.error('Failed to search works:', error)
+                return { data: [] }
+            }),
+            searchOnlineEvents(searchQuery, locale).catch((error) => {
+                console.error('Failed to search online events:', error)
+                return { data: [] }
+            }),
+            searchOfflineEvents(searchQuery, locale).catch((error) => {
+                console.error('Failed to search offline events:', error)
+                return { data: [] }
+            }),
+            searchStudents(searchQuery, locale).catch((error) => {
+                console.error('Failed to search students:', error)
+                return { data: [] }
+            }),
         ])
         announcements = announcementsRes.data || []
         works = worksRes.data || []
         onlineEvents = onlineEventsRes.data || []
         offlineEvents = offlineEventsRes.data || []
-        const normalizedQuery = searchQuery.toLowerCase()
-        students = (studentsRes.data || []).filter((student) => {
-            return [
-                student.name,
-                student.organization,
-                student.school,
-                student.bio,
-            ].some((value) => value?.toLowerCase().includes(normalizedQuery))
-        })
+        students = studentsRes.data || []
     }
 
     const sortByFreshness = <T extends { publishedAt?: string; updatedAt?: string; createdAt?: string }>(items: T[]) => {

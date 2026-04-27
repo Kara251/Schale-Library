@@ -10,6 +10,14 @@ export default {
       },
     },
     {
+      method: 'POST',
+      path: '/panel/internal/rate-limit',
+      handler: 'panel.rateLimit',
+      config: {
+        auth: false,
+      },
+    },
+    {
       method: 'GET',
       path: '/panel/:collection',
       handler: 'panel.list',

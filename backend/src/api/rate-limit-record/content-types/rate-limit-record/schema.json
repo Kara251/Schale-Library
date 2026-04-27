@@ -1,0 +1,34 @@
+{
+  "kind": "collectionType",
+  "collectionName": "rate_limit_records",
+  "info": {
+    "singularName": "rate-limit-record",
+    "pluralName": "rate-limit-records",
+    "displayName": "Rate Limit Record",
+    "description": "Internal rate limit windows keyed by hashed identifiers"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "scope": {
+      "type": "string",
+      "required": true
+    },
+    "count": {
+      "type": "integer",
+      "required": true,
+      "default": 0,
+      "min": 0
+    },
+    "resetAt": {
+      "type": "datetime",
+      "required": true
+    }
+  }
+}

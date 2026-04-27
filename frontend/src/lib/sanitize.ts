@@ -5,6 +5,16 @@
 
 import DOMPurify from 'isomorphic-dompurify';
 
+const TRUSTED_IMAGE_HOSTS = new Set(['i0.hdslb.com', 'i1.hdslb.com', 'i2.hdslb.com', 'res.cloudinary.com']);
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083';
+
+try {
+    const parsedApiUrl = new URL(API_URL);
+    TRUSTED_IMAGE_HOSTS.add(parsedApiUrl.hostname);
+} catch {
+    // Ignore invalid API URL in build-time environments.
+}
+
 /**
  * 允许的 HTML 标签白名单
  * 这些标签通常在富文本编辑器中使用，是安全的
@@ -32,8 +42,39 @@ const ALLOWED_TAGS = [
 const ALLOWED_ATTR = [
     'href', 'target', 'rel',
     'src', 'alt', 'width', 'height',
-    'class', 'style',
+    'class',
 ];
+
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+    if (node.nodeName === 'A') {
+        const target = node.getAttribute('target');
+        if (target === '_blank') {
+            node.setAttribute('rel', 'noopener noreferrer');
+        }
+    }
+
+    if (node.nodeName === 'IMG') {
+        const src = node.getAttribute('src');
+        if (!src) {
+            node.remove();
+            return;
+        }
+
+        try {
+            const imageUrl = new URL(src, API_URL);
+            if (imageUrl.protocol !== 'https:' && imageUrl.protocol !== 'http:') {
+                node.remove();
+                return;
+            }
+
+            if (!TRUSTED_IMAGE_HOSTS.has(imageUrl.hostname)) {
+                node.remove();
+            }
+        } catch {
+            node.remove();
+        }
+    }
+});
 
 /**
  * 消毒 HTML 内容，移除潜在的恶意脚本
@@ -46,6 +87,7 @@ export function sanitizeHtml(dirty: string | undefined | null): string {
     return DOMPurify.sanitize(dirty, {
         ALLOWED_TAGS,
         ALLOWED_ATTR,
+        FORBID_ATTR: ['style'],
         // 只允许安全的 URL 协议
         ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
     });

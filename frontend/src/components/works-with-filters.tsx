@@ -7,7 +7,7 @@ import { WorksFilters, type SourcePlatform, type WorkNature, type WorkType } fro
 import { StudentSelectorTrigger } from '@/components/student-selector'
 import { SearchBar } from '@/components/search-bar'
 import { useLocale } from '@/contexts/locale-context'
-import type { Work, Student, SchoolType } from '@/lib/api'
+import { schoolNamesLocalized, type Work, type Student, type SchoolType } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 
 interface WorksWithFiltersProps {
@@ -85,16 +85,17 @@ export function WorksWithFilters({ works, students, title }: WorksWithFiltersPro
 
     const availableSchools = useMemo(() => {
         const values = new Set<SchoolType>()
-        works.forEach((work) => {
-            work.students?.forEach((student) => {
-                if (student.school) values.add(student.school)
-            })
+        students.forEach((student) => {
+            if (student.school) {
+                values.add(student.school)
+            }
         })
+        Object.keys(schoolNamesLocalized[locale] || {}).forEach((school) => values.add(school as SchoolType))
         return Array.from(values).sort()
-    }, [works])
+    }, [locale, students])
 
     const availableSourcePlatforms = useMemo(() => {
-        const values = new Set<SourcePlatform>()
+        const values = new Set<SourcePlatform>(sourcePlatforms.filter((source) => source !== 'all'))
         works.forEach((work) => {
             const source = work.sourcePlatform
             if (source && sourcePlatforms.includes(source)) values.add(source)
@@ -118,7 +119,9 @@ export function WorksWithFilters({ works, students, title }: WorksWithFiltersPro
                 const query = searchQuery.toLowerCase()
                 const matchesTitle = work.title.toLowerCase().includes(query)
                 const matchesAuthor = work.author?.toLowerCase().includes(query) || false
-                if (!matchesTitle && !matchesAuthor) return false
+                const matchesDescription = work.description?.toLowerCase().includes(query) || false
+                const matchesStudents = work.students?.some((student) => student.name.toLowerCase().includes(query)) || false
+                if (!matchesTitle && !matchesAuthor && !matchesDescription && !matchesStudents) return false
             }
             if (nature !== 'all' && work.nature !== nature) return false
             if (workType !== 'all' && work.workType !== workType) return false

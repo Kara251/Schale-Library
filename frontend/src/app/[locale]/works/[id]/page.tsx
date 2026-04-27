@@ -6,7 +6,7 @@ import { WorkCard } from "@/components/work-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ExternalLink, Users } from 'lucide-react'
-import { getContentEntryPathId, getWorkById, getWorks } from "@/lib/api"
+import { getContentEntryPathId, getWorkById, getWorksByAuthor, getWorksByStudentIds } from "@/lib/api"
 import { sanitizeHtml } from "@/lib/sanitize"
 import { format } from 'date-fns'
 import { zhCN, enUS, ja } from 'date-fns/locale'
@@ -116,9 +116,21 @@ export async function generateMetadata({ params }: PageProps) {
         return { title: 'Work not found - Schale Library' }
     }
 
+    const work = workRes.data
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const imageUrl = work.coverImage?.url
+        ? new URL(getMediaUrl(work.coverImage.url), siteUrl).toString()
+        : work.coverImageUrl
+
     return {
-        title: `${workRes.data.title} - Schale Library`,
-        description: workRes.data.description?.substring(0, 150) || '',
+        title: `${work.title} - Schale Library`,
+        description: work.description?.replace(/<[^>]*>/g, '').substring(0, 150) || '',
+        openGraph: {
+            title: `${work.title} - Schale Library`,
+            description: work.description?.replace(/<[^>]*>/g, '').substring(0, 150) || '',
+            type: 'article',
+            images: imageUrl ? [{ url: imageUrl }] : undefined,
+        },
     }
 }
 
@@ -127,27 +139,28 @@ export default async function WorkDetailPage({ params }: PageProps) {
     const t = content[locale as Locale] || content['zh-Hans']
     const dateLocale = dateLocales[locale as Locale] || zhCN
 
-    const [workRes, worksRes] = await Promise.all([
-        getWorkById(id, locale).catch(() => null),
-        getWorks(100, locale).catch(() => ({ data: [] })),
-    ])
+    const workRes = await getWorkById(id, locale).catch((error) => {
+        console.error('Failed to load work detail:', error)
+        return null
+    })
 
     if (!workRes || !workRes.data) {
         notFound()
     }
 
     const work = workRes.data
-    const allWorks = worksRes.data || []
-    const sameAuthorWorks = allWorks
-        .filter((item) => item.id !== work.id && work.author && item.author === work.author)
-        .slice(0, 4)
-    const sameStudentWorks = allWorks
-        .filter((item) => {
-            if (item.id === work.id || !work.students?.length) return false
-            const currentStudentIds = new Set(work.students.map((student) => student.id))
-            return item.students?.some((student) => currentStudentIds.has(student.id))
-        })
-        .slice(0, 4)
+    const [sameAuthorRes, sameStudentRes] = await Promise.all([
+        work.author ? getWorksByAuthor(work.author, work.id, 4, locale).catch((error) => {
+            console.error('Failed to load same author works:', error)
+            return { data: [] }
+        }) : Promise.resolve({ data: [] }),
+        work.students?.length ? getWorksByStudentIds(work.students.map((student) => student.id), work.id, 4, locale).catch((error) => {
+            console.error('Failed to load same student works:', error)
+            return { data: [] }
+        }) : Promise.resolve({ data: [] }),
+    ])
+    const sameAuthorWorks = sameAuthorRes.data || []
+    const sameStudentWorks = sameStudentRes.data || []
     const relatedWorks = [...sameStudentWorks, ...sameAuthorWorks]
         .filter((item, index, items) => items.findIndex((candidate) => candidate.id === item.id) === index)
         .slice(0, 4)

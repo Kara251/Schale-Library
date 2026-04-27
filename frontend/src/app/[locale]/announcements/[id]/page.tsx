@@ -20,6 +20,31 @@ interface PageProps {
 
 const dateLocales = { 'zh-Hans': zhCN, 'en': enUS, 'ja': ja }
 
+export async function generateMetadata({ params }: PageProps) {
+    const { id, locale } = await params
+    const announcementRes = await getAnnouncementById(id, locale).catch(() => null)
+
+    if (!announcementRes?.data) {
+        return { title: 'Announcement not found - Schale Library' }
+    }
+
+    const announcement = announcementRes.data
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const imageUrl = announcement.coverImage?.url ? new URL(getMediaUrl(announcement.coverImage.url), siteUrl).toString() : undefined
+    const description = announcement.content?.replace(/<[^>]*>/g, '').slice(0, 150) || ''
+
+    return {
+        title: `${announcement.title} - Schale Library`,
+        description,
+        openGraph: {
+            title: `${announcement.title} - Schale Library`,
+            description,
+            type: 'article',
+            images: imageUrl ? [{ url: imageUrl }] : undefined,
+        },
+    }
+}
+
 const content: Record<Locale, {
     back: string
     important: string

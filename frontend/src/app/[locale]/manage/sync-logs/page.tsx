@@ -7,7 +7,7 @@ import type { Locale } from '@/lib/i18n'
 import { type AdminStrapiEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
 
-type SyncLogStatus = 'success' | 'partial' | 'failed'
+type SyncLogStatus = 'success' | 'partial' | 'failed' | 'retry' | 'pending'
 type SyncLogAction = 'bilibili-sync-one' | 'bilibili-sync-all' | 'bilibili-sync-cron'
 
 interface SyncLogAdminEntry extends AdminStrapiEntry {
@@ -53,6 +53,8 @@ const labels: Record<Locale, {
   success: string
   partial: string
   failed: string
+  retry: string
+  pending: string
   syncOne: string
   syncAll: string
   syncCron: string
@@ -84,6 +86,8 @@ const labels: Record<Locale, {
     success: '成功',
     partial: '部分成功',
     failed: '失败',
+    retry: '重试中',
+    pending: '等待中',
     syncOne: '单个订阅',
     syncAll: '手动同步全部',
     syncCron: '定时同步',
@@ -115,6 +119,8 @@ const labels: Record<Locale, {
     success: 'Success',
     partial: 'Partial',
     failed: 'Failed',
+    retry: 'Retrying',
+    pending: 'Pending',
     syncOne: 'Single feed',
     syncAll: 'Manual full sync',
     syncCron: 'Scheduled sync',
@@ -146,6 +152,8 @@ const labels: Record<Locale, {
     success: '成功',
     partial: '一部成功',
     failed: '失敗',
+    retry: '再試行中',
+    pending: '待機中',
     syncOne: '単一購読',
     syncAll: '手動一括同期',
     syncCron: '定期同期',
@@ -192,7 +200,15 @@ function getActionLabel(action: SyncLogAction, t: typeof labels['zh-Hans']) {
 function getStatusLabel(status: SyncLogStatus, t: typeof labels['zh-Hans']) {
   if (status === 'failed') return t.failed
   if (status === 'partial') return t.partial
+  if (status === 'retry') return t.retry
+  if (status === 'pending') return t.pending
   return t.success
+}
+
+function getStatusVariant(status: SyncLogStatus): 'destructive' | 'secondary' | 'default' {
+  if (status === 'failed') return 'destructive'
+  if (status === 'partial' || status === 'retry' || status === 'pending') return 'secondary'
+  return 'default'
 }
 
 function getErrorPreview(errors: unknown) {
@@ -251,7 +267,7 @@ export default async function SyncLogsManagePage({ params, searchParams }: SyncL
             header: t.result,
             className: 'w-32',
             render: (item) => (
-              <Badge variant={item.status === 'failed' ? 'destructive' : item.status === 'partial' ? 'secondary' : 'default'}>
+              <Badge variant={getStatusVariant(item.status)}>
                 {getStatusLabel(item.status, t)}
               </Badge>
             ),

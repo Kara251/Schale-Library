@@ -25,7 +25,9 @@
       "enum": [
         "success",
         "partial",
-        "failed"
+        "failed",
+        "retry",
+        "pending"
       ],
       "required": true
     },

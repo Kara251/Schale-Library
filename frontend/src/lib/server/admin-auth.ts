@@ -7,7 +7,7 @@ import { redirect } from 'next/navigation'
 import type { User } from '@/lib/auth'
 
 const STRAPI_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083'
-const DEFAULT_ALLOWED_ROLES = 'authenticated'
+const DEVELOPMENT_ALLOWED_ROLES = 'authenticated'
 const SESSION_MAX_AGE = 60 * 60 * 8
 
 export const ADMIN_SESSION_COOKIE = 'schale_admin_session'
@@ -31,7 +31,8 @@ export interface AdminSession {
 }
 
 function getAllowedRoles(): Set<string> {
-  const configuredRoles = process.env.ADMIN_PANEL_ALLOWED_ROLES || DEFAULT_ALLOWED_ROLES
+  const configuredRoles = process.env.ADMIN_PANEL_ALLOWED_ROLES ||
+    (process.env.NODE_ENV === 'production' ? '' : DEVELOPMENT_ALLOWED_ROLES)
 
   return new Set(
     configuredRoles
@@ -52,7 +53,7 @@ export function isAllowedAdminUser(user: AdminUser): boolean {
     .map((role) => role.toLowerCase())
 
   if (roleCandidates.length === 0) {
-    return process.env.ADMIN_PANEL_ALLOW_MISSING_ROLE === 'true'
+    return process.env.NODE_ENV !== 'production' && process.env.ADMIN_PANEL_ALLOW_MISSING_ROLE === 'true'
   }
 
   return roleCandidates.some((role) => allowedRoles.has(role))

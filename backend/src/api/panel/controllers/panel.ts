@@ -1,4 +1,5 @@
 import { errors } from '@strapi/utils'
+import crypto from 'node:crypto'
 
 const { ApplicationError, NotFoundError } = errors
 
@@ -19,6 +20,7 @@ interface CollectionConfig {
   defaultSort: string
   supportsDraft: boolean
   fields: string[]
+  readOnly?: boolean
 }
 
 const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
@@ -108,10 +110,14 @@ const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
     defaultSort: 'startedAt:desc',
     supportsDraft: false,
     fields: [],
+    readOnly: true,
   },
 }
 
 const SUPPORTED_LOCALES = new Set(['zh-Hans', 'en', 'ja'])
+const RATE_LIMIT_UID = 'api::rate-limit-record.rate-limit-record' as any
+const DEFAULT_RATE_LIMIT = 60
+const DEFAULT_RATE_LIMIT_WINDOW_MS = 60 * 1000
 
 function isPanelCollectionKey(value: string): value is PanelCollectionKey {
   return value in COLLECTIONS
@@ -347,6 +353,135 @@ function ensureCollection(key: string): PanelCollectionKey {
   return key
 }
 
+function ensureWritableCollection(collection: PanelCollectionKey) {
+  if (COLLECTIONS[collection].readOnly) {
+    throw new ApplicationError('该集合为只读')
+  }
+}
+
+function getInternalSecret() {
+  return process.env.PANEL_INTERNAL_TOKEN || process.env.RATE_LIMIT_HASH_SECRET || process.env.APP_KEYS || 'development-rate-limit-secret'
+}
+
+function validateInternalToken(ctx: any) {
+  const expectedToken = process.env.PANEL_INTERNAL_TOKEN
+
+  if (!expectedToken) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new ApplicationError('未配置内部接口令牌')
+    }
+
+    strapi.log.warn('PANEL_INTERNAL_TOKEN 未配置，仅允许开发环境使用内部限流接口')
+    return
+  }
+
+  const providedToken = String(ctx.request.headers['x-panel-internal-token'] || '')
+  const expected = Buffer.from(expectedToken)
+  const provided = Buffer.from(providedToken)
+
+  if (expected.length !== provided.length || !crypto.timingSafeEqual(expected, provided)) {
+    throw new ApplicationError('内部接口令牌无效')
+  }
+}
+
+function hashRateLimitKey(scope: string, identifier: string) {
+  return crypto
+    .createHmac('sha256', getInternalSecret())
+    .update(`${scope}:${identifier}`)
+    .digest('hex')
+}
+
+function normalizeRateLimitInput(ctx: any) {
+  const body = ctx.request.body || {}
+  const scope = typeof body.scope === 'string' ? body.scope.trim().slice(0, 80) : ''
+  const identifier = typeof body.identifier === 'string' ? body.identifier.trim().slice(0, 256) : ''
+  const limit = Math.min(1000, Math.max(1, toNumber(body.limit, DEFAULT_RATE_LIMIT)))
+  const windowMs = Math.min(60 * 60 * 1000, Math.max(1000, toNumber(body.windowMs, DEFAULT_RATE_LIMIT_WINDOW_MS)))
+
+  if (!scope || !identifier) {
+    throw new ApplicationError('限流参数无效')
+  }
+
+  return { scope, identifier, limit, windowMs }
+}
+
+async function cleanupExpiredRateLimits(now: Date) {
+  if (Math.random() > 0.02) {
+    return
+  }
+
+  try {
+    await strapi.db.query(RATE_LIMIT_UID).deleteMany({
+      where: {
+        resetAt: {
+          $lt: now.toISOString(),
+        },
+      },
+    })
+  } catch (error) {
+    strapi.log.warn(`清理限流记录失败: ${(error as Error).message}`)
+  }
+}
+
+async function checkRateLimit(ctx: any) {
+  validateInternalToken(ctx)
+
+  const { scope, identifier, limit, windowMs } = normalizeRateLimitInput(ctx)
+  const now = new Date()
+  const resetAt = new Date(now.getTime() + windowMs)
+  const key = hashRateLimitKey(scope, identifier)
+
+  await cleanupExpiredRateLimits(now)
+
+  const records = await strapi.entityService.findMany(RATE_LIMIT_UID, {
+    filters: { key },
+    limit: 1,
+  }) as Array<{ id: number; count?: number; resetAt?: string }>
+  const record = records[0]
+
+  if (!record || !record.resetAt || new Date(record.resetAt).getTime() <= now.getTime()) {
+    const data = {
+      key,
+      scope,
+      count: 1,
+      resetAt: resetAt.toISOString(),
+    }
+
+    if (record) {
+      await strapi.entityService.update(RATE_LIMIT_UID, record.id, { data })
+    } else {
+      await strapi.entityService.create(RATE_LIMIT_UID, { data })
+    }
+
+    return {
+      allowed: true,
+      remaining: Math.max(0, limit - 1),
+      resetAt: resetAt.toISOString(),
+    }
+  }
+
+  const currentCount = Number(record.count || 0)
+  if (currentCount >= limit) {
+    return {
+      allowed: false,
+      remaining: 0,
+      resetAt: record.resetAt,
+    }
+  }
+
+  await strapi.entityService.update(RATE_LIMIT_UID, record.id, {
+    data: {
+      count: currentCount + 1,
+    },
+  })
+
+  return {
+    allowed: true,
+    remaining: Math.max(0, limit - currentCount - 1),
+    resetAt: record.resetAt,
+  }
+}
+
 async function listCollection(ctx: any, collection: PanelCollectionKey) {
   const config = COLLECTIONS[collection]
   const locale = mapLocale(ctx.query.locale)
@@ -427,6 +562,7 @@ function getInputData(ctx: any) {
 }
 
 async function createCollectionItem(ctx: any, collection: PanelCollectionKey) {
+  ensureWritableCollection(collection)
   const config = COLLECTIONS[collection]
   const input = getInputData(ctx)
   const data = pickAllowedFields(collection, input, ctx.request.body?.locale || ctx.query.locale)
@@ -440,6 +576,7 @@ async function createCollectionItem(ctx: any, collection: PanelCollectionKey) {
 }
 
 async function updateCollectionItem(ctx: any, collection: PanelCollectionKey) {
+  ensureWritableCollection(collection)
   const config = COLLECTIONS[collection]
   const id = toNumber(ctx.params.id, NaN)
 
@@ -459,6 +596,7 @@ async function updateCollectionItem(ctx: any, collection: PanelCollectionKey) {
 }
 
 async function deleteCollectionItem(ctx: any, collection: PanelCollectionKey) {
+  ensureWritableCollection(collection)
   const config = COLLECTIONS[collection]
   const id = toNumber(ctx.params.id, NaN)
 
@@ -543,6 +681,18 @@ export default {
     try {
       ctx.body = await uploadMedia(ctx)
     } catch (error) {
+      ctx.badRequest((error as Error).message)
+    }
+  },
+
+  async rateLimit(ctx: any) {
+    try {
+      ctx.body = await checkRateLimit(ctx)
+    } catch (error) {
+      if ((error as Error).message.includes('令牌')) {
+        return ctx.unauthorized((error as Error).message)
+      }
+
       ctx.badRequest((error as Error).message)
     }
   },

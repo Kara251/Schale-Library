@@ -21,6 +21,31 @@ interface PageProps {
 
 const dateLocales = { 'zh-Hans': zhCN, 'en': enUS, 'ja': ja }
 
+export async function generateMetadata({ params }: PageProps) {
+    const { id, locale } = await params
+    const eventRes = await getOnlineEventById(id, locale).catch(() => null)
+
+    if (!eventRes?.data) {
+        return { title: 'Online event not found - Schale Library' }
+    }
+
+    const event = eventRes.data
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const imageUrl = event.coverImage?.url ? new URL(getMediaUrl(event.coverImage.url), siteUrl).toString() : undefined
+    const description = event.description?.replace(/<[^>]*>/g, '').slice(0, 150) || ''
+
+    return {
+        title: `${event.title} - Schale Library`,
+        description,
+        openGraph: {
+            title: `${event.title} - Schale Library`,
+            description,
+            type: 'article',
+            images: imageUrl ? [{ url: imageUrl }] : undefined,
+        },
+    }
+}
+
 function getSourceHost(link?: string) {
     if (!link) return null
     try {

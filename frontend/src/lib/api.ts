@@ -4,6 +4,7 @@
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083';
+const API_TIMEOUT_MS = Math.max(1000, Number(process.env.API_TIMEOUT_MS || '10000'));
 
 type ContentIdentifier = string | number;
 
@@ -46,6 +47,8 @@ async function fetchAPI<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_URL}/api${endpoint}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
 
   const defaultOptions: RequestInit = {
     headers: {
@@ -55,16 +58,25 @@ async function fetchAPI<T>(
     next: { revalidate: 60 },
   };
 
-  const response = await fetch(url, {
-    ...defaultOptions,
-    ...options,
-  });
+  try {
+    const response = await fetch(url, {
+      ...defaultOptions,
+      ...options,
+      headers: {
+        ...defaultOptions.headers,
+        ...options.headers,
+      },
+      signal: options.signal || controller.signal,
+    });
 
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+
+    return response.json();
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return response.json();
 }
 
 /**
@@ -201,6 +213,8 @@ export async function searchAnnouncements(
       locale: strapiLocale,
       'filters[$or][0][title][$containsi]': query,
       'filters[$or][1][content][$containsi]': query,
+      sort: 'priority:desc',
+      'pagination[limit]': 50,
       populate: '*',
     })}`
   );
@@ -222,6 +236,8 @@ export async function searchOnlineEvents(
       'filters[$or][0][title][$containsi]': query,
       'filters[$or][1][organizer][$containsi]': query,
       'filters[$or][2][description][$containsi]': query,
+      sort: 'startTime:desc',
+      'pagination[limit]': 50,
       populate: '*',
     })}`
   );
@@ -245,6 +261,8 @@ export async function searchOfflineEvents(
       'filters[$or][2][location][$containsi]': query,
       'filters[$or][3][guests][$containsi]': query,
       'filters[$or][4][description][$containsi]': query,
+      sort: 'startTime:desc',
+      'pagination[limit]': 50,
       populate: '*',
     })}`
   );
@@ -417,20 +435,135 @@ export interface Student {
   publishedAt: string;
 }
 
+export interface WorkListOptions {
+  query?: string;
+  nature?: Work['nature'] | 'all';
+  workType?: Work['workType'] | 'all';
+  sourcePlatform?: NonNullable<Work['sourcePlatform']> | 'all';
+  school?: SchoolType | 'all';
+  studentIds?: number[];
+  page?: number;
+}
+
+function appendWorkFilters(
+  params: Record<string, string | number | boolean | undefined>,
+  options: WorkListOptions = {}
+) {
+  const query = options.query?.trim();
+
+  if (query) {
+    params['filters[$or][0][title][$containsi]'] = query;
+    params['filters[$or][1][author][$containsi]'] = query;
+    params['filters[$or][2][description][$containsi]'] = query;
+    params['filters[$or][3][students][name][$containsi]'] = query;
+  }
+
+  if (options.nature && options.nature !== 'all') {
+    params['filters[nature][$eq]'] = options.nature;
+  }
+
+  if (options.workType && options.workType !== 'all') {
+    params['filters[workType][$eq]'] = options.workType;
+  }
+
+  if (options.sourcePlatform && options.sourcePlatform !== 'all') {
+    params['filters[sourcePlatform][$eq]'] = options.sourcePlatform;
+  }
+
+  if (options.school && options.school !== 'all') {
+    params['filters[students][school][$eq]'] = options.school;
+  }
+
+  options.studentIds?.forEach((studentId, index) => {
+    params[`filters[students][id][$in][${index}]`] = studentId;
+  });
+
+  if (options.page) {
+    params['pagination[page]'] = options.page;
+  }
+}
+
 /**
  * 获取推荐作品列表
  * @param limit 返回数量限制
  */
-export async function getWorks(limit: number = 20, locale: string = 'zh-Hans') {
+export async function getWorks(limit: number = 20, locale: string = 'zh-Hans', options: WorkListOptions = {}) {
+  const strapiLocale = toStrapiLocale(locale)
+  const params: Record<string, string | number | boolean | undefined> = {
+    locale: strapiLocale,
+    'filters[isActive][$eq]': true,
+    sort: 'publishedAt:desc',
+    'pagination[limit]': limit,
+    populate: '*',
+  }
+  appendWorkFilters(params, options)
+
+  return fetchAPI<StrapiResponse<Work[]>>(
+    `/works?${createCollectionQuery(params)}`
+  );
+}
+
+export async function getWorksByStudent(
+  student: Pick<Student, 'id' | 'documentId'>,
+  limit: number = 24,
+  locale: string = 'zh-Hans'
+) {
   const strapiLocale = toStrapiLocale(locale)
   return fetchAPI<StrapiResponse<Work[]>>(
     `/works?${createCollectionQuery({
       locale: strapiLocale,
       'filters[isActive][$eq]': true,
+      'filters[$or][0][students][id][$eq]': student.id,
+      'filters[$or][1][students][documentId][$eq]': student.documentId,
       sort: 'publishedAt:desc',
       'pagination[limit]': limit,
       populate: '*',
     })}`
+  );
+}
+
+export async function getWorksByAuthor(
+  author: string,
+  currentWorkId: number,
+  limit: number = 4,
+  locale: string = 'zh-Hans'
+) {
+  const strapiLocale = toStrapiLocale(locale)
+  return fetchAPI<StrapiResponse<Work[]>>(
+    `/works?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[isActive][$eq]': true,
+      'filters[id][$ne]': currentWorkId,
+      'filters[author][$eq]': author,
+      sort: 'publishedAt:desc',
+      'pagination[limit]': limit,
+      populate: '*',
+    })}`
+  );
+}
+
+export async function getWorksByStudentIds(
+  studentIds: number[],
+  currentWorkId: number,
+  limit: number = 4,
+  locale: string = 'zh-Hans'
+) {
+  const strapiLocale = toStrapiLocale(locale)
+  const params: Record<string, string | number | boolean | undefined> = {
+    locale: strapiLocale,
+    'filters[isActive][$eq]': true,
+    'filters[id][$ne]': currentWorkId,
+    sort: 'publishedAt:desc',
+    'pagination[limit]': limit,
+    populate: '*',
+  }
+
+  studentIds.forEach((studentId, index) => {
+    params[`filters[students][id][$in][${index}]`] = studentId
+  })
+
+  return fetchAPI<StrapiResponse<Work[]>>(
+    `/works?${createCollectionQuery(params)}`
   );
 }
 
@@ -473,7 +606,29 @@ export async function searchWorks(
       'filters[$or][1][author][$containsi]': query,
       'filters[$or][2][description][$containsi]': query,
       'filters[$or][3][students][name][$containsi]': query,
+      'filters[isActive][$eq]': true,
+      sort: 'publishedAt:desc',
+      'pagination[limit]': 50,
       populate: '*',
+    })}`
+  );
+}
+
+export async function searchStudents(
+  query: string,
+  locale: string = 'zh-Hans'
+) {
+  const strapiLocale = toStrapiLocale(locale)
+  return fetchAPI<StrapiResponse<Student[]>>(
+    `/students?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[$or][0][name][$containsi]': query,
+      'filters[$or][1][organization][$containsi]': query,
+      'filters[$or][2][school][$containsi]': query,
+      'filters[$or][3][bio][$containsi]': query,
+      sort: 'updatedAt:desc',
+      'pagination[limit]': 50,
+      populate: 'avatar',
     })}`
   );
 }

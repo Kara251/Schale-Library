@@ -4,6 +4,7 @@
  */
 
 import { factories } from '@strapi/strapi';
+import { XMLParser } from 'fast-xml-parser';
 
 // 自动发布的关键词列表
 const AUTO_PUBLISH_KEYWORDS = [
@@ -32,7 +33,7 @@ interface SyncResult {
 }
 
 type SyncLogAction = 'bilibili-sync-one' | 'bilibili-sync-all' | 'bilibili-sync-cron';
-type SyncLogStatus = 'success' | 'partial' | 'failed';
+type SyncLogStatus = 'success' | 'partial' | 'failed' | 'retry' | 'pending';
 
 interface SyncLogInput {
     action: SyncLogAction;
@@ -86,6 +87,34 @@ function decodeHtmlEntities(value: string): string {
 // RSS 缓存（5分钟有效期）
 const rssCache = new Map<string, { data: RSSItem[]; expires: number }>();
 const RSS_CACHE_TTL = 5 * 60 * 1000; // 5分钟
+const RSS_FETCH_TIMEOUT_MS = 15000;
+const RSS_SYNC_CONCURRENCY = Math.max(1, Math.min(10, Number(process.env.RSS_SYNC_CONCURRENCY || '3')));
+const rssParser = new XMLParser({
+    ignoreAttributes: false,
+    cdataPropName: '__cdata',
+    textNodeName: '#text',
+});
+
+function toArray<T>(value: T | T[] | undefined | null): T[] {
+    if (!value) {
+        return [];
+    }
+
+    return Array.isArray(value) ? value : [value];
+}
+
+function normalizeXmlText(value: unknown): string {
+    if (value === null || value === undefined) {
+        return '';
+    }
+
+    if (typeof value === 'object') {
+        const record = value as Record<string, unknown>;
+        return String(record.__cdata || record['#text'] || '').trim();
+    }
+
+    return String(value).trim();
+}
 
 export default factories.createCoreService('api::bilibili-subscription.bilibili-subscription', ({ strapi }) => ({
     async recordSyncLog(input: SyncLogInput): Promise<void> {
@@ -154,18 +183,16 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
             const rssUrl = `${instance}/bilibili/user/video/${uid}`;
             strapi.log.info(`尝试 RSSHub 实例: ${instance}`);
 
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超时
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), RSS_FETCH_TIMEOUT_MS);
 
+            try {
                 const response = await fetch(rssUrl, {
                     signal: controller.signal,
                     headers: {
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                     },
                 });
-
-                clearTimeout(timeoutId);
 
                 if (!response.ok) {
                     throw new Error(`RSS 请求失败: ${response.status}`);
@@ -187,6 +214,8 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                 lastError = error as Error;
                 strapi.log.warn(`RSSHub 实例 ${instance} 失败: ${getErrorMessage(error)}`);
                 continue;
+            } finally {
+                clearTimeout(timeoutId);
             }
         }
 
@@ -198,38 +227,27 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
      * 解析 RSS XML
      */
     parseRSS(xmlText: string): RSSItem[] {
-        const items: RSSItem[] = [];
+        const parsed = rssParser.parse(xmlText) as Record<string, any>;
+        const rawItems = toArray(parsed?.rss?.channel?.item || parsed?.feed?.entry);
 
-        const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-        let match;
+        return rawItems
+            .map((item) => {
+                const rawDescription = normalizeXmlText(item.description || item.summary || item.content);
+                const linkValue = Array.isArray(item.link) ? item.link[0] : item.link;
+                const link = typeof linkValue === 'object'
+                    ? normalizeXmlText(linkValue?.['@_href'])
+                    : normalizeXmlText(linkValue);
 
-        while ((match = itemRegex.exec(xmlText)) !== null) {
-            const itemContent = match[1];
-
-            const title = this.extractTag(itemContent, 'title');
-            const link = this.extractTag(itemContent, 'link');
-            const pubDate = this.extractTag(itemContent, 'pubDate');
-            const rawDescription = this.extractTag(itemContent, 'description');
-            const author = this.extractTag(itemContent, 'author');
-
-            // 从描述中提取封面图
-            const coverUrl = this.extractCoverFromDescription(rawDescription);
-            // 清理描述中的 HTML
-            const description = this.stripHtml(rawDescription);
-
-            if (title && link) {
-                items.push({
-                    title,
+                return {
+                    title: normalizeXmlText(item.title),
                     link,
-                    pubDate,
-                    description,
-                    author,
-                    coverUrl,
-                });
-            }
-        }
-
-        return items;
+                    pubDate: normalizeXmlText(item.pubDate || item.published || item.updated),
+                    description: this.stripHtml(rawDescription),
+                    author: normalizeXmlText(item.author?.name || item.author || item['dc:creator']),
+                    coverUrl: this.extractCoverFromDescription(rawDescription),
+                };
+            })
+            .filter((item) => item.title && item.link);
     },
 
     /**
@@ -446,10 +464,22 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
 
         const failedSubscriptions: BilibiliSubscription[] = [];
 
-        // 并发同步所有订阅
-        const results = await Promise.allSettled(
-            subscriptions.map(sub => this.syncSubscription(sub))
-        );
+        // 限制并发，避免订阅数量增长后同时打满 RSSHub 实例。
+        const results: Array<PromiseSettledResult<SyncResult>> = [];
+        let nextIndex = 0;
+        const workerCount = Math.min(RSS_SYNC_CONCURRENCY, subscriptions.length);
+
+        await Promise.all(Array.from({ length: workerCount }, async () => {
+            while (nextIndex < subscriptions.length) {
+                const currentIndex = nextIndex++;
+                try {
+                    const value = await this.syncSubscription(subscriptions[currentIndex]);
+                    results[currentIndex] = { status: 'fulfilled', value };
+                } catch (reason) {
+                    results[currentIndex] = { status: 'rejected', reason };
+                }
+            }
+        }));
 
         // 处理结果
         results.forEach((result, index) => {
@@ -476,13 +506,29 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
         // 如果有失败的订阅，5分钟后自动重试
         if (failedSubscriptions.length > 0) {
             strapi.log.info(`${failedSubscriptions.length} 个订阅失败，将在5分钟后重试`);
+            await this.recordSyncLog({
+                action: 'bilibili-sync-all',
+                status: 'retry',
+                message: `${failedSubscriptions.length} 个订阅失败，已安排 5 分钟后重试`,
+                total: failedSubscriptions.length,
+                errors: failedSubscriptions.map((subscription) => subscription.upName),
+                startedAt: new Date(),
+                finishedAt: new Date(),
+            });
 
             setTimeout(async () => {
                 strapi.log.info(`开始重试 ${failedSubscriptions.length} 个失败的订阅`);
+                const retryStartedAt = new Date();
+                let retryCreated = 0;
+                let retrySkipped = 0;
+                const retryErrors: string[] = [];
 
                 for (const subscription of failedSubscriptions) {
                     try {
                         const result = await this.syncSubscription(subscription);
+                        retryCreated += result.created;
+                        retrySkipped += result.skipped;
+                        retryErrors.push(...result.errors);
                         if (result.created > 0) {
                             strapi.log.info(`重试成功: ${subscription.upName}, 新增 ${result.created} 个视频`);
                         } else if (result.errors.length > 0) {
@@ -490,8 +536,20 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                         }
                     } catch (error) {
                         strapi.log.error(`重试出错: ${subscription.upName}`, error);
+                        retryErrors.push(`重试出错 "${subscription.upName}": ${getErrorMessage(error)}`);
                     }
                 }
+
+                await this.recordSyncLog({
+                    action: 'bilibili-sync-all',
+                    message: `重试完成，共处理 ${failedSubscriptions.length} 个订阅，新增 ${retryCreated} 个视频`,
+                    total: failedSubscriptions.length,
+                    created: retryCreated,
+                    skipped: retrySkipped,
+                    errors: retryErrors,
+                    startedAt: retryStartedAt,
+                    finishedAt: new Date(),
+                });
             }, 5 * 60 * 1000); // 5分钟
         }
 

@@ -1,9 +1,10 @@
 import type { Core } from '@strapi/strapi'
 
-const DEFAULT_ALLOWED_ROLES = 'authenticated'
+const DEVELOPMENT_ALLOWED_ROLES = 'authenticated'
 
 function getAllowedRoles(): Set<string> {
-  const configuredRoles = process.env.ADMIN_PANEL_ALLOWED_ROLES || DEFAULT_ALLOWED_ROLES
+  const configuredRoles = process.env.ADMIN_PANEL_ALLOWED_ROLES ||
+    (process.env.NODE_ENV === 'production' ? '' : DEVELOPMENT_ALLOWED_ROLES)
 
   return new Set(
     configuredRoles
@@ -35,7 +36,7 @@ export default async (policyContext: any, _config: unknown, { strapi }: { strapi
       .map((role) => role.toLowerCase())
 
     if (roleCandidates.length === 0) {
-      return process.env.ADMIN_PANEL_ALLOW_MISSING_ROLE === 'true'
+      return process.env.NODE_ENV !== 'production' && process.env.ADMIN_PANEL_ALLOW_MISSING_ROLE === 'true'
     }
 
     const allowedRoles = getAllowedRoles()

@@ -9,6 +9,7 @@ export default {
             path: '/bilibili-subscriptions/:id/sync',
             handler: 'bilibili-subscription.syncOne',
             config: {
+                auth: false,
                 policies: ['global::is-panel-maintainer'],
             },
         },
@@ -17,6 +18,7 @@ export default {
             path: '/bilibili-subscriptions/sync-all',
             handler: 'bilibili-subscription.syncAll',
             config: {
+                auth: false,
                 policies: ['global::is-panel-maintainer'],
             },
         },

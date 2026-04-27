@@ -5,39 +5,13 @@ import {
   fetchStrapiCurrentUser,
   getAdminSessionCookieOptions,
 } from '@/lib/server/admin-auth'
+import { checkServerRateLimit, getClientIp } from '@/lib/server/rate-limit'
 import { createForbiddenOriginResponse, verifyTrustedOrigin } from '@/lib/server/request-security'
 
 const STRAPI_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083'
-const LOGIN_RATE_LIMIT = 10
+const LOGIN_IP_RATE_LIMIT = 30
+const LOGIN_ACCOUNT_RATE_LIMIT = 10
 const LOGIN_RATE_WINDOW = 10 * 60 * 1000
-
-const loginAttemptMap = new Map<string, { count: number; resetAt: number }>()
-
-function getClientIp(request: NextRequest): string {
-  const forwardedFor = request.headers.get('x-forwarded-for')
-  if (forwardedFor) {
-    return forwardedFor.split(',')[0].trim()
-  }
-
-  return request.headers.get('x-real-ip') || 'unknown'
-}
-
-function isLoginAllowed(ip: string): boolean {
-  const now = Date.now()
-  const record = loginAttemptMap.get(ip)
-
-  if (!record || now >= record.resetAt) {
-    loginAttemptMap.set(ip, { count: 1, resetAt: now + LOGIN_RATE_WINDOW })
-    return true
-  }
-
-  if (record.count >= LOGIN_RATE_LIMIT) {
-    return false
-  }
-
-  record.count += 1
-  return true
-}
 
 export async function POST(request: NextRequest) {
   const originError = verifyTrustedOrigin(request)
@@ -46,7 +20,14 @@ export async function POST(request: NextRequest) {
   }
 
   const clientIp = getClientIp(request)
-  if (!isLoginAllowed(clientIp)) {
+  const ipAllowed = await checkServerRateLimit({
+    scope: 'admin-login-ip',
+    identifier: clientIp,
+    limit: LOGIN_IP_RATE_LIMIT,
+    windowMs: LOGIN_RATE_WINDOW,
+    failClosed: true,
+  })
+  if (!ipAllowed) {
     return NextResponse.json({ error: '登录尝试过于频繁，请稍后再试' }, { status: 429 })
   }
 
@@ -69,6 +50,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '账号和密码不能为空' }, { status: 400 })
   }
 
+  const accountAllowed = await checkServerRateLimit({
+    scope: 'admin-login-account',
+    identifier: identifier.toLowerCase(),
+    limit: LOGIN_ACCOUNT_RATE_LIMIT,
+    windowMs: LOGIN_RATE_WINDOW,
+    failClosed: true,
+  })
+  if (!accountAllowed) {
+    return NextResponse.json({ error: '登录尝试过于频繁，请稍后再试' }, { status: 429 })
+  }
+
   const loginResponse = await fetch(`${STRAPI_URL}/api/auth/local`, {
     method: 'POST',
     headers: {
@@ -84,7 +76,7 @@ export async function POST(request: NextRequest) {
 
   if (!loginResponse.ok || !loginPayload?.jwt) {
     return NextResponse.json(
-      { error: loginPayload?.error?.message || '登录失败，请检查账号或密码' },
+      { error: '登录失败，请检查账号或密码' },
       { status: loginResponse.status || 401, headers: { 'Cache-Control': 'no-store' } }
     )
   }
@@ -102,7 +94,6 @@ export async function POST(request: NextRequest) {
     { status: 200, headers: { 'Cache-Control': 'no-store' } }
   )
 
-  loginAttemptMap.delete(clientIp)
   response.cookies.set(ADMIN_SESSION_COOKIE, loginPayload.jwt, getAdminSessionCookieOptions())
   return response
 }

@@ -11,7 +11,7 @@ import { getMediaUrl } from '@/lib/media'
 import { sanitizeHtml } from '@/lib/sanitize'
 import {
   getStudentById,
-  getWorks,
+  getWorksByStudent,
   schoolNames,
   schoolNamesLocalized,
 } from '@/lib/api'
@@ -65,9 +65,19 @@ export async function generateMetadata({ params }: PageProps) {
     return { title: 'Student not found - Schale Library' }
   }
 
+  const student = studentRes.data
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const imageUrl = student.avatar?.url ? new URL(getMediaUrl(student.avatar.url), siteUrl).toString() : undefined
+
   return {
-    title: `${studentRes.data.name} - Schale Library`,
-    description: studentRes.data.bio?.replace(/<[^>]*>/g, '').slice(0, 150) || '',
+    title: `${student.name} - Schale Library`,
+    description: student.bio?.replace(/<[^>]*>/g, '').slice(0, 150) || '',
+    openGraph: {
+      title: `${student.name} - Schale Library`,
+      description: student.bio?.replace(/<[^>]*>/g, '').slice(0, 150) || '',
+      type: 'profile',
+      images: imageUrl ? [{ url: imageUrl }] : undefined,
+    },
   }
 }
 
@@ -76,19 +86,21 @@ export default async function StudentDetailPage({ params }: PageProps) {
   const t = content[locale as Locale] || content['zh-Hans']
   const localizedSchoolNames = schoolNamesLocalized[locale] || schoolNamesLocalized['zh-Hans']
 
-  const [studentRes, worksRes] = await Promise.all([
-    getStudentById(id, locale).catch(() => null),
-    getWorks(100, locale).catch(() => ({ data: [] })),
-  ])
+  const studentRes = await getStudentById(id, locale).catch((error) => {
+    console.error('Failed to load student detail:', error)
+    return null
+  })
 
   if (!studentRes?.data) {
     notFound()
   }
 
   const student = studentRes.data
-  const relatedWorks = (worksRes.data || []).filter((work) =>
-    work.students?.some((item) => item.id === student.id || item.documentId === student.documentId)
-  )
+  const worksRes = await getWorksByStudent(student, 24, locale).catch((error) => {
+    console.error('Failed to load student related works:', error)
+    return { data: [] }
+  })
+  const relatedWorks = worksRes.data || []
   const schoolLabel = student.school
     ? localizedSchoolNames[student.school] || schoolNames[student.school] || student.school
     : null
