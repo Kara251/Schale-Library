@@ -2,6 +2,11 @@ import path from 'path';
 
 export default ({ env }) => {
   const client = env('DATABASE_CLIENT', 'sqlite');
+  const allowProductionSqlite = env.bool('ALLOW_PRODUCTION_SQLITE', false);
+
+  if (env('NODE_ENV') === 'production' && client === 'sqlite' && !allowProductionSqlite) {
+    throw new Error('SQLite is disabled in production. Use PostgreSQL or set ALLOW_PRODUCTION_SQLITE=true only for disposable demos.');
+  }
 
   const connections = {
     mysql: {
@@ -20,7 +25,7 @@ export default ({ env }) => {
           rejectUnauthorized: env.bool('DATABASE_SSL_REJECT_UNAUTHORIZED', true),
         },
       },
-      pool: { min: env.int('DATABASE_POOL_MIN', 2), max: env.int('DATABASE_POOL_MAX', 10) },
+      pool: { min: env.int('DATABASE_POOL_MIN', 0), max: env.int('DATABASE_POOL_MAX', 5) },
     },
     postgres: {
       connection: {
@@ -40,7 +45,7 @@ export default ({ env }) => {
         },
         schema: env('DATABASE_SCHEMA', 'public'),
       },
-      pool: { min: env.int('DATABASE_POOL_MIN', 2), max: env.int('DATABASE_POOL_MAX', 10) },
+      pool: { min: env.int('DATABASE_POOL_MIN', 0), max: env.int('DATABASE_POOL_MAX', 5) },
     },
     sqlite: {
       connection: {

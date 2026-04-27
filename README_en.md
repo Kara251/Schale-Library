@@ -17,3 +17,7 @@ A system for collecting content from the game *Blue Archive*, along with various
 -   **CMS:** [Strapi](https://github.com/strapi/strapi)
 -   **API Communication:** Strapi REST API
 -   **Data Processing:** Next.js Route Handlers (API Routes)
+
+### Deployment
+
+Keep Strapi on PostgreSQL/Supabase for cloud deployments. Cloudflare is best used for DNS, CDN, and the frontend. See [docs/deployment.md](./docs/deployment.md) for required variables, maintainer account recovery, and production database notes.
