@@ -1,5 +1,7 @@
 # Schale Library
 
+**This project was developed with Claude, ChatGPT, Gemini, and other AI tools.**
+
 [简体中文](../zh-Hans/README.md) | [日本語](../ja/README.md)
 
 ## Overview
@@ -16,7 +18,6 @@ Library URL: [https://bakivo.com](https://bakivo.com)
 - **API:** Strapi REST API
 - **Data processing:** Next.js Route Handlers
 - **Media:** [Cloudinary](https://cloudinary.com) + [OpenList](https://github.com/OpenListTeam/OpenList) + OneDrive
-- **Development assistance:** Claude, ChatGPT, Gemini, and other AI tools were used during design, coding, review, and documentation work.
 
 ## Local Development
 
