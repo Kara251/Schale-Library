@@ -1,15 +1,15 @@
 # Deployment Notes
 
-## Recommended topology
+## Backend runtime
 
-- Keep Strapi on a Node.js runtime with PostgreSQL, preferably the current Supabase-backed database.
-- Deploy the Next.js frontend to Vercel, Cloudflare Pages, or another edge-friendly platform.
+- Run Strapi on a Node.js runtime with PostgreSQL.
+- Deploy the Next.js frontend separately to any compatible frontend platform.
 - Do not run the Strapi backend on Cloudflare Workers or D1 for production. Strapi needs a Node server runtime and a supported SQL client; D1 is not a supported Strapi database target.
-- SQLite is fine for local development and disposable demos only. The backend now blocks production SQLite unless `ALLOW_PRODUCTION_SQLITE=true`.
+- SQLite is intended for local development and disposable demos only. The backend blocks production SQLite unless `ALLOW_PRODUCTION_SQLITE=true`.
 
-## PostgreSQL / Supabase
+## PostgreSQL
 
-Use Supabase PostgreSQL for the Strapi backend:
+Use PostgreSQL for the Strapi backend:
 
 ```env
 DATABASE_CLIENT=postgres
@@ -20,7 +20,7 @@ DATABASE_POOL_MIN=0
 DATABASE_POOL_MAX=5
 ```
 
-Small serverless instances should keep the pool small. If the provider uses transaction pooling, use the Supabase pooler URL and keep `DATABASE_POOL_MIN=0`.
+Small serverless instances should keep the pool small. If the provider uses transaction pooling, use the provider's pooler URL and keep `DATABASE_POOL_MIN=0`.
 
 ## Required production secrets
 
@@ -74,4 +74,4 @@ Cloudflare is a good fit for:
 - the Next.js frontend when the app does not rely on unsupported Node APIs;
 - lightweight edge route handlers.
 
-Cloudflare is not the best fit for the current Strapi backend. Moving Strapi data from Supabase PostgreSQL to SQLite/D1 would reduce compatibility and increase migration risk for little benefit. If you want one dashboard, move DNS/frontend/media routing to Cloudflare first and keep Strapi + PostgreSQL separate.
+Cloudflare Workers and D1 are not a supported target for the Strapi backend in this project. Keep Strapi on Node.js with PostgreSQL, and use Cloudflare only for the parts that fit its runtime model.
