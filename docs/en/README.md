@@ -32,6 +32,8 @@ Library URL: [https://bakivo.com](https://bakivo.com)
 
 Deployment, database, and maintainer account recovery notes are available in [Deployment Notes](deployment.md).
 
+Security compensating controls and dependency audit notes are available in [Security Notes](security.md).
+
 ## Copyright
 
 - **Code:** Source code in this repository is licensed under the [MIT License](../../LICENSE).
