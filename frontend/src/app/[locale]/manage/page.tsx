@@ -16,21 +16,21 @@ const labels: Record<Locale, { title: string; description: string; view: string;
     description: '查看内容总量、快速进入各个维护模块。',
     view: '进入列表',
     securityTitle: '安全说明',
-    securityBody: '当前自研后台通过同源接口与 HttpOnly Cookie 会话访问 Strapi，避免在浏览器中暴露维护者令牌。后续可继续补充细粒度角色、操作审计和上传工作流。',
+    securityBody: '当前自研后台通过同源接口与 HttpOnly Cookie 会话访问 Strapi，避免在浏览器中暴露维护者令牌。写操作、上传和同步动作会记录到审计日志。',
   },
   en: {
     title: 'Dashboard',
     description: 'Overview of content totals and quick entry points.',
     view: 'Open list',
     securityTitle: 'Security notes',
-    securityBody: 'The panel uses same-origin APIs and HttpOnly cookies to access Strapi, keeping maintainer tokens out of browser storage. Fine-grained roles, audit logs, and upload workflows can be added next.',
+    securityBody: 'The panel uses same-origin APIs and HttpOnly cookies to access Strapi, keeping maintainer tokens out of browser storage. Write actions, uploads, and sync actions are recorded in audit logs.',
   },
   ja: {
     title: 'ダッシュボード',
     description: 'コンテンツ総数と管理モジュールへの入口を確認します。',
     view: '一覧を開く',
     securityTitle: 'セキュリティ',
-    securityBody: 'この管理パネルは同一オリジン API と HttpOnly Cookie セッション経由で Strapi に接続し、ブラウザ保存領域へトークンを置きません。次は権限分離、監査ログ、アップロード導線を追加できます。',
+    securityBody: 'この管理パネルは同一オリジン API と HttpOnly Cookie セッション経由で Strapi に接続し、ブラウザ保存領域へトークンを置きません。書き込み、アップロード、同期操作は監査ログに記録されます。',
   },
 }
 

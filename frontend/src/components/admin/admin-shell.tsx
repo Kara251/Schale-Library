@@ -11,6 +11,7 @@ import {
   LogOut,
   Radio,
   Rss,
+  ShieldCheck,
   Users,
 } from 'lucide-react'
 
@@ -54,6 +55,7 @@ const navLabels: Record<Locale, Record<string, string>> = {
     students: '学生',
     subscriptions: 'B站订阅',
     syncLogs: '同步日志',
+    auditLogs: '审计日志',
   },
   en: {
     dashboard: 'Dashboard',
@@ -64,6 +66,7 @@ const navLabels: Record<Locale, Record<string, string>> = {
     students: 'Students',
     subscriptions: 'Bilibili Feeds',
     syncLogs: 'Sync Logs',
+    auditLogs: 'Audit Logs',
   },
   ja: {
     dashboard: 'ダッシュボード',
@@ -74,6 +77,7 @@ const navLabels: Record<Locale, Record<string, string>> = {
     students: '生徒',
     subscriptions: 'B站購読',
     syncLogs: '同期ログ',
+    auditLogs: '監査ログ',
   },
 }
 
@@ -92,6 +96,7 @@ export function AdminShell({ children, locale, user }: AdminShellProps) {
     { href: `/${locale}/manage/students`, label: nav.students, icon: Users },
     { href: `/${locale}/manage/bilibili-subscriptions`, label: nav.subscriptions, icon: Rss },
     { href: `/${locale}/manage/sync-logs`, label: nav.syncLogs, icon: ClipboardList },
+    { href: `/${locale}/manage/admin-audit-logs`, label: nav.auditLogs, icon: ShieldCheck },
   ]
 
   return (

@@ -8,6 +8,7 @@ export type AdminCollectionKey =
   | 'students'
   | 'bilibili-subscriptions'
   | 'sync-logs'
+  | 'admin-audit-logs'
 
 export type AdminFieldType =
   | 'text'
@@ -337,6 +338,32 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       'zh-Hans': '查看日志',
       en: 'View log',
       ja: 'ログを表示',
+    },
+    fields: [],
+  },
+  'admin-audit-logs': {
+    endpoint: 'admin-audit-logs',
+    localized: false,
+    supportsDraft: false,
+    title: {
+      'zh-Hans': '审计日志',
+      en: 'Audit logs',
+      ja: '監査ログ',
+    },
+    description: {
+      'zh-Hans': '查看自研后台的创建、更新、删除、上传与同步操作。',
+      en: 'Review custom panel create, update, delete, upload, and sync actions.',
+      ja: '独自管理パネルの作成、更新、削除、アップロード、同期操作を確認します。',
+    },
+    createLabel: {
+      'zh-Hans': '新建审计日志',
+      en: 'New audit log',
+      ja: '監査ログを新規作成',
+    },
+    editLabel: {
+      'zh-Hans': '查看审计日志',
+      en: 'View audit log',
+      ja: '監査ログを表示',
     },
     fields: [],
   },

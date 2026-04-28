@@ -62,6 +62,8 @@ frontend/.next/
 frontend/out/
 frontend/build/
 frontend/dist/
+playwright-report/
+test-results/
 
 # ----------------------
 # RSSHub

@@ -1,0 +1,72 @@
+{
+  "kind": "collectionType",
+  "collectionName": "admin_audit_logs",
+  "info": {
+    "singularName": "admin-audit-log",
+    "pluralName": "admin-audit-logs",
+    "displayName": "后台审计日志",
+    "description": "记录自研后台中的维护操作"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "action": {
+      "type": "enumeration",
+      "enum": [
+        "create",
+        "update",
+        "delete",
+        "upload",
+        "sync-one",
+        "sync-all"
+      ],
+      "required": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "success",
+        "failed"
+      ],
+      "required": true
+    },
+    "actorId": {
+      "type": "integer"
+    },
+    "actorEmail": {
+      "type": "email"
+    },
+    "actorUsername": {
+      "type": "string"
+    },
+    "actorRole": {
+      "type": "string"
+    },
+    "targetCollection": {
+      "type": "string",
+      "required": true
+    },
+    "targetId": {
+      "type": "integer"
+    },
+    "targetName": {
+      "type": "string"
+    },
+    "locale": {
+      "type": "string"
+    },
+    "message": {
+      "type": "text"
+    },
+    "details": {
+      "type": "json"
+    },
+    "ip": {
+      "type": "string"
+    },
+    "userAgent": {
+      "type": "text"
+    }
+  }
+}

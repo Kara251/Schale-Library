@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.29.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run frontend lint
+        run: pnpm --dir frontend lint
+
+      - name: Run regression checks
+        run: pnpm test:regression
+
+      - name: Build backend
+        run: pnpm --dir backend build
+        env:
+          NODE_ENV: development
+          DATABASE_CLIENT: sqlite
+          APP_KEYS: localKey1,localKey2
+          API_TOKEN_SALT: local-token-salt
+          ADMIN_JWT_SECRET: local-admin-jwt-secret
+          TRANSFER_TOKEN_SALT: local-transfer-token-salt
+          JWT_SECRET: local-jwt-secret
+          ENCRYPTION_KEY: local-encryption-key-32-characters
+
+      - name: Build frontend
+        run: pnpm --dir frontend build
+        env:
+          NEXT_PUBLIC_API_URL: http://127.0.0.1:59999
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+          PANEL_INTERNAL_TOKEN: ci-panel-token
+
+      - name: Run Playwright smoke tests
+        run: pnpm test:e2e:ci
+        env:
+          NEXT_PUBLIC_API_URL: http://127.0.0.1:59999
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+          PANEL_INTERNAL_TOKEN: ci-panel-token

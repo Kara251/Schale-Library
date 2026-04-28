@@ -11,6 +11,7 @@ type PanelCollectionKey =
   | 'students'
   | 'bilibili-subscriptions'
   | 'sync-logs'
+  | 'admin-audit-logs'
 
 interface CollectionConfig {
   uid: any
@@ -112,10 +113,20 @@ const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
     fields: [],
     readOnly: true,
   },
+  'admin-audit-logs': {
+    uid: 'api::admin-audit-log.admin-audit-log',
+    localized: false,
+    searchFields: ['actorEmail', 'actorUsername', 'targetCollection', 'targetName', 'message'],
+    defaultSort: 'createdAt:desc',
+    supportsDraft: false,
+    fields: [],
+    readOnly: true,
+  },
 }
 
 const SUPPORTED_LOCALES = new Set(['zh-Hans', 'en', 'ja'])
 const RATE_LIMIT_UID = 'api::rate-limit-record.rate-limit-record' as any
+const AUDIT_LOG_UID = 'api::admin-audit-log.admin-audit-log' as any
 const DEFAULT_RATE_LIMIT = 60
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60 * 1000
 
@@ -239,6 +250,63 @@ function normalizeRelationList(value: unknown) {
   return value
     .map((item) => Number(item))
     .filter((item) => Number.isFinite(item))
+}
+
+function getClientIp(ctx: any) {
+  const forwardedFor = ctx.request.headers['x-forwarded-for']
+  if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
+    return forwardedFor.split(',')[0].trim()
+  }
+
+  return ctx.request.ip || ctx.ip || undefined
+}
+
+function getActor(ctx: any) {
+  const user = ctx.state?.user
+  if (!user || typeof user !== 'object') {
+    return {}
+  }
+
+  return {
+    actorId: typeof user.id === 'number' ? user.id : undefined,
+    actorEmail: typeof user.email === 'string' ? user.email : undefined,
+    actorUsername: typeof user.username === 'string' ? user.username : undefined,
+    actorRole: typeof user.role?.type === 'string' ? user.role.type : typeof user.role?.name === 'string' ? user.role.name : undefined,
+  }
+}
+
+function getEntryLabel(entry: unknown) {
+  if (!entry || typeof entry !== 'object') {
+    return undefined
+  }
+
+  const record = entry as Record<string, unknown>
+  return [record.title, record.name, record.upName, record.targetName]
+    .find((value) => typeof value === 'string' && value.trim().length > 0) as string | undefined
+}
+
+async function recordAdminAuditLog(ctx: any, input: {
+  action: 'create' | 'update' | 'delete' | 'upload' | 'sync-one' | 'sync-all'
+  status: 'success' | 'failed'
+  targetCollection: string
+  targetId?: number
+  targetName?: string
+  locale?: string
+  message?: string
+  details?: Record<string, unknown>
+}) {
+  try {
+    await strapi.entityService.create(AUDIT_LOG_UID, {
+      data: {
+        ...input,
+        ...getActor(ctx),
+        ip: getClientIp(ctx),
+        userAgent: typeof ctx.request.headers['user-agent'] === 'string' ? ctx.request.headers['user-agent'] : undefined,
+      },
+    })
+  } catch (error) {
+    strapi.log.warn(`后台审计日志写入失败: ${(error as Error).message}`)
+  }
 }
 
 function getUploadCandidates(input: unknown) {
@@ -651,28 +719,81 @@ export default {
   },
 
   async create(ctx: any) {
+    let collection: PanelCollectionKey | undefined
     try {
-      const collection = ensureCollection(ctx.params.collection)
+      collection = ensureCollection(ctx.params.collection)
       ctx.body = await createCollectionItem(ctx, collection)
+      const entry = ctx.body?.data
+      await recordAdminAuditLog(ctx, {
+        action: 'create',
+        status: 'success',
+        targetCollection: collection,
+        targetId: typeof entry?.id === 'number' ? entry.id : undefined,
+        targetName: getEntryLabel(entry),
+        locale: mapLocale(ctx.request.body?.locale || ctx.query.locale),
+      })
     } catch (error) {
+      await recordAdminAuditLog(ctx, {
+        action: 'create',
+        status: 'failed',
+        targetCollection: collection || String(ctx.params.collection || 'unknown'),
+        locale: mapLocale(ctx.request.body?.locale || ctx.query.locale),
+        message: (error as Error).message,
+      })
       ctx.badRequest((error as Error).message)
     }
   },
 
   async update(ctx: any) {
+    let collection: PanelCollectionKey | undefined
+    const id = toNumber(ctx.params.id, NaN)
     try {
-      const collection = ensureCollection(ctx.params.collection)
+      collection = ensureCollection(ctx.params.collection)
       ctx.body = await updateCollectionItem(ctx, collection)
+      const entry = ctx.body?.data
+      await recordAdminAuditLog(ctx, {
+        action: 'update',
+        status: 'success',
+        targetCollection: collection,
+        targetId: Number.isFinite(id) ? id : undefined,
+        targetName: getEntryLabel(entry),
+        locale: mapLocale(ctx.request.body?.locale || ctx.query.locale),
+      })
     } catch (error) {
+      await recordAdminAuditLog(ctx, {
+        action: 'update',
+        status: 'failed',
+        targetCollection: collection || String(ctx.params.collection || 'unknown'),
+        targetId: Number.isFinite(id) ? id : undefined,
+        locale: mapLocale(ctx.request.body?.locale || ctx.query.locale),
+        message: (error as Error).message,
+      })
       ctx.badRequest((error as Error).message)
     }
   },
 
   async delete(ctx: any) {
+    let collection: PanelCollectionKey | undefined
+    const id = toNumber(ctx.params.id, NaN)
     try {
-      const collection = ensureCollection(ctx.params.collection)
+      collection = ensureCollection(ctx.params.collection)
       ctx.body = await deleteCollectionItem(ctx, collection)
+      await recordAdminAuditLog(ctx, {
+        action: 'delete',
+        status: 'success',
+        targetCollection: collection,
+        targetId: Number.isFinite(id) ? id : undefined,
+        locale: mapLocale(ctx.query.locale),
+      })
     } catch (error) {
+      await recordAdminAuditLog(ctx, {
+        action: 'delete',
+        status: 'failed',
+        targetCollection: collection || String(ctx.params.collection || 'unknown'),
+        targetId: Number.isFinite(id) ? id : undefined,
+        locale: mapLocale(ctx.query.locale),
+        message: (error as Error).message,
+      })
       ctx.badRequest((error as Error).message)
     }
   },
@@ -680,7 +801,24 @@ export default {
   async upload(ctx: any) {
     try {
       ctx.body = await uploadMedia(ctx)
+      const uploaded = Array.isArray(ctx.body?.data) ? ctx.body.data[0] : undefined
+      await recordAdminAuditLog(ctx, {
+        action: 'upload',
+        status: 'success',
+        targetCollection: typeof ctx.request.body?.collection === 'string' ? ctx.request.body.collection : 'upload',
+        targetId: typeof uploaded?.id === 'number' ? uploaded.id : undefined,
+        targetName: getEntryLabel(uploaded),
+        details: {
+          fieldName: typeof ctx.request.body?.fieldName === 'string' ? ctx.request.body.fieldName : undefined,
+        },
+      })
     } catch (error) {
+      await recordAdminAuditLog(ctx, {
+        action: 'upload',
+        status: 'failed',
+        targetCollection: typeof ctx.request.body?.collection === 'string' ? ctx.request.body.collection : 'upload',
+        message: (error as Error).message,
+      })
       ctx.badRequest((error as Error).message)
     }
   },

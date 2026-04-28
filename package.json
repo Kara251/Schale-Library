@@ -8,7 +8,9 @@
     "dev:backend": "pnpm --dir backend dev",
     "dev:frontend": "pnpm --dir frontend dev",
     "lint": "pnpm --dir frontend lint",
-    "test:regression": "node scripts/regression-check.mjs"
+    "test:regression": "node scripts/regression-check.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ci": "playwright test --reporter=line"
   },
   "pnpm": {
     "overrides": {
@@ -25,5 +27,8 @@
       "sharp",
       "unrs-resolver"
     ]
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
   }
 }
