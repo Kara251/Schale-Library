@@ -391,6 +391,8 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
             isAutoImported: true,
             importedAt: new Date().toISOString(),
             isActive: true,
+            isFeatured: false,
+            featuredPriority: 0,
             publishedAt: autoPublish ? new Date().toISOString() : null,
         };
 

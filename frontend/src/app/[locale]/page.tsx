@@ -3,7 +3,7 @@ import { Footer } from "@/components/footer"
 import { Carousel } from "@/components/carousel"
 import { EventList } from "@/components/event-list"
 import { WorkCard } from "@/components/work-card"
-import { getAnnouncements, getOnlineEvents, getOfflineEvents, getWorks } from "@/lib/api"
+import { getAnnouncements, getOnlineEvents, getOfflineEvents, getFeaturedWorks } from "@/lib/api"
 import { translations, type Locale } from "@/lib/i18n"
 
 interface HomePageProps {
@@ -19,9 +19,9 @@ export default async function HomePage({ params }: HomePageProps) {
     // 并行获取数据，传递语言参数
     const [announcementsRes, onlineEventsRes, offlineEventsRes, worksRes] = await Promise.all([
         getAnnouncements(locale).catch(() => ({ data: [] })),
-        getOnlineEvents(6, locale).catch(() => ({ data: [] })),
-        getOfflineEvents(6, locale).catch(() => ({ data: [] })),
-        getWorks(6, locale).catch(() => ({ data: [] })),
+        getOnlineEvents(6, locale, { sort: 'relevant', pageSize: 6 }).catch(() => ({ data: [] })),
+        getOfflineEvents(6, locale, { sort: 'relevant', pageSize: 6 }).catch(() => ({ data: [] })),
+        getFeaturedWorks(6, locale).catch(() => ({ data: [] })),
     ]);
 
     const announcements = announcementsRes.data || [];
@@ -60,7 +60,7 @@ export default async function HomePage({ params }: HomePageProps) {
                     <section>
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-3xl font-bold">
-                                {t['home.latestWorks'] || '最新推荐作品'}
+                                {t['home.featuredWorks'] || t['home.latestWorks'] || '精选推荐作品'}
                             </h2>
                         </div>
                         {works.length > 0 ? (

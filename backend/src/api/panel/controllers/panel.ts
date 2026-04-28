@@ -62,6 +62,10 @@ const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
       'sourceId',
       'isAutoImported',
       'importedAt',
+      'isFeatured',
+      'featuredPriority',
+      'featuredReason',
+      'featuredUntil',
       'coverImageUrl',
       'originalPublishDate',
       'coverImage',
@@ -223,6 +227,17 @@ function buildCollectionSpecificFilters(collection: PanelCollectionKey, query: R
     }
     if (typeof query.stage === 'string' && query.stage && query.stage !== 'all') {
       filters.stage = { $eq: query.stage }
+    }
+    return filters
+  }
+
+  if (collection === 'works') {
+    const filters: Record<string, unknown> = {}
+    if (typeof query.featured === 'string' && query.featured === 'featured') {
+      filters.isFeatured = { $eq: true }
+    }
+    if (typeof query.featured === 'string' && query.featured === 'not-featured') {
+      filters.isFeatured = { $ne: true }
     }
     return filters
   }
@@ -421,6 +436,7 @@ function pickAllowedFields(collection: PanelCollectionKey, input: Record<string,
     switch (field) {
       case 'content':
       case 'description':
+      case 'featuredReason':
       case 'bio':
       case 'guests':
       case 'notes':
@@ -429,10 +445,12 @@ function pickAllowedFields(collection: PanelCollectionKey, input: Record<string,
         break
       case 'priority':
       case 'syncCount':
+      case 'featuredPriority':
         data[field] = toNumber(value, 0)
         break
       case 'isActive':
       case 'isAutoImported':
+      case 'isFeatured':
         data[field] = normalizeBoolean(value)
         break
       case 'coverImage':
@@ -446,6 +464,7 @@ function pickAllowedFields(collection: PanelCollectionKey, input: Record<string,
       case 'endTime':
       case 'importedAt':
       case 'originalPublishDate':
+      case 'featuredUntil':
       case 'lastSyncAt':
         data[field] = normalizeDateTime(value)
         break
@@ -782,9 +801,21 @@ async function scanContentQuality() {
   addMissingTranslations(issues, 'announcements', announcements)
 
   const sourceGroups = new Map<string, any[]>()
+  const now = Date.now()
   for (const work of works) {
     if (!work.coverImage && !work.coverImageUrl) {
       issues.push(toIssue({ issueType: 'missing-image', collection: 'works', entry: work, message: '作品缺少封面图或远程封面地址' }))
+    }
+    if (work.isFeatured) {
+      if (!work.coverImage && !work.coverImageUrl) {
+        issues.push(toIssue({ issueType: 'featured-missing-image', severity: 'error', collection: 'works', entry: work, message: '精选作品缺少封面图或远程封面地址' }))
+      }
+      if (!normalizeRichValue(work.featuredReason).trim()) {
+        issues.push(toIssue({ issueType: 'featured-missing-reason', severity: 'warning', collection: 'works', entry: work, message: '精选作品缺少推荐理由' }))
+      }
+      if (work.featuredUntil && new Date(work.featuredUntil).getTime() <= now) {
+        issues.push(toIssue({ issueType: 'featured-expired', severity: 'warning', collection: 'works', entry: work, message: '精选作品已过期但仍标记为精选' }))
+      }
     }
     if (!Array.isArray(work.students) || work.students.length === 0) {
       issues.push(toIssue({ issueType: 'missing-students', collection: 'works', entry: work, message: '作品尚未关联学生' }))
@@ -1186,6 +1217,21 @@ async function runBulkAction(ctx: any) {
         case 'set-source-platform':
           if (collection !== 'works') throw new ApplicationError('仅作品支持批量设置来源平台')
           data.sourcePlatform = String(body.sourcePlatform || 'manual')
+          break
+        case 'set-featured':
+          if (collection !== 'works') throw new ApplicationError('仅作品支持批量精选')
+          data.isFeatured = true
+          if (body.featuredPriority !== undefined) {
+            data.featuredPriority = toNumber(body.featuredPriority, 0)
+          }
+          break
+        case 'unset-featured':
+          if (collection !== 'works') throw new ApplicationError('仅作品支持批量取消精选')
+          data.isFeatured = false
+          break
+        case 'set-featured-priority':
+          if (collection !== 'works') throw new ApplicationError('仅作品支持批量设置推荐优先级')
+          data.featuredPriority = toNumber(body.featuredPriority, 0)
           break
         case 'set-student-school':
           if (collection !== 'students') throw new ApplicationError('仅学生支持批量设置学校')

@@ -49,19 +49,6 @@ function createLimitedImageStream(body: ReadableStream<Uint8Array>, abort: () =>
 }
 
 export async function GET(request: NextRequest) {
-    // Rate Limiting
-    const ip = getClientIp(request);
-    const allowed = await checkServerRateLimit({
-        scope: 'image-proxy',
-        identifier: ip,
-        limit: RATE_LIMIT,
-        windowMs: RATE_WINDOW,
-        failClosed: process.env.NODE_ENV === 'production',
-    });
-    if (!allowed) {
-        return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
-    }
-
     const url = request.nextUrl.searchParams.get('url');
 
     if (!url) {
@@ -81,6 +68,19 @@ export async function GET(request: NextRequest) {
         }
     } catch {
         return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
+    }
+
+    // Rate limiting is only needed after cheap local URL rejection.
+    const ip = getClientIp(request);
+    const allowed = await checkServerRateLimit({
+        scope: 'image-proxy',
+        identifier: ip,
+        limit: RATE_LIMIT,
+        windowMs: RATE_WINDOW,
+        failClosed: process.env.NODE_ENV === 'production',
+    });
+    if (!allowed) {
+        return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
     }
 
     const controller = new AbortController();

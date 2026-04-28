@@ -8,18 +8,23 @@ import type { Locale } from '@/lib/i18n'
 export type WorkNature = 'all' | 'official' | 'fanmade'
 export type WorkType = 'all' | 'video' | 'image' | 'text' | 'other'
 export type SourcePlatform = 'all' | 'bilibili' | 'twitter' | 'pixiv' | 'youtube' | 'other' | 'manual'
+export type WorkSortMode = 'latest' | 'recommended'
 
 interface WorksFiltersProps {
     nature: WorkNature
     workType: WorkType
     school: SchoolType | 'all'
     sourcePlatform: SourcePlatform
+    featuredOnly: boolean
+    sortMode: WorkSortMode
     schools: SchoolType[]
     sourcePlatforms: SourcePlatform[]
     onNatureChange: (nature: WorkNature) => void
     onWorkTypeChange: (workType: WorkType) => void
     onSchoolChange: (school: SchoolType | 'all') => void
     onSourcePlatformChange: (sourcePlatform: SourcePlatform) => void
+    onFeaturedOnlyChange: (featuredOnly: boolean) => void
+    onSortModeChange: (sortMode: WorkSortMode) => void
     onReset: () => void
 }
 
@@ -28,6 +33,11 @@ const labels: Record<Locale, {
     type: string
     school: string
     source: string
+    recommendation: string
+    featured: string
+    sort: string
+    latest: string
+    recommended: string
     all: string
     official: string
     fanmade: string
@@ -47,6 +57,11 @@ const labels: Record<Locale, {
         type: '类型',
         school: '学校',
         source: '来源',
+        recommendation: '推荐',
+        featured: '精选',
+        sort: '排序',
+        latest: '最新',
+        recommended: '精选优先',
         all: '全部',
         official: '官方',
         fanmade: '同人',
@@ -66,6 +81,11 @@ const labels: Record<Locale, {
         type: 'Type',
         school: 'School',
         source: 'Source',
+        recommendation: 'Recommendation',
+        featured: 'Featured',
+        sort: 'Sort',
+        latest: 'Latest',
+        recommended: 'Featured first',
         all: 'All',
         official: 'Official',
         fanmade: 'Fan-made',
@@ -85,6 +105,11 @@ const labels: Record<Locale, {
         type: 'タイプ',
         school: '学校',
         source: '出典',
+        recommendation: 'おすすめ',
+        featured: 'おすすめ',
+        sort: '並び替え',
+        latest: '最新',
+        recommended: 'おすすめ優先',
         all: 'すべて',
         official: '公式',
         fanmade: '二次創作',
@@ -109,18 +134,22 @@ export function WorksFilters({
     workType,
     school,
     sourcePlatform,
+    featuredOnly,
+    sortMode,
     schools,
     sourcePlatforms,
     onNatureChange,
     onWorkTypeChange,
     onSchoolChange,
     onSourcePlatformChange,
+    onFeaturedOnlyChange,
+    onSortModeChange,
     onReset,
 }: WorksFiltersProps) {
     const { locale } = useLocale()
     const t = labels[locale] || labels['zh-Hans']
     const localizedSchoolNames = schoolNamesLocalized[locale] || schoolNamesLocalized['zh-Hans']
-    const hasActiveFilters = nature !== 'all' || workType !== 'all' || school !== 'all' || sourcePlatform !== 'all'
+    const hasActiveFilters = nature !== 'all' || workType !== 'all' || school !== 'all' || sourcePlatform !== 'all' || featuredOnly || sortMode !== 'latest'
 
     return (
         <div className="space-y-3 mb-6">
@@ -173,6 +202,22 @@ export function WorksFilters({
                     </div>
                 </div>
             )}
+
+            <div>
+                <div className="text-sm font-bold text-foreground mb-2">{t.recommendation}</div>
+                <div className="flex flex-wrap gap-1">
+                    <FilterTag active={!featuredOnly} onClick={() => onFeaturedOnlyChange(false)}>{t.all}</FilterTag>
+                    <FilterTag active={featuredOnly} onClick={() => onFeaturedOnlyChange(true)}>{t.featured}</FilterTag>
+                </div>
+            </div>
+
+            <div>
+                <div className="text-sm font-bold text-foreground mb-2">{t.sort}</div>
+                <div className="flex flex-wrap gap-1">
+                    <FilterTag active={sortMode === 'latest'} onClick={() => onSortModeChange('latest')}>{t.latest}</FilterTag>
+                    <FilterTag active={sortMode === 'recommended'} onClick={() => onSortModeChange('recommended')}>{t.recommended}</FilterTag>
+                </div>
+            </div>
 
             {/* 清除筛选 */}
             {hasActiveFilters && (

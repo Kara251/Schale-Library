@@ -33,6 +33,8 @@ const content: Record<Locale, {
     students: string
     source: string
     relatedWorks: string
+    featured: string
+    featuredReason: string
     sameAuthor: string
     sameStudents: string
     viewMoreByAuthor: string
@@ -54,6 +56,8 @@ const content: Record<Locale, {
         students: '出场学生',
         source: '来源',
         relatedWorks: '相关作品',
+        featured: '精选',
+        featuredReason: '推荐理由',
         sameAuthor: '同作者作品',
         sameStudents: '同学生作品',
         viewMoreByAuthor: '查看该作者作品',
@@ -75,6 +79,8 @@ const content: Record<Locale, {
         students: 'Featured Students',
         source: 'Source',
         relatedWorks: 'Related Works',
+        featured: 'Featured',
+        featuredReason: 'Why recommended',
         sameAuthor: 'More by this author',
         sameStudents: 'Works with the same students',
         viewMoreByAuthor: 'View works by this author',
@@ -96,6 +102,8 @@ const content: Record<Locale, {
         students: '登場生徒',
         source: '出典',
         relatedWorks: '関連作品',
+        featured: 'おすすめ',
+        featuredReason: 'おすすめ理由',
         sameAuthor: '同じ作者の作品',
         sameStudents: '同じ生徒の作品',
         viewMoreByAuthor: 'この作者の作品を見る',
@@ -217,6 +225,7 @@ export default async function WorkDetailPage({ params }: PageProps) {
 
                         <div className="mb-8">
                             <div className="flex flex-wrap gap-2 mb-4">
+                                {work.isFeatured ? <Badge variant="default">{t.featured}</Badge> : null}
                                 <Badge variant="outline">{natureLabel}</Badge>
                                 <Badge variant="outline">{typeLabel}</Badge>
                             </div>
@@ -266,6 +275,13 @@ export default async function WorkDetailPage({ params }: PageProps) {
                                 </Button>
                             </div>
                         )}
+
+                        {work.isFeatured && work.featuredReason ? (
+                            <div className="mb-8 rounded-lg border bg-card p-6">
+                                <h2 className="mb-4 text-2xl font-bold">{t.featuredReason}</h2>
+                                <div className="prose prose-slate dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(work.featuredReason) }} />
+                            </div>
+                        ) : null}
 
                         {work.description && (
                             <div className="prose prose-slate dark:prose-invert max-w-none">

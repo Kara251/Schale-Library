@@ -29,6 +29,7 @@ const labels: Record<Locale, {
     other: string
     official: string
     fanmade: string
+    featured: string
 }> = {
     'zh-Hans': {
         video: '视频',
@@ -37,6 +38,7 @@ const labels: Record<Locale, {
         other: '其他',
         official: '官方',
         fanmade: '同人',
+        featured: '精选',
     },
     'en': {
         video: 'Video',
@@ -45,6 +47,7 @@ const labels: Record<Locale, {
         other: 'Other',
         official: 'Official',
         fanmade: 'Fan-made',
+        featured: 'Featured',
     },
     'ja': {
         video: '動画',
@@ -53,6 +56,7 @@ const labels: Record<Locale, {
         other: 'その他',
         official: '公式',
         fanmade: '二次創作',
+        featured: 'おすすめ',
     },
 }
 
@@ -102,6 +106,12 @@ export const WorkCard = memo(function WorkCard({ work }: WorkCardProps) {
                     <span className="absolute top-2 right-2 px-2 py-0.5 text-xs bg-black/60 text-white rounded">
                         {typeLabel}
                     </span>
+
+                    {work.isFeatured ? (
+                        <span className="absolute top-2 left-2 px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded">
+                            {t.featured}
+                        </span>
+                    ) : null}
 
                     {/* 出场学生头像 */}
                     {students.length > 0 && (

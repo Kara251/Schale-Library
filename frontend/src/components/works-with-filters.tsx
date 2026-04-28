@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { WorkCard } from '@/components/work-card'
-import { WorksFilters, type SourcePlatform, type WorkNature, type WorkType } from '@/components/works-filters'
+import { WorksFilters, type SourcePlatform, type WorkNature, type WorkSortMode, type WorkType } from '@/components/works-filters'
 import { StudentSelectorTrigger } from '@/components/student-selector'
 import { SearchBar } from '@/components/search-bar'
 import { Pagination } from '@/components/pagination'
@@ -18,6 +18,7 @@ interface WorksWithFiltersProps {
     total: number
     page: number
     pageCount: number
+    hasError?: boolean
 }
 
 const labels: Record<Locale, {
@@ -28,6 +29,7 @@ const labels: Record<Locale, {
     noResults: string
     clearFilters: string
     shareHint: string
+    error: string
 }> = {
     'zh-Hans': {
         description: '精选蔚蓝档案相关创作内容',
@@ -37,6 +39,7 @@ const labels: Record<Locale, {
         noResults: '暂无符合条件的作品',
         clearFilters: '清除筛选条件',
         shareHint: '当前筛选条件已同步到地址栏，可直接分享链接。',
+        error: '作品数据暂时不可用，已显示可用的空状态。',
     },
     'en': {
         description: 'Selected Blue Archive creative works',
@@ -46,6 +49,7 @@ const labels: Record<Locale, {
         noResults: 'No matching works',
         clearFilters: 'Clear filters',
         shareHint: 'Filters are synced to the URL and can be shared directly.',
+        error: 'Work data is temporarily unavailable. Showing the safe empty state.',
     },
     'ja': {
         description: 'ブルーアーカイブ関連作品セレクション',
@@ -55,12 +59,14 @@ const labels: Record<Locale, {
         noResults: '条件に合う作品がありません',
         clearFilters: 'フィルターをクリア',
         shareHint: '現在のフィルターは URL に同期され、そのまま共有できます。',
+        error: '作品データを一時的に取得できません。安全な空状態を表示しています。',
     },
 }
 
 const workNatures: WorkNature[] = ['all', 'official', 'fanmade']
 const workTypes: WorkType[] = ['all', 'video', 'image', 'text', 'other']
 const sourcePlatforms: SourcePlatform[] = ['all', 'bilibili', 'twitter', 'pixiv', 'youtube', 'other', 'manual']
+const workSortModes: WorkSortMode[] = ['latest', 'recommended']
 
 function parseEnumValue<T extends string>(value: string | null, allowedValues: T[], fallback: T): T {
     return value && allowedValues.includes(value as T) ? value as T : fallback
@@ -80,7 +86,7 @@ function parseStudentIds(value: string | null) {
 /**
  * 带搜索和筛选功能的推荐作品列表组件
  */
-export function WorksWithFilters({ works, students, title, total, page, pageCount }: WorksWithFiltersProps) {
+export function WorksWithFilters({ works, students, title, total, page, pageCount, hasError = false }: WorksWithFiltersProps) {
     const { locale } = useLocale()
     const router = useRouter()
     const pathname = usePathname()
@@ -116,6 +122,8 @@ export function WorksWithFilters({ works, students, title, total, page, pageCoun
     })
     const [sourcePlatform, setSourcePlatform] = useState<SourcePlatform>(() => parseEnumValue(searchParams.get('source'), sourcePlatforms, 'all'))
     const [selectedStudents, setSelectedStudents] = useState<number[]>(() => parseStudentIds(searchParams.get('students')))
+    const [featuredOnly, setFeaturedOnly] = useState(() => searchParams.get('featured') === '1')
+    const [sortMode, setSortMode] = useState<WorkSortMode>(() => parseEnumValue(searchParams.get('sort'), workSortModes, 'latest'))
 
     useEffect(() => {
         const nextParams = new URLSearchParams()
@@ -125,6 +133,8 @@ export function WorksWithFilters({ works, students, title, total, page, pageCoun
         if (school !== 'all') nextParams.set('school', school)
         if (sourcePlatform !== 'all') nextParams.set('source', sourcePlatform)
         if (selectedStudents.length > 0) nextParams.set('students', selectedStudents.join(','))
+        if (featuredOnly) nextParams.set('featured', '1')
+        if (sortMode !== 'latest') nextParams.set('sort', sortMode)
         if (searchParams.get('page')) nextParams.set('page', searchParams.get('page') || '1')
 
         const nextSearch = nextParams.toString()
@@ -132,7 +142,7 @@ export function WorksWithFilters({ works, students, title, total, page, pageCoun
         if (nextSearch !== currentSearch) {
             router.replace(`${pathname}${nextSearch ? `?${nextSearch}` : ''}`, { scroll: false })
         }
-    }, [nature, pathname, router, school, searchParams, searchQuery, selectedStudents, sourcePlatform, workType])
+    }, [featuredOnly, nature, pathname, router, school, searchParams, searchQuery, selectedStudents, sortMode, sourcePlatform, workType])
 
     const handleReset = useCallback(() => {
         setSearchQuery('')
@@ -141,9 +151,11 @@ export function WorksWithFilters({ works, students, title, total, page, pageCoun
         setSchool('all')
         setSourcePlatform('all')
         setSelectedStudents([])
+        setFeaturedOnly(false)
+        setSortMode('latest')
     }, [])
 
-    const hasActiveFilters = Boolean(searchQuery) || nature !== 'all' || workType !== 'all' || school !== 'all' || sourcePlatform !== 'all' || selectedStudents.length > 0
+    const hasActiveFilters = Boolean(searchQuery) || nature !== 'all' || workType !== 'all' || school !== 'all' || sourcePlatform !== 'all' || selectedStudents.length > 0 || featuredOnly || sortMode !== 'latest'
     const handlePageChange = useCallback((nextPage: number) => {
         const nextParams = new URLSearchParams(searchParams.toString())
         if (nextPage <= 1) {
@@ -176,12 +188,16 @@ export function WorksWithFilters({ works, students, title, total, page, pageCoun
                     workType={workType}
                     school={school}
                     sourcePlatform={sourcePlatform}
+                    featuredOnly={featuredOnly}
+                    sortMode={sortMode}
                     schools={availableSchools}
                     sourcePlatforms={availableSourcePlatforms}
                     onNatureChange={setNature}
                     onWorkTypeChange={setWorkType}
                     onSchoolChange={setSchool}
                     onSourcePlatformChange={setSourcePlatform}
+                    onFeaturedOnlyChange={setFeaturedOnly}
+                    onSortModeChange={setSortMode}
                     onReset={handleReset}
                 />
 
@@ -203,6 +219,12 @@ export function WorksWithFilters({ works, students, title, total, page, pageCoun
                 {t.foundWorks.replace('{count}', String(total))}
                 {hasActiveFilters ? <span className="ml-2">{t.shareHint}</span> : null}
             </div>
+
+            {hasError ? (
+                <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                    {t.error}
+                </div>
+            ) : null}
 
             {works.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

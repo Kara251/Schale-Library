@@ -34,7 +34,7 @@ const labels: Record<Locale, {
 }> = {
   'zh-Hans': {
     title: '内容质量',
-    description: '扫描缺图、缺翻译、重复来源、草稿、无学生关联和活动时间异常。',
+    description: '扫描缺图、缺翻译、重复来源、草稿、无学生关联、精选推荐和活动时间异常。',
     scan: '重新扫描',
     empty: '暂无内容质量问题。',
     issue: '问题',
@@ -52,7 +52,7 @@ const labels: Record<Locale, {
   },
   en: {
     title: 'Content Quality',
-    description: 'Scan missing images, translations, duplicate sources, drafts, missing students, and invalid event times.',
+    description: 'Scan missing images, translations, duplicate sources, drafts, missing students, featured works, and invalid event times.',
     scan: 'Run scan',
     empty: 'No content quality issues.',
     issue: 'Issue',
@@ -70,7 +70,7 @@ const labels: Record<Locale, {
   },
   ja: {
     title: '品質チェック',
-    description: '画像不足、翻訳不足、重複ソース、下書き、生徒未関連、イベント時間異常を確認します。',
+    description: '画像不足、翻訳不足、重複ソース、下書き、生徒未関連、おすすめ作品、イベント時間異常を確認します。',
     scan: '再スキャン',
     empty: '品質問題はありません。',
     issue: '問題',

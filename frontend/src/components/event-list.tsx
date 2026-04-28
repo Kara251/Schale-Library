@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { EventCard } from '@/components/event-card'
 import { Button } from '@/components/ui/button'
 import { useLocale } from '@/contexts/locale-context'
+import { getEventStatus } from '@/lib/utils/event-utils'
 import type { OnlineEvent, OfflineEvent } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 
@@ -57,12 +58,23 @@ export function EventList({
   const t = labels[locale] || labels['zh-Hans']
   const [displayCount, setDisplayCount] = useState(showLimit)
 
-  // 合并所有活动并按发布时间排序
+  // 合并所有活动，优先展示进行中与即将开始的内容。
   const allEvents = [
     ...onlineEvents.map(event => ({ ...event, type: 'online' as const })),
     ...offlineEvents.map(event => ({ ...event, type: 'offline' as const }))
   ].sort((a, b) => {
-    return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    const statusOrder = { ongoing: 0, upcoming: 1, ended: 2 }
+    const statusA = getEventStatus(a.startTime, a.endTime)
+    const statusB = getEventStatus(b.startTime, b.endTime)
+    if (statusA !== statusB) {
+      return statusOrder[statusA] - statusOrder[statusB]
+    }
+
+    if (statusA === 'ended') {
+      return new Date(b.endTime).getTime() - new Date(a.endTime).getTime()
+    }
+
+    return new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
   })
 
   if (allEvents.length === 0) {

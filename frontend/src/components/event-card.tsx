@@ -102,6 +102,9 @@ export const EventCard = memo(function EventCard({ event, type }: EventCardProps
               <Calendar className="w-8 h-8 text-muted-foreground/30" />
             </div>
           )}
+          <span className="absolute top-2 left-2 rounded bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
+            {status}
+          </span>
         </div>
 
         {/* 内容区 */}
@@ -132,4 +135,3 @@ export const EventCard = memo(function EventCard({ event, type }: EventCardProps
     </LocaleLink>
   )
 })
-

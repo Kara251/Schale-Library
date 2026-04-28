@@ -20,7 +20,10 @@
         "missing-students",
         "missing-link",
         "draft",
-        "invalid-event-time"
+        "invalid-event-time",
+        "featured-missing-image",
+        "featured-missing-reason",
+        "featured-expired"
       ],
       "required": true
     },

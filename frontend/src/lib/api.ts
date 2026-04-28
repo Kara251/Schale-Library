@@ -94,23 +94,198 @@ export async function getAnnouncements(locale: string = 'zh-Hans') {
   );
 }
 
+export type EventNatureFilter = 'all' | 'official' | 'fanmade';
+export type EventStatusFilter = 'all' | 'upcoming' | 'ongoing' | 'ended';
+export type EventSortMode = 'relevant' | 'startTime' | 'endTime';
+type EventCollection = 'online-events' | 'offline-events';
+type EventKind = 'online' | 'offline';
+
+export interface EventListOptions {
+  query?: string;
+  nature?: EventNatureFilter;
+  status?: EventStatusFilter;
+  sort?: EventSortMode;
+  page?: number;
+  pageSize?: number;
+  excludeId?: number;
+}
+
+function appendEventFilters(
+  params: Record<string, string | number | boolean | undefined>,
+  options: EventListOptions,
+  kind: EventKind,
+  nowIso: string,
+  statusOverride?: EventStatusFilter
+) {
+  const query = options.query?.trim();
+  const status = statusOverride || options.status || 'all';
+
+  if (query) {
+    params['filters[$or][0][title][$containsi]'] = query;
+    params['filters[$or][1][organizer][$containsi]'] = query;
+    params['filters[$or][2][description][$containsi]'] = query;
+    if (kind === 'offline') {
+      params['filters[$or][3][location][$containsi]'] = query;
+      params['filters[$or][4][guests][$containsi]'] = query;
+    }
+  }
+
+  if (options.nature && options.nature !== 'all') {
+    params['filters[nature][$eq]'] = options.nature;
+  }
+
+  if (options.excludeId) {
+    params['filters[id][$ne]'] = options.excludeId;
+  }
+
+  if (status === 'upcoming') {
+    params['filters[startTime][$gt]'] = nowIso;
+  }
+  if (status === 'ongoing') {
+    params['filters[startTime][$lte]'] = nowIso;
+    params['filters[endTime][$gte]'] = nowIso;
+  }
+  if (status === 'ended') {
+    params['filters[endTime][$lt]'] = nowIso;
+  }
+}
+
+function eventPageMeta(page: number, pageSize: number, total: number) {
+  return {
+    pagination: {
+      page,
+      pageSize,
+      pageCount: Math.max(1, Math.ceil(total / pageSize)),
+      total,
+    },
+  };
+}
+
+async function fetchEventPage<T>(
+  collection: EventCollection,
+  params: Record<string, string | number | boolean | undefined>
+) {
+  return fetchAPI<StrapiResponse<T[]>>(
+    `/${collection}?${createCollectionQuery({
+      ...params,
+      populate: '*',
+    })}`
+  );
+}
+
+async function getRelevantEvents<T>(
+  collection: EventCollection,
+  kind: EventKind,
+  limit: number,
+  locale: string,
+  options: EventListOptions
+): Promise<StrapiResponse<T[]>> {
+  const strapiLocale = toStrapiLocale(locale);
+  const nowIso = new Date().toISOString();
+  const page = Math.max(1, options.page || 1);
+  const pageSize = Math.max(1, options.pageSize || limit);
+  const start = (page - 1) * pageSize;
+  const base = {
+    locale: strapiLocale,
+  };
+
+  const activeCountParams: Record<string, string | number | boolean | undefined> = {
+    ...base,
+    sort: 'startTime:asc',
+    'pagination[pageSize]': 1,
+    'pagination[page]': 1,
+  };
+  appendEventFilters(activeCountParams, options, kind, nowIso);
+  activeCountParams['filters[endTime][$gte]'] = nowIso;
+
+  const endedCountParams: Record<string, string | number | boolean | undefined> = {
+    ...base,
+    sort: 'endTime:desc',
+    'pagination[pageSize]': 1,
+    'pagination[page]': 1,
+  };
+  appendEventFilters(endedCountParams, options, kind, nowIso, 'ended');
+
+  const [activeCount, endedCount] = await Promise.all([
+    fetchEventPage<T>(collection, activeCountParams),
+    fetchEventPage<T>(collection, endedCountParams),
+  ]);
+  const activeTotal = activeCount.meta.pagination?.total || 0;
+  const endedTotal = endedCount.meta.pagination?.total || 0;
+  const data: T[] = [];
+
+  if (start < activeTotal) {
+    const activeLimit = Math.min(pageSize, activeTotal - start);
+    const activeParams: Record<string, string | number | boolean | undefined> = {
+      ...base,
+      sort: 'startTime:asc',
+      'pagination[start]': start,
+      'pagination[limit]': activeLimit,
+    };
+    appendEventFilters(activeParams, options, kind, nowIso);
+    activeParams['filters[endTime][$gte]'] = nowIso;
+    const activePage = await fetchEventPage<T>(collection, activeParams);
+    data.push(...(activePage.data || []));
+  }
+
+  if (data.length < pageSize) {
+    const endedStart = Math.max(0, start - activeTotal);
+    const endedParams: Record<string, string | number | boolean | undefined> = {
+      ...base,
+      sort: 'endTime:desc',
+      'pagination[start]': endedStart,
+      'pagination[limit]': pageSize - data.length,
+    };
+    appendEventFilters(endedParams, options, kind, nowIso, 'ended');
+    const endedPage = await fetchEventPage<T>(collection, endedParams);
+    data.push(...(endedPage.data || []));
+  }
+
+  return {
+    data,
+    meta: eventPageMeta(page, pageSize, activeTotal + endedTotal),
+  };
+}
+
+async function getEventsForCollection<T>(
+  collection: EventCollection,
+  kind: EventKind,
+  limit: number,
+  locale: string,
+  options: EventListOptions = {}
+) {
+  const sortMode = options.sort || 'relevant';
+  const status = options.status || 'all';
+
+  if (sortMode === 'relevant' && status === 'all') {
+    return getRelevantEvents<T>(collection, kind, limit, locale, options);
+  }
+
+  const strapiLocale = toStrapiLocale(locale);
+  const nowIso = new Date().toISOString();
+  const page = Math.max(1, options.page || 1);
+  const pageSize = Math.max(1, options.pageSize || limit);
+  const params: Record<string, string | number | boolean | undefined> = {
+    locale: strapiLocale,
+    sort: sortMode === 'endTime' ? 'endTime:desc' : 'startTime:desc',
+    'pagination[pageSize]': pageSize,
+    'pagination[page]': page,
+  };
+
+  appendEventFilters(params, { ...options, status }, kind, nowIso);
+  return fetchEventPage<T>(collection, params);
+}
+
 /**
  * 获取最新线上活动
  * @param limit 返回数量限制
  */
 export async function getOnlineEvents(
   limit: number = 10,
-  locale: string = 'zh-Hans'
+  locale: string = 'zh-Hans',
+  options: EventListOptions = {}
 ) {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<OnlineEvent[]>>(
-    `/online-events?${createCollectionQuery({
-      locale: strapiLocale,
-      sort: 'startTime:desc',
-      'pagination[limit]': limit,
-      populate: '*',
-    })}`
-  );
+  return getEventsForCollection<OnlineEvent>('online-events', 'online', limit, locale, options);
 }
 
 /**
@@ -119,17 +294,10 @@ export async function getOnlineEvents(
  */
 export async function getOfflineEvents(
   limit: number = 10,
-  locale: string = 'zh-Hans'
+  locale: string = 'zh-Hans',
+  options: EventListOptions = {}
 ) {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<OfflineEvent[]>>(
-    `/offline-events?${createCollectionQuery({
-      locale: strapiLocale,
-      sort: 'startTime:desc',
-      'pagination[limit]': limit,
-      populate: '*',
-    })}`
-  );
+  return getEventsForCollection<OfflineEvent>('offline-events', 'offline', limit, locale, options);
 }
 
 /**
@@ -403,6 +571,10 @@ export interface Work {
   workType: 'video' | 'image' | 'text' | 'other';
   link?: string;
   isActive: boolean;
+  isFeatured?: boolean;
+  featuredPriority?: number;
+  featuredReason?: string;
+  featuredUntil?: string;
   // RSS 导入相关字段
   sourceUrl?: string;
   sourcePlatform?: 'bilibili' | 'twitter' | 'pixiv' | 'youtube' | 'other' | 'manual';
@@ -442,6 +614,10 @@ export interface WorkListOptions {
   sourcePlatform?: NonNullable<Work['sourcePlatform']> | 'all';
   school?: SchoolType | 'all';
   studentIds?: number[];
+  featured?: boolean;
+  excludeFeatured?: boolean;
+  featuredActiveOnly?: boolean;
+  sort?: 'latest' | 'recommended';
   page?: number;
   pageSize?: number;
 }
@@ -471,6 +647,19 @@ function appendWorkFilters(
     params['filters[sourcePlatform][$eq]'] = options.sourcePlatform;
   }
 
+  if (options.featured) {
+    params['filters[isFeatured][$eq]'] = true;
+  }
+
+  if (options.excludeFeatured) {
+    params['filters[isFeatured][$ne]'] = true;
+  }
+
+  if (options.featuredActiveOnly) {
+    params['filters[$and][0][$or][0][featuredUntil][$null]'] = true;
+    params['filters[$and][0][$or][1][featuredUntil][$gte]'] = new Date().toISOString();
+  }
+
   if (options.school && options.school !== 'all') {
     params['filters[students][school][$eq]'] = options.school;
   }
@@ -493,15 +682,46 @@ export async function getWorks(limit: number = 20, locale: string = 'zh-Hans', o
   const params: Record<string, string | number | boolean | undefined> = {
     locale: strapiLocale,
     'filters[isActive][$eq]': true,
-    sort: 'publishedAt:desc',
     'pagination[pageSize]': options.pageSize || limit,
     populate: '*',
+  }
+  if (options.sort === 'recommended') {
+    params['sort[0]'] = 'isFeatured:desc'
+    params['sort[1]'] = 'featuredPriority:desc'
+    params['sort[2]'] = 'publishedAt:desc'
+  } else {
+    params.sort = 'publishedAt:desc'
   }
   appendWorkFilters(params, options)
 
   return fetchAPI<StrapiResponse<Work[]>>(
     `/works?${createCollectionQuery(params)}`
   );
+}
+
+export async function getFeaturedWorks(limit: number = 6, locale: string = 'zh-Hans') {
+  const featured = await getWorks(limit, locale, {
+    featured: true,
+    featuredActiveOnly: true,
+    sort: 'recommended',
+    pageSize: limit,
+  });
+  const featuredItems = featured.data || [];
+
+  if (featuredItems.length >= limit) {
+    return featured;
+  }
+
+  const latest = await getWorks(limit, locale, {
+    excludeFeatured: true,
+    sort: 'latest',
+    pageSize: limit - featuredItems.length,
+  });
+
+  return {
+    data: [...featuredItems, ...(latest.data || [])].slice(0, limit),
+    meta: eventPageMeta(1, limit, (featured.meta.pagination?.total || 0) + (latest.meta.pagination?.total || 0)),
+  } as StrapiResponse<Work[]>;
 }
 
 export interface StudentListOptions {

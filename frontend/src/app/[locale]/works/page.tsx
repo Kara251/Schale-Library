@@ -16,6 +16,8 @@ interface WorksPageProps {
         school?: SchoolType | 'all'
         source?: NonNullable<Work['sourcePlatform']> | 'all'
         students?: string
+        featured?: string
+        sort?: 'recommended' | 'latest'
         page?: string
     }>
 }
@@ -35,8 +37,9 @@ export default async function WorksPage({ params, searchParams }: WorksPageProps
         .map((item) => Number(item))
         .filter((item) => Number.isFinite(item))
     const page = Math.max(1, Number(filters.page || '1'))
+    const sort = filters.sort === 'recommended' ? 'recommended' : 'latest'
 
-    const [worksRes, studentsRes] = await Promise.all([
+    const [worksResult, studentsRes] = await Promise.all([
         getWorks(24, locale, {
             query: filters.q,
             nature: filters.nature,
@@ -44,14 +47,20 @@ export default async function WorksPage({ params, searchParams }: WorksPageProps
             school: filters.school,
             sourcePlatform: filters.source,
             studentIds,
+            featured: filters.featured === '1',
+            sort,
             page,
             pageSize: 24,
-        }).catch((error) => {
+        }).then((response) => ({ response, hasError: false })).catch((error) => {
             console.error('Failed to load works:', error)
-            return { data: [], meta: { pagination: { page, pageSize: 24, pageCount: 1, total: 0 } } }
+            return {
+                response: { data: [], meta: { pagination: { page, pageSize: 24, pageCount: 1, total: 0 } } },
+                hasError: true,
+            }
         }),
         getStudents(locale, { pageSize: 50 }).catch(() => ({ data: [] })),
     ])
+    const worksRes = worksResult.response
     const works = worksRes.data || []
     const students = studentsRes.data || []
     const pagination = worksRes.meta?.pagination || { page, pageCount: 1, total: works.length }
@@ -69,6 +78,7 @@ export default async function WorksPage({ params, searchParams }: WorksPageProps
                         total={pagination.total}
                         page={pagination.page}
                         pageCount={pagination.pageCount}
+                        hasError={worksResult.hasError}
                     />
                 </div>
             </main>

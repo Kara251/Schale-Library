@@ -83,6 +83,7 @@ export default async function BulkActionsPage({ params, searchParams }: BulkActi
       sourcePlatform: String(formData.get('sourcePlatform') || ''),
       school: String(formData.get('school') || ''),
       organization: String(formData.get('organization') || ''),
+      featuredPriority: Number(formData.get('featuredPriority') || 0),
     }
     const result = await runBulkAction(session, payload)
     redirect(`/${locale}/manage/bulk-actions?updated=${result.updated}&failed=${result.failed}`)
@@ -121,6 +122,9 @@ export default async function BulkActionsPage({ params, searchParams }: BulkActi
               <option value="deactivate">deactivate</option>
               <option value="set-students">set-students</option>
               <option value="set-source-platform">set-source-platform</option>
+              <option value="set-featured">set-featured</option>
+              <option value="unset-featured">unset-featured</option>
+              <option value="set-featured-priority">set-featured-priority</option>
               <option value="set-student-school">set-student-school</option>
               <option value="set-student-organization">set-student-organization</option>
             </select>
@@ -149,6 +153,10 @@ export default async function BulkActionsPage({ params, searchParams }: BulkActi
           <label className="space-y-2 text-sm">
             <span className="font-medium">{t.optional}: organization</span>
             <input name="organization" className="w-full rounded-md border bg-background px-3 py-2" />
+          </label>
+          <label className="space-y-2 text-sm">
+            <span className="font-medium">{t.optional}: featuredPriority</span>
+            <input name="featuredPriority" type="number" defaultValue="0" className="w-full rounded-md border bg-background px-3 py-2" />
           </label>
         </div>
 

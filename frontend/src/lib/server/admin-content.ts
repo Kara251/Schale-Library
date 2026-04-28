@@ -22,6 +22,7 @@ export interface AdminListQuery {
   action?: string
   actor?: string
   collection?: string
+  featured?: string
   from?: string
   to?: string
   stage?: string
@@ -100,6 +101,7 @@ export interface BulkActionPayload {
   sourcePlatform?: string
   school?: string
   organization?: string
+  featuredPriority?: number
 }
 
 function buildCollectionQuery(key: AdminCollectionKey, query: AdminListQuery): URLSearchParams {
@@ -125,7 +127,7 @@ function buildCollectionQuery(key: AdminCollectionKey, query: AdminListQuery): U
     params.set('status', query.status)
   }
 
-  for (const key of ['action', 'actor', 'collection', 'from', 'to', 'stage'] as const) {
+  for (const key of ['action', 'actor', 'collection', 'featured', 'from', 'to', 'stage'] as const) {
     if (query[key]) {
       params.set(key, String(query[key]))
     }

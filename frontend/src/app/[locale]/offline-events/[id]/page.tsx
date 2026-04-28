@@ -4,8 +4,9 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { EventCard } from "@/components/event-card"
 import { Calendar, MapPin, User, ArrowLeft, ExternalLink } from 'lucide-react'
-import { getOfflineEventById } from "@/lib/api"
+import { getOfflineEventById, getOfflineEvents } from "@/lib/api"
 import { sanitizeHtml } from "@/lib/sanitize"
 import { format } from 'date-fns'
 import { zhCN, enUS, ja } from 'date-fns/locale'
@@ -72,6 +73,7 @@ const content: Record<Locale, {
     location: string
     visitLink: string
     description: string
+    related: string
 }> = {
     'zh-Hans': {
         back: '返回线下活动列表',
@@ -90,6 +92,7 @@ const content: Record<Locale, {
         location: '活动地点',
         visitLink: '访问活动',
         description: '活动详情',
+        related: '相关线下活动',
     },
     'en': {
         back: 'Back to offline events',
@@ -108,6 +111,7 @@ const content: Record<Locale, {
         location: 'Location',
         visitLink: 'Visit Event',
         description: 'Details',
+        related: 'Related Offline Events',
     },
     'ja': {
         back: 'オフラインイベント一覧に戻る',
@@ -126,6 +130,7 @@ const content: Record<Locale, {
         location: '開催場所',
         visitLink: 'イベントを見る',
         description: '詳細',
+        related: '関連オフラインイベント',
     },
 }
 
@@ -141,6 +146,16 @@ export default async function OfflineEventDetailPage({ params }: PageProps) {
     }
 
     const event = eventRes.data
+    const relatedRes = await getOfflineEvents(4, locale, {
+        nature: event.nature,
+        sort: 'relevant',
+        excludeId: event.id,
+        pageSize: 4,
+    }).catch((error) => {
+        console.error('Failed to load related offline events:', error)
+        return { data: [] }
+    })
+    const relatedEvents = relatedRes.data || []
 
     const formatDate = (dateString: string) => {
         try {
@@ -199,6 +214,10 @@ export default async function OfflineEventDetailPage({ params }: PageProps) {
 
                         <div className="mb-8">
                             <h1 className="text-3xl md:text-4xl font-bold mb-4">{event.title}</h1>
+                            <div className="mb-4 flex flex-wrap gap-2">
+                                <Badge variant={status.color} className="font-bold">{status.label}</Badge>
+                                <Badge variant={event.nature === 'official' ? 'default' : 'secondary'} className="font-bold">{natureLabel}</Badge>
+                            </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                 {event.organizer && (
@@ -252,6 +271,17 @@ export default async function OfflineEventDetailPage({ params }: PageProps) {
                                 <div className="bg-card border rounded-lg p-6" dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.description) }} />
                             </div>
                         )}
+
+                        {relatedEvents.length > 0 ? (
+                            <section className="mt-10">
+                                <h2 className="text-2xl font-bold mb-4">{t.related}</h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                    {relatedEvents.map((item) => (
+                                        <EventCard key={item.id} event={item} type="offline" />
+                                    ))}
+                                </div>
+                            </section>
+                        ) : null}
                     </div>
                 </div>
             </main>

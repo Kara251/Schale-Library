@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge'
 import { AdminRowActions } from '@/components/admin/admin-row-actions'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { AdminPagination } from '@/components/admin/admin-pagination'
-import { AdminSearchForm } from '@/components/admin/admin-search-form'
 import { AdminTable } from '@/components/admin/admin-table'
 import { getAdminActionLabels } from '@/lib/admin-panel-labels'
 import type { Locale } from '@/lib/i18n'
@@ -18,11 +17,14 @@ interface WorkAdminEntry extends AdminStrapiEntry {
   nature: 'official' | 'fanmade'
   workType: 'video' | 'image' | 'text' | 'other'
   isActive?: boolean
+  isFeatured?: boolean
+  featuredPriority?: number
+  featuredUntil?: string | null
 }
 
 interface WorksManagePageProps {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ search?: string; page?: string; status?: string }>
+  searchParams: Promise<{ search?: string; page?: string; status?: string; featured?: string }>
 }
 
 const labels: Record<Locale, {
@@ -34,6 +36,11 @@ const labels: Record<Locale, {
   statusAll: string
   statusPublished: string
   statusDraft: string
+  featuredAll: string
+  featuredOnly: string
+  featuredNormal: string
+  featured: string
+  priority: string
   empty: string
   previous: string
   next: string
@@ -53,6 +60,11 @@ const labels: Record<Locale, {
     statusAll: '全部状态',
     statusPublished: '已发布',
     statusDraft: '草稿',
+    featuredAll: '全部推荐状态',
+    featuredOnly: '仅精选',
+    featuredNormal: '非精选',
+    featured: '精选',
+    priority: '优先级',
     empty: '暂无符合条件的作品。',
     previous: '上一页',
     next: '下一页',
@@ -72,6 +84,11 @@ const labels: Record<Locale, {
     statusAll: 'All statuses',
     statusPublished: 'Published',
     statusDraft: 'Draft',
+    featuredAll: 'All feature states',
+    featuredOnly: 'Featured only',
+    featuredNormal: 'Not featured',
+    featured: 'Featured',
+    priority: 'Priority',
     empty: 'No works matched the current filters.',
     previous: 'Previous',
     next: 'Next',
@@ -91,6 +108,11 @@ const labels: Record<Locale, {
     statusAll: 'すべての状態',
     statusPublished: '公開済み',
     statusDraft: '下書き',
+    featuredAll: 'すべてのおすすめ状態',
+    featuredOnly: 'おすすめのみ',
+    featuredNormal: 'おすすめ以外',
+    featured: 'おすすめ',
+    priority: '優先度',
     empty: '条件に一致する作品がありません。',
     previous: '前へ',
     next: '次へ',
@@ -126,18 +148,21 @@ export default async function WorksManagePage({ params, searchParams }: WorksMan
   const actionLabels = getAdminActionLabels(locale as Locale)
   const page = Number(query.page || '1')
   const status = query.status === 'published' || query.status === 'draft' ? query.status : 'all'
+  const featured = query.featured === 'featured' || query.featured === 'not-featured' ? query.featured : 'all'
 
   const response = await listAdminCollection<WorkAdminEntry>(session, 'works', {
     locale,
     page,
     search: query.search,
     status,
+    featured,
   })
 
   const buildHref = (nextPage: number) => {
     const params = new URLSearchParams()
     if (query.search) params.set('search', query.search)
     if (status !== 'all') params.set('status', status)
+    if (featured !== 'all') params.set('featured', featured)
     params.set('page', String(nextPage))
     const qs = params.toString()
     return `/${locale}/manage/works${qs ? `?${qs}` : ''}`
@@ -154,19 +179,28 @@ export default async function WorksManagePage({ params, searchParams }: WorksMan
           </Button>
         }
       />
-      <AdminSearchForm
-        action={`/${locale}/manage/works`}
-        search={query.search}
-        status={status}
-        placeholder={t.searchPlaceholder}
-        labels={{
-          search: t.search,
-          statusAll: t.statusAll,
-          statusPublished: t.statusPublished,
-          statusDraft: t.statusDraft,
-          reset: t.reset,
-        }}
-      />
+      <form action={`/${locale}/manage/works`} className="mb-6 grid gap-3 rounded-lg border bg-card p-4 md:grid-cols-[minmax(0,1fr)_180px_180px_auto_auto]">
+        <input
+          name="search"
+          defaultValue={query.search || ''}
+          placeholder={t.searchPlaceholder}
+          className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+        />
+        <select name="status" defaultValue={status} className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]">
+          <option value="all">{t.statusAll}</option>
+          <option value="published">{t.statusPublished}</option>
+          <option value="draft">{t.statusDraft}</option>
+        </select>
+        <select name="featured" defaultValue={featured} className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]">
+          <option value="all">{t.featuredAll}</option>
+          <option value="featured">{t.featuredOnly}</option>
+          <option value="not-featured">{t.featuredNormal}</option>
+        </select>
+        <Button type="submit">{t.search}</Button>
+        <Button asChild variant="outline">
+          <Link href={`/${locale}/manage/works`}>{t.reset}</Link>
+        </Button>
+      </form>
       <AdminTable
         items={response.data}
         emptyText={t.empty}
@@ -196,6 +230,17 @@ export default async function WorksManagePage({ params, searchParams }: WorksMan
             header: t.type,
             className: 'w-24',
             render: (item) => <Badge variant="outline">{item.workType}</Badge>,
+          },
+          {
+            key: 'isFeatured',
+            header: t.featured,
+            className: 'w-32',
+            render: (item) => item.isFeatured ? (
+              <div className="flex flex-col gap-1">
+                <Badge variant="default">{t.featured}</Badge>
+                <span className="text-xs text-muted-foreground">{t.priority}: {item.featuredPriority ?? 0}</span>
+              </div>
+            ) : '-',
           },
           {
             key: 'publishedAt',
