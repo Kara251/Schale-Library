@@ -1,0 +1,77 @@
+{
+  "kind": "collectionType",
+  "collectionName": "content_quality_issues",
+  "info": {
+    "singularName": "content-quality-issue",
+    "pluralName": "content-quality-issues",
+    "displayName": "内容质量问题",
+    "description": "后台内容质量扫描产生的问题记录"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "issueType": {
+      "type": "enumeration",
+      "enum": [
+        "missing-image",
+        "missing-translation",
+        "duplicate-source",
+        "missing-students",
+        "missing-link",
+        "draft",
+        "invalid-event-time"
+      ],
+      "required": true
+    },
+    "severity": {
+      "type": "enumeration",
+      "enum": [
+        "info",
+        "warning",
+        "error"
+      ],
+      "default": "warning",
+      "required": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "open",
+        "resolved"
+      ],
+      "default": "open",
+      "required": true
+    },
+    "collection": {
+      "type": "string",
+      "required": true
+    },
+    "targetId": {
+      "type": "integer"
+    },
+    "targetDocumentId": {
+      "type": "string"
+    },
+    "locale": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "message": {
+      "type": "text",
+      "required": true
+    },
+    "details": {
+      "type": "json"
+    },
+    "detectedAt": {
+      "type": "datetime",
+      "required": true
+    },
+    "resolvedAt": {
+      "type": "datetime"
+    }
+  }
+}

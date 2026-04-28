@@ -39,12 +39,16 @@ interface SyncLogInput {
     action: SyncLogAction;
     message: string;
     status?: SyncLogStatus;
+    stage?: 'queued' | 'running' | 'retry' | 'success' | 'failed';
     targetId?: number;
     targetName?: string;
     total?: number;
     created?: number;
     skipped?: number;
     errors?: string[];
+    rssInstance?: string;
+    errorCategory?: string;
+    details?: Record<string, unknown>;
     startedAt: Date;
     finishedAt: Date;
 }
@@ -66,12 +70,26 @@ interface CreatedWorkEntity {
     [key: string]: unknown;
 }
 
+interface RssFetchResult {
+    items: RSSItem[];
+    instance: string;
+}
+
 function getErrorMessage(error: unknown): string {
     if (error instanceof Error) {
         return error.message;
     }
 
     return String(error);
+}
+
+function categorizeSyncError(error: unknown): string {
+    const message = getErrorMessage(error).toLowerCase();
+    if (message.includes('abort') || message.includes('timeout')) return 'timeout';
+    if (message.includes('rss 请求失败')) return 'http';
+    if (message.includes('parse') || message.includes('xml')) return 'parse';
+    if (message.includes('fetch') || message.includes('network') || message.includes('econn')) return 'network';
+    return 'unknown';
 }
 
 function decodeHtmlEntities(value: string): string {
@@ -120,6 +138,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
     async recordSyncLog(input: SyncLogInput): Promise<void> {
         const errors = Array.isArray(input.errors) ? input.errors : [];
         const status = input.status || (errors.length > 0 ? (input.created || input.skipped ? 'partial' : 'failed') : 'success');
+        const stage = input.stage || (status === 'retry' ? 'retry' : status === 'failed' ? 'failed' : 'success');
         const durationMs = Math.max(0, input.finishedAt.getTime() - input.startedAt.getTime());
 
         try {
@@ -127,6 +146,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                 data: {
                     action: input.action,
                     status,
+                    stage,
                     message: input.message,
                     targetId: input.targetId,
                     targetName: input.targetName,
@@ -135,6 +155,9 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                     skipped: input.skipped ?? 0,
                     errorCount: errors.length,
                     errors,
+                    rssInstance: input.rssInstance,
+                    errorCategory: input.errorCategory || (errors.length > 0 ? 'sync' : undefined),
+                    details: input.details,
                     startedAt: input.startedAt.toISOString(),
                     finishedAt: input.finishedAt.toISOString(),
                     durationMs,
@@ -169,11 +192,16 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
      * 从 RSSHub 获取 UP主 视频列表（带备用实例和缓存）
      */
     async fetchVideos(uid: string): Promise<RSSItem[]> {
+        const result = await this.fetchVideosWithInstance(uid);
+        return result.items;
+    },
+
+    async fetchVideosWithInstance(uid: string): Promise<RssFetchResult> {
         // 检查缓存
         const cached = rssCache.get(uid);
         if (cached && Date.now() < cached.expires) {
             strapi.log.info(`使用缓存数据 (UID: ${uid})`);
-            return cached.data;
+            return { items: cached.data, instance: 'cache' };
         }
 
         const instances = this.getRssHubInstances();
@@ -208,7 +236,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                         expires: Date.now() + RSS_CACHE_TTL,
                     });
                     strapi.log.info(`成功从 ${instance} 获取 ${items.length} 个视频`);
-                    return items;
+                    return { items, instance };
                 }
             } catch (error) {
                 lastError = error as Error;
@@ -391,10 +419,11 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
         }
 
         try {
-            let items = await this.fetchVideos(subscription.uid);
+            const fetchResult = await this.fetchVideosWithInstance(subscription.uid);
+            let items = fetchResult.items;
             // 只同步最近 5 个视频
             items = items.slice(0, 5);
-            strapi.log.info(`获取到 ${items.length} 个视频 (${subscription.upName})`);
+            strapi.log.info(`获取到 ${items.length} 个视频 (${subscription.upName}, ${fetchResult.instance})`);
 
             for (const item of items) {
                 try {
@@ -509,8 +538,10 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
             await this.recordSyncLog({
                 action: 'bilibili-sync-all',
                 status: 'retry',
+                stage: 'retry',
                 message: `${failedSubscriptions.length} 个订阅失败，已安排 5 分钟后重试`,
                 total: failedSubscriptions.length,
+                errorCategory: 'retry-scheduled',
                 errors: failedSubscriptions.map((subscription) => subscription.upName),
                 startedAt: new Date(),
                 finishedAt: new Date(),
@@ -543,10 +574,12 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                 await this.recordSyncLog({
                     action: 'bilibili-sync-all',
                     message: `重试完成，共处理 ${failedSubscriptions.length} 个订阅，新增 ${retryCreated} 个视频`,
+                    stage: retryErrors.length > 0 ? 'failed' : 'success',
                     total: failedSubscriptions.length,
                     created: retryCreated,
                     skipped: retrySkipped,
                     errors: retryErrors,
+                    errorCategory: retryErrors.length > 0 ? categorizeSyncError(retryErrors[0]) : undefined,
                     startedAt: retryStartedAt,
                     finishedAt: new Date(),
                 });

@@ -80,6 +80,7 @@ export default factories.createCoreController('api::bilibili-subscription.bilibi
             await service.recordSyncLog({
                 action: 'bilibili-sync-one',
                 message,
+                stage: result.errors.length > 0 ? 'failed' : 'success',
                 targetId: subscription.id,
                 targetName: subscription.upName,
                 total: result.created + result.skipped + result.errors.length,
@@ -108,8 +109,10 @@ export default factories.createCoreController('api::bilibili-subscription.bilibi
             await service.recordSyncLog({
                 action: 'bilibili-sync-one',
                 status: 'failed',
+                stage: 'failed',
                 message: '同步失败: ' + (error as Error).message,
                 targetId: Number.isFinite(Number(id)) ? Number(id) : undefined,
+                errorCategory: 'manual-sync',
                 errors: [(error as Error).message],
                 startedAt,
                 finishedAt: new Date(),
@@ -135,6 +138,7 @@ export default factories.createCoreController('api::bilibili-subscription.bilibi
             await service.recordSyncLog({
                 action: 'bilibili-sync-all',
                 message,
+                stage: result.errors.length > 0 ? 'failed' : 'success',
                 total: result.total,
                 created: result.created,
                 skipped: result.skipped,
@@ -159,7 +163,9 @@ export default factories.createCoreController('api::bilibili-subscription.bilibi
             await service.recordSyncLog({
                 action: 'bilibili-sync-all',
                 status: 'failed',
+                stage: 'failed',
                 message: '同步失败: ' + (error as Error).message,
+                errorCategory: 'manual-sync',
                 errors: [(error as Error).message],
                 startedAt,
                 finishedAt: new Date(),

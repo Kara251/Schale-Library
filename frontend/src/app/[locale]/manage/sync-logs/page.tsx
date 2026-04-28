@@ -8,13 +8,17 @@ import { type AdminStrapiEntry, listAdminCollection } from '@/lib/server/admin-c
 import { requireAdminSession } from '@/lib/server/admin-auth'
 
 type SyncLogStatus = 'success' | 'partial' | 'failed' | 'retry' | 'pending'
+type SyncLogStage = 'queued' | 'running' | 'retry' | 'success' | 'failed'
 type SyncLogAction = 'bilibili-sync-one' | 'bilibili-sync-all' | 'bilibili-sync-cron'
 
 interface SyncLogAdminEntry extends AdminStrapiEntry {
   action: SyncLogAction
   status: SyncLogStatus
+  stage?: SyncLogStage
   message?: string
   targetName?: string
+  rssInstance?: string
+  errorCategory?: string
   total?: number
   created?: number
   skipped?: number
@@ -55,6 +59,8 @@ const labels: Record<Locale, {
   failed: string
   retry: string
   pending: string
+  stage: string
+  rssInstance: string
   syncOne: string
   syncAll: string
   syncCron: string
@@ -88,6 +94,8 @@ const labels: Record<Locale, {
     failed: '失败',
     retry: '重试中',
     pending: '等待中',
+    stage: '阶段',
+    rssInstance: 'RSSHub',
     syncOne: '单个订阅',
     syncAll: '手动同步全部',
     syncCron: '定时同步',
@@ -121,6 +129,8 @@ const labels: Record<Locale, {
     failed: 'Failed',
     retry: 'Retrying',
     pending: 'Pending',
+    stage: 'Stage',
+    rssInstance: 'RSSHub',
     syncOne: 'Single feed',
     syncAll: 'Manual full sync',
     syncCron: 'Scheduled sync',
@@ -154,6 +164,8 @@ const labels: Record<Locale, {
     failed: '失敗',
     retry: '再試行中',
     pending: '待機中',
+    stage: '段階',
+    rssInstance: 'RSSHub',
     syncOne: '単一購読',
     syncAll: '手動一括同期',
     syncCron: '定期同期',
@@ -315,6 +327,9 @@ export default async function SyncLogsManagePage({ params, searchParams }: SyncL
             render: (item) => (
               <div className="max-w-xl space-y-1">
                 <p className="leading-6">{item.message || '-'}</p>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  {[item.stage ? `${t.stage}: ${item.stage}` : null, item.rssInstance ? `${t.rssInstance}: ${item.rssInstance}` : null, item.errorCategory].filter(Boolean).join(' / ')}
+                </p>
                 {getErrorPreview(item.errors) ? (
                   <p className="text-xs leading-5 text-destructive">{getErrorPreview(item.errors)}</p>
                 ) : null}

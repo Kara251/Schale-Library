@@ -20,6 +20,34 @@ const PROXY_TIMEOUT_MS = 10000;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_HOSTS = new Set(['i0.hdslb.com', 'i1.hdslb.com', 'i2.hdslb.com']);
 
+function createLimitedImageStream(body: ReadableStream<Uint8Array>, abort: () => void) {
+    const reader = body.getReader();
+    let totalBytes = 0;
+
+    return new ReadableStream<Uint8Array>({
+        async pull(controller) {
+            const { done, value } = await reader.read();
+            if (done) {
+                controller.close();
+                return;
+            }
+
+            totalBytes += value.byteLength;
+            if (totalBytes > MAX_IMAGE_SIZE) {
+                abort();
+                controller.error(new Error('Image too large'));
+                return;
+            }
+
+            controller.enqueue(value);
+        },
+        cancel() {
+            abort();
+            reader.cancel().catch(() => undefined);
+        },
+    });
+}
+
 export async function GET(request: NextRequest) {
     // Rate Limiting
     const ip = getClientIp(request);
@@ -82,17 +110,14 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Image too large' }, { status: 413 });
         }
 
-        const arrayBuffer = await response.arrayBuffer();
-
-        // 二次检查实际大小
-        if (arrayBuffer.byteLength > MAX_IMAGE_SIZE) {
-            return NextResponse.json({ error: 'Image too large' }, { status: 413 });
+        if (!response.body) {
+            return NextResponse.json({ error: 'Empty image response' }, { status: 502 });
         }
 
-        return new NextResponse(arrayBuffer, {
+        return new NextResponse(createLimitedImageStream(response.body, () => controller.abort()), {
             headers: {
                 'Content-Type': contentType,
-                'Cache-Control': 'public, max-age=86400', // 缓存 1 天
+                'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
                 'X-Content-Type-Options': 'nosniff',
             },
         });

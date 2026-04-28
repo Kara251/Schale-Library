@@ -1,0 +1,30 @@
+{
+  "kind": "collectionType",
+  "collectionName": "job_locks",
+  "info": {
+    "singularName": "job-lock",
+    "pluralName": "job-locks",
+    "displayName": "Job Lock",
+    "description": "Database-backed locks for scheduled jobs"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "owner": {
+      "type": "string"
+    },
+    "lockedUntil": {
+      "type": "datetime",
+      "required": true
+    },
+    "details": {
+      "type": "json"
+    }
+  }
+}

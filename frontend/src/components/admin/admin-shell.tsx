@@ -7,11 +7,13 @@ import {
   BookOpen,
   CalendarDays,
   ClipboardList,
+  HeartPulse,
   LayoutDashboard,
   LogOut,
   Radio,
   Rss,
   ShieldCheck,
+  SlidersHorizontal,
   Users,
 } from 'lucide-react'
 
@@ -56,6 +58,9 @@ const navLabels: Record<Locale, Record<string, string>> = {
     subscriptions: 'B站订阅',
     syncLogs: '同步日志',
     auditLogs: '审计日志',
+    quality: '内容质量',
+    system: '系统自检',
+    bulk: '批量操作',
   },
   en: {
     dashboard: 'Dashboard',
@@ -67,6 +72,9 @@ const navLabels: Record<Locale, Record<string, string>> = {
     subscriptions: 'Bilibili Feeds',
     syncLogs: 'Sync Logs',
     auditLogs: 'Audit Logs',
+    quality: 'Content Quality',
+    system: 'System Health',
+    bulk: 'Bulk Actions',
   },
   ja: {
     dashboard: 'ダッシュボード',
@@ -78,6 +86,9 @@ const navLabels: Record<Locale, Record<string, string>> = {
     subscriptions: 'B站購読',
     syncLogs: '同期ログ',
     auditLogs: '監査ログ',
+    quality: '品質チェック',
+    system: 'システム確認',
+    bulk: '一括操作',
   },
 }
 
@@ -95,6 +106,9 @@ export function AdminShell({ children, locale, user }: AdminShellProps) {
     { href: `/${locale}/manage/offline-events`, label: nav.offlineEvents, icon: CalendarDays },
     { href: `/${locale}/manage/students`, label: nav.students, icon: Users },
     { href: `/${locale}/manage/bilibili-subscriptions`, label: nav.subscriptions, icon: Rss },
+    { href: `/${locale}/manage/content-quality`, label: nav.quality, icon: HeartPulse },
+    { href: `/${locale}/manage/bulk-actions`, label: nav.bulk, icon: SlidersHorizontal },
+    { href: `/${locale}/manage/system-health`, label: nav.system, icon: ShieldCheck },
     { href: `/${locale}/manage/sync-logs`, label: nav.syncLogs, icon: ClipboardList },
     { href: `/${locale}/manage/admin-audit-logs`, label: nav.auditLogs, icon: ShieldCheck },
   ]

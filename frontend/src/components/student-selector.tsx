@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { X, Search, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -31,6 +31,9 @@ const labels: Record<Locale, {
     clearSelection: string
     confirm: string
     clickToSelect: string
+    prev: string
+    next: string
+    pageInfo: string
 }> = {
     'zh-Hans': {
         title: '选择出场学生',
@@ -44,6 +47,9 @@ const labels: Record<Locale, {
         clearSelection: '清除已选',
         confirm: '确定',
         clickToSelect: '点击选择学生...',
+        prev: '上一页',
+        next: '下一页',
+        pageInfo: '第 {current} / {total} 页',
     },
     'en': {
         title: 'Select Students',
@@ -57,6 +63,9 @@ const labels: Record<Locale, {
         clearSelection: 'Clear selection',
         confirm: 'Confirm',
         clickToSelect: 'Click to select students...',
+        prev: 'Previous',
+        next: 'Next',
+        pageInfo: 'Page {current} / {total}',
     },
     'ja': {
         title: '生徒を選択',
@@ -70,6 +79,9 @@ const labels: Record<Locale, {
         clearSelection: '選択をクリア',
         confirm: '確定',
         clickToSelect: '生徒を選択...',
+        prev: '前へ',
+        next: '次へ',
+        pageInfo: 'ページ {current} / {total}',
     },
 }
 
@@ -92,34 +104,71 @@ export function StudentSelector({
     const [searchQuery, setSearchQuery] = useState('')
     const [schoolFilter, setSchoolFilter] = useState<SchoolType | 'all'>('all')
     const [orgFilter, setOrgFilter] = useState<string>('all')
+    const [page, setPage] = useState(1)
+    const [remoteStudents, setRemoteStudents] = useState<Student[]>(students)
+    const [pageCount, setPageCount] = useState(1)
+    const [loading, setLoading] = useState(false)
 
     const schools = useMemo(() => {
-        const schoolSet = new Set<SchoolType>()
-        students.forEach(s => {
-            if (s.school) schoolSet.add(s.school)
-        })
-        return Array.from(schoolSet).sort()
-    }, [students])
+        return Object.keys(localizedSchoolNames).sort() as SchoolType[]
+    }, [localizedSchoolNames])
+
+    useEffect(() => {
+        if (!isOpen) return
+
+        const controller = new AbortController()
+        const timeoutId = setTimeout(async () => {
+            setLoading(true)
+            const params = new URLSearchParams({
+                locale,
+                page: String(page),
+                pageSize: '50',
+            })
+            if (searchQuery.trim()) params.set('q', searchQuery.trim())
+            if (schoolFilter !== 'all') params.set('school', schoolFilter)
+
+            try {
+                const response = await fetch(`/api/students?${params.toString()}`, {
+                    signal: controller.signal,
+                    cache: 'no-store',
+                })
+                if (!response.ok) throw new Error('Failed to load students')
+                const payload = await response.json()
+                setRemoteStudents(payload.data || [])
+                setPageCount(payload.meta?.pagination?.pageCount || 1)
+            } catch (error) {
+                if (!controller.signal.aborted) {
+                    console.error('Failed to load students:', error)
+                    setRemoteStudents(students)
+                    setPageCount(1)
+                }
+            } finally {
+                if (!controller.signal.aborted) {
+                    setLoading(false)
+                }
+            }
+        }, 150)
+
+        return () => {
+            clearTimeout(timeoutId)
+            controller.abort()
+        }
+    }, [isOpen, locale, page, schoolFilter, searchQuery, students])
 
     const organizations = useMemo(() => {
         const orgSet = new Set<string>()
-        students.forEach(s => {
+        remoteStudents.forEach(s => {
             if (s.organization) orgSet.add(s.organization)
         })
         return Array.from(orgSet).sort()
-    }, [students])
+    }, [remoteStudents])
 
     const filteredStudents = useMemo(() => {
-        return students.filter(student => {
-            if (searchQuery) {
-                const query = searchQuery.toLowerCase()
-                if (!student.name.toLowerCase().includes(query)) return false
-            }
-            if (schoolFilter !== 'all' && student.school !== schoolFilter) return false
+        return remoteStudents.filter(student => {
             if (orgFilter !== 'all' && student.organization !== orgFilter) return false
             return true
         })
-    }, [students, searchQuery, schoolFilter, orgFilter])
+    }, [remoteStudents, orgFilter])
 
     const toggleStudent = (studentId: number) => {
         if (selectedStudents.includes(studentId)) {
@@ -135,6 +184,7 @@ export function StudentSelector({
         setSearchQuery('')
         setSchoolFilter('all')
         setOrgFilter('all')
+        setPage(1)
     }
 
     if (!isOpen) return null
@@ -162,7 +212,10 @@ export function StudentSelector({
                         <input
                             type="text"
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value)
+                                setPage(1)
+                            }}
                             placeholder={t.searchPlaceholder}
                             className="w-full pl-10 pr-4 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
                         />
@@ -173,7 +226,10 @@ export function StudentSelector({
                             <span className="text-sm font-bold">{t.school}:</span>
                             <select
                                 value={schoolFilter}
-                                onChange={(e) => setSchoolFilter(e.target.value as SchoolType | 'all')}
+                                onChange={(e) => {
+                                    setSchoolFilter(e.target.value as SchoolType | 'all')
+                                    setPage(1)
+                                }}
                                 className="text-sm border rounded-lg px-2 py-1 bg-background cursor-pointer"
                             >
                                 <option value="all">{t.all}</option>
@@ -210,7 +266,9 @@ export function StudentSelector({
                 </div>
 
                 <div className="p-4 overflow-y-auto max-h-[50vh]">
-                    {filteredStudents.length > 0 ? (
+                    {loading ? (
+                        <div className="text-center py-8 text-muted-foreground">{t.searchPlaceholder}</div>
+                    ) : filteredStudents.length > 0 ? (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                             {filteredStudents.map(student => {
                                 const isSelected = selectedStudents.includes(student.id)
@@ -258,6 +316,15 @@ export function StudentSelector({
                     <button onClick={clearSelection} className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
                         {t.clearSelection}
                     </button>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Button variant="outline" size="sm" onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1}>
+                            {t.prev}
+                        </Button>
+                        <span>{t.pageInfo.replace('{current}', String(page)).replace('{total}', String(pageCount))}</span>
+                        <Button variant="outline" size="sm" onClick={() => setPage(Math.min(pageCount, page + 1))} disabled={page >= pageCount}>
+                            {t.next}
+                        </Button>
+                    </div>
                     <Button onClick={onClose}>
                         {t.confirm} ({selectedStudents.length})
                     </Button>

@@ -16,6 +16,7 @@ interface WorksPageProps {
         school?: SchoolType | 'all'
         source?: NonNullable<Work['sourcePlatform']> | 'all'
         students?: string
+        page?: string
     }>
 }
 
@@ -33,23 +34,27 @@ export default async function WorksPage({ params, searchParams }: WorksPageProps
         ?.split(',')
         .map((item) => Number(item))
         .filter((item) => Number.isFinite(item))
+    const page = Math.max(1, Number(filters.page || '1'))
 
     const [worksRes, studentsRes] = await Promise.all([
-        getWorks(100, locale, {
+        getWorks(24, locale, {
             query: filters.q,
             nature: filters.nature,
             workType: filters.type,
             school: filters.school,
             sourcePlatform: filters.source,
             studentIds,
+            page,
+            pageSize: 24,
         }).catch((error) => {
             console.error('Failed to load works:', error)
-            return { data: [] }
+            return { data: [], meta: { pagination: { page, pageSize: 24, pageCount: 1, total: 0 } } }
         }),
-        getStudents(locale).catch(() => ({ data: [] })),
+        getStudents(locale, { pageSize: 50 }).catch(() => ({ data: [] })),
     ])
     const works = worksRes.data || []
     const students = studentsRes.data || []
+    const pagination = worksRes.meta?.pagination || { page, pageCount: 1, total: works.length }
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -61,6 +66,9 @@ export default async function WorksPage({ params, searchParams }: WorksPageProps
                         works={works}
                         students={students}
                         title={title}
+                        total={pagination.total}
+                        page={pagination.page}
+                        pageCount={pagination.pageCount}
                     />
                 </div>
             </main>

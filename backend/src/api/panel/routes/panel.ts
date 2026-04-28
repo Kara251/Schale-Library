@@ -19,6 +19,51 @@ export default {
     },
     {
       method: 'GET',
+      path: '/panel/system/health',
+      handler: 'panel.systemHealth',
+      config: {
+        auth: false,
+        policies: ['global::is-panel-maintainer'],
+      },
+    },
+    {
+      method: 'GET',
+      path: '/panel/quality/issues',
+      handler: 'panel.qualityIssues',
+      config: {
+        auth: false,
+        policies: ['global::is-panel-maintainer'],
+      },
+    },
+    {
+      method: 'POST',
+      path: '/panel/quality/scan',
+      handler: 'panel.scanQuality',
+      config: {
+        auth: false,
+        policies: ['global::is-panel-maintainer'],
+      },
+    },
+    {
+      method: 'POST',
+      path: '/panel/bulk-action',
+      handler: 'panel.bulkAction',
+      config: {
+        auth: false,
+        policies: ['global::is-panel-maintainer'],
+      },
+    },
+    {
+      method: 'GET',
+      path: '/panel/admin-audit-logs/export',
+      handler: 'panel.exportAuditLogs',
+      config: {
+        auth: false,
+        policies: ['global::is-panel-maintainer'],
+      },
+    },
+    {
+      method: 'GET',
       path: '/panel/:collection',
       handler: 'panel.list',
       config: {

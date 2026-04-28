@@ -1,7 +1,9 @@
+import Link from 'next/link'
+
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { AdminPagination } from '@/components/admin/admin-pagination'
-import { AdminSearchForm } from '@/components/admin/admin-search-form'
 import { AdminTable } from '@/components/admin/admin-table'
 import type { Locale } from '@/lib/i18n'
 import { type AdminStrapiEntry, listAdminCollection } from '@/lib/server/admin-content'
@@ -27,7 +29,7 @@ interface AdminAuditLogEntry extends AdminStrapiEntry {
 
 interface AuditLogsManagePageProps {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ search?: string; page?: string }>
+  searchParams: Promise<{ search?: string; page?: string; status?: string; action?: string; collection?: string; actor?: string; from?: string; to?: string }>
 }
 
 const labels: Record<Locale, {
@@ -51,6 +53,10 @@ const labels: Record<Locale, {
   message: string
   success: string
   failed: string
+  exportCsv: string
+  collection: string
+  from: string
+  to: string
 }> = {
   'zh-Hans': {
     title: '审计日志',
@@ -73,6 +79,10 @@ const labels: Record<Locale, {
     message: '消息',
     success: '成功',
     failed: '失败',
+    exportCsv: '导出 CSV',
+    collection: '集合',
+    from: '开始时间',
+    to: '结束时间',
   },
   en: {
     title: 'Audit Logs',
@@ -95,6 +105,10 @@ const labels: Record<Locale, {
     message: 'Message',
     success: 'Success',
     failed: 'Failed',
+    exportCsv: 'Export CSV',
+    collection: 'Collection',
+    from: 'From',
+    to: 'To',
   },
   ja: {
     title: '監査ログ',
@@ -117,6 +131,10 @@ const labels: Record<Locale, {
     message: 'メッセージ',
     success: '成功',
     failed: '失敗',
+    exportCsv: 'CSV 出力',
+    collection: 'コレクション',
+    from: '開始',
+    to: '終了',
   },
 }
 
@@ -153,32 +171,62 @@ export default async function AdminAuditLogsManagePage({ params, searchParams }:
   const response = await listAdminCollection<AdminAuditLogEntry>(session, 'admin-audit-logs', {
     page,
     search: query.search,
+    status: query.status,
+    action: query.action,
+    collection: query.collection,
+    actor: query.actor,
+    from: query.from,
+    to: query.to,
   })
 
-  const buildHref = (nextPage: number) => {
+  const buildParams = (nextPage?: number) => {
     const params = new URLSearchParams()
-    if (query.search) params.set('search', query.search)
-    params.set('page', String(nextPage))
+    for (const key of ['search', 'status', 'action', 'collection', 'actor', 'from', 'to'] as const) {
+      if (query[key]) params.set(key, query[key] as string)
+    }
+    if (nextPage) params.set('page', String(nextPage))
+    return params
+  }
+
+  const buildHref = (nextPage: number) => {
+    const params = buildParams(nextPage)
     const qs = params.toString()
     return `/${locale}/manage/admin-audit-logs${qs ? `?${qs}` : ''}`
   }
 
   return (
     <div>
-      <AdminPageHeader title={t.title} description={t.description} />
-      <AdminSearchForm
-        action={`/${locale}/manage/admin-audit-logs`}
-        search={query.search}
-        showStatus={false}
-        placeholder={t.searchPlaceholder}
-        labels={{
-          search: t.search,
-          statusAll: t.statusAll,
-          statusPublished: t.statusPublished,
-          statusDraft: t.statusDraft,
-          reset: t.reset,
-        }}
+      <AdminPageHeader
+        title={t.title}
+        description={t.description}
+        actions={
+          <Button asChild variant="outline">
+            <Link href={`/api/admin/audit-logs/export?${buildParams().toString()}`}>{t.exportCsv}</Link>
+          </Button>
+        }
       />
+      <form action={`/${locale}/manage/admin-audit-logs`} className="mb-4 grid gap-3 rounded-lg border bg-card p-4 md:grid-cols-4">
+        <input name="search" defaultValue={query.search || ''} placeholder={t.searchPlaceholder} className="rounded-md border bg-background px-3 py-2 text-sm" />
+        <input name="actor" defaultValue={query.actor || ''} placeholder={t.actor} className="rounded-md border bg-background px-3 py-2 text-sm" />
+        <input name="collection" defaultValue={query.collection || ''} placeholder={t.collection} className="rounded-md border bg-background px-3 py-2 text-sm" />
+        <select name="status" defaultValue={query.status || 'all'} className="rounded-md border bg-background px-3 py-2 text-sm">
+          <option value="all">{t.statusAll}</option>
+          <option value="success">{t.success}</option>
+          <option value="failed">{t.failed}</option>
+        </select>
+        <select name="action" defaultValue={query.action || ''} className="rounded-md border bg-background px-3 py-2 text-sm">
+          <option value="">{t.action}: {t.statusAll}</option>
+          {(['create', 'update', 'delete', 'upload', 'sync-one', 'sync-all'] as AuditAction[]).map((action) => (
+            <option key={action} value={action}>{action}</option>
+          ))}
+        </select>
+        <input name="from" defaultValue={query.from || ''} placeholder={t.from} type="date" className="rounded-md border bg-background px-3 py-2 text-sm" />
+        <input name="to" defaultValue={query.to || ''} placeholder={t.to} type="date" className="rounded-md border bg-background px-3 py-2 text-sm" />
+        <div className="flex gap-2">
+          <Button type="submit" variant="outline">{t.search}</Button>
+          <Button asChild variant="ghost"><Link href={`/${locale}/manage/admin-audit-logs`}>{t.reset}</Link></Button>
+        </div>
+      </form>
       <AdminTable
         items={response.data}
         emptyText={t.empty}

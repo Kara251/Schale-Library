@@ -5,11 +5,7 @@ import { Search, Globe, MapPin, Bell, Star, Users } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
     getContentEntryPathId,
-    searchAnnouncements,
-    searchOnlineEvents,
-    searchOfflineEvents,
-    searchStudents,
-    searchWorks,
+    searchAllContent,
     type Announcement,
     type OnlineEvent,
     type OfflineEvent,
@@ -48,6 +44,7 @@ const content: Record<Locale, {
     image: string
     text: string
     other: string
+    partialError: string
 }> = {
     'zh-Hans': {
         title: '搜索图书馆',
@@ -72,6 +69,7 @@ const content: Record<Locale, {
         image: '图画',
         text: '文字',
         other: '其他',
+        partialError: '部分搜索结果暂时不可用，请稍后重试。',
     },
     'en': {
         title: 'Search Library',
@@ -96,6 +94,7 @@ const content: Record<Locale, {
         image: 'Image',
         text: 'Text',
         other: 'Other',
+        partialError: 'Some search sections are temporarily unavailable.',
     },
     'ja': {
         title: '図書館を検索',
@@ -120,6 +119,7 @@ const content: Record<Locale, {
         image: '画像',
         text: 'テキスト',
         other: 'その他',
+        partialError: '一部の検索結果は一時的に利用できません。',
     },
 }
 
@@ -133,35 +133,30 @@ export default async function GlobalSearchPage({ params, searchParams }: GlobalS
     let onlineEvents: OnlineEvent[] = []
     let offlineEvents: OfflineEvent[] = []
     let students: Student[] = []
+    let resultTotals = {
+        announcements: 0,
+        works: 0,
+        onlineEvents: 0,
+        offlineEvents: 0,
+        students: 0,
+    }
+    let hasSearchError = false
 
     if (searchQuery) {
-        const [announcementsRes, worksRes, onlineEventsRes, offlineEventsRes, studentsRes] = await Promise.all([
-            searchAnnouncements(searchQuery, locale).catch((error) => {
-                console.error('Failed to search announcements:', error)
-                return { data: [] }
-            }),
-            searchWorks(searchQuery, locale).catch((error) => {
-                console.error('Failed to search works:', error)
-                return { data: [] }
-            }),
-            searchOnlineEvents(searchQuery, locale).catch((error) => {
-                console.error('Failed to search online events:', error)
-                return { data: [] }
-            }),
-            searchOfflineEvents(searchQuery, locale).catch((error) => {
-                console.error('Failed to search offline events:', error)
-                return { data: [] }
-            }),
-            searchStudents(searchQuery, locale).catch((error) => {
-                console.error('Failed to search students:', error)
-                return { data: [] }
-            }),
-        ])
-        announcements = announcementsRes.data || []
-        works = worksRes.data || []
-        onlineEvents = onlineEventsRes.data || []
-        offlineEvents = offlineEventsRes.data || []
-        students = studentsRes.data || []
+        const results = await searchAllContent(searchQuery, locale)
+        announcements = results.announcements.data || []
+        works = results.works.data || []
+        onlineEvents = results.onlineEvents.data || []
+        offlineEvents = results.offlineEvents.data || []
+        students = results.students.data || []
+        resultTotals = {
+            announcements: results.announcements.total,
+            works: results.works.total,
+            onlineEvents: results.onlineEvents.total,
+            offlineEvents: results.offlineEvents.total,
+            students: results.students.total,
+        }
+        hasSearchError = Boolean(results.announcements.error || results.works.error || results.onlineEvents.error || results.offlineEvents.error || results.students.error)
     }
 
     const sortByFreshness = <T extends { publishedAt?: string; updatedAt?: string; createdAt?: string }>(items: T[]) => {
@@ -178,7 +173,7 @@ export default async function GlobalSearchPage({ params, searchParams }: GlobalS
     offlineEvents = sortByFreshness(offlineEvents)
     students = sortByFreshness(students)
 
-    const totalResults = announcements.length + works.length + onlineEvents.length + offlineEvents.length + students.length
+    const totalResults = resultTotals.announcements + resultTotals.works + resultTotals.onlineEvents + resultTotals.offlineEvents + resultTotals.students
     const workTypeLabels: Record<string, string> = {
         video: t.video,
         image: t.image,
@@ -205,12 +200,15 @@ export default async function GlobalSearchPage({ params, searchParams }: GlobalS
                             )}
                             {searchQuery && (
                                 <div className="mt-4 flex flex-wrap gap-2">
-                                    <Badge variant="secondary">{t.announcements} {announcements.length}</Badge>
-                                    <Badge variant="secondary">{t.works} {works.length}</Badge>
-                                    <Badge variant="secondary">{t.students} {students.length}</Badge>
-                                    <Badge variant="secondary">{t.onlineEvents} {onlineEvents.length}</Badge>
-                                    <Badge variant="secondary">{t.offlineEvents} {offlineEvents.length}</Badge>
+                                    <Badge variant="secondary">{t.announcements} {resultTotals.announcements}</Badge>
+                                    <Badge variant="secondary">{t.works} {resultTotals.works}</Badge>
+                                    <Badge variant="secondary">{t.students} {resultTotals.students}</Badge>
+                                    <Badge variant="secondary">{t.onlineEvents} {resultTotals.onlineEvents}</Badge>
+                                    <Badge variant="secondary">{t.offlineEvents} {resultTotals.offlineEvents}</Badge>
                                 </div>
+                            )}
+                            {hasSearchError && (
+                                <p className="mt-3 text-sm text-destructive">{t.partialError}</p>
                             )}
                         </div>
 

@@ -443,6 +443,7 @@ export interface WorkListOptions {
   school?: SchoolType | 'all';
   studentIds?: number[];
   page?: number;
+  pageSize?: number;
 }
 
 function appendWorkFilters(
@@ -493,7 +494,7 @@ export async function getWorks(limit: number = 20, locale: string = 'zh-Hans', o
     locale: strapiLocale,
     'filters[isActive][$eq]': true,
     sort: 'publishedAt:desc',
-    'pagination[limit]': limit,
+    'pagination[pageSize]': options.pageSize || limit,
     populate: '*',
   }
   appendWorkFilters(params, options)
@@ -501,6 +502,14 @@ export async function getWorks(limit: number = 20, locale: string = 'zh-Hans', o
   return fetchAPI<StrapiResponse<Work[]>>(
     `/works?${createCollectionQuery(params)}`
   );
+}
+
+export interface StudentListOptions {
+  query?: string;
+  school?: SchoolType | 'all';
+  page?: number;
+  pageSize?: number;
+  studentIds?: number[];
 }
 
 export async function getWorksByStudent(
@@ -637,11 +646,110 @@ export async function searchStudents(
  * 获取所有学生列表
  * @param locale 语言代码
  */
-export async function getStudents(locale: string = 'zh-Hans') {
+export async function getStudents(locale: string = 'zh-Hans', options: StudentListOptions = {}) {
   const strapiLocale = toStrapiLocale(locale)
+  const params: Record<string, string | number | boolean | undefined> = {
+    locale: strapiLocale,
+    sort: 'name:asc',
+    populate: 'avatar',
+    'pagination[page]': options.page || 1,
+    'pagination[pageSize]': Math.min(100, Math.max(1, options.pageSize || 50)),
+  }
+
+  const query = options.query?.trim()
+  if (query) {
+    params['filters[$or][0][name][$containsi]'] = query
+    params['filters[$or][1][organization][$containsi]'] = query
+  }
+
+  if (options.school && options.school !== 'all') {
+    params['filters[school][$eq]'] = options.school
+  }
+
+  options.studentIds?.forEach((studentId, index) => {
+    params[`filters[id][$in][${index}]`] = studentId
+  })
+
   return fetchAPI<StrapiResponse<Student[]>>(
-    `/students?locale=${strapiLocale}&sort=name:asc&populate=avatar&pagination[limit]=500`
+    `/students?${createCollectionQuery(params)}`
   );
+}
+
+export async function getAllCollectionItems<T>(
+  endpoint: string,
+  locale: string = 'zh-Hans',
+  options: {
+    pageSize?: number;
+    populate?: string;
+    filters?: Record<string, string | number | boolean | undefined>;
+  } = {}
+) {
+  const pageSize = Math.min(100, Math.max(1, options.pageSize || 100))
+  const items: T[] = []
+  let page = 1
+  let pageCount = 1
+
+  do {
+    const response = await fetchAPI<StrapiResponse<T[]>>(
+      `/${endpoint}?${createCollectionQuery({
+        locale: toStrapiLocale(locale),
+        populate: options.populate || '*',
+        'pagination[page]': page,
+        'pagination[pageSize]': pageSize,
+        ...options.filters,
+      })}`
+    )
+    items.push(...(response.data || []))
+    pageCount = response.meta?.pagination?.pageCount || 1
+    page++
+  } while (page <= pageCount)
+
+  return items
+}
+
+export interface SearchSectionResult<T> {
+  data: T[];
+  total: number;
+  error?: string;
+}
+
+async function safeSearch<T>(label: string, request: Promise<StrapiResponse<T[]>>): Promise<SearchSectionResult<T>> {
+  try {
+    const response = await request
+    return {
+      data: response.data || [],
+      total: response.meta?.pagination?.total ?? response.data?.length ?? 0,
+    }
+  } catch (error) {
+    console.error(`Failed to search ${label}:`, error)
+    return {
+      data: [],
+      total: 0,
+      error: error instanceof Error ? error.message : 'Search failed',
+    }
+  }
+}
+
+export async function searchAllContent(query: string, locale: string = 'zh-Hans') {
+  if (!query.trim()) {
+    return {
+      announcements: { data: [], total: 0 } as SearchSectionResult<Announcement>,
+      works: { data: [], total: 0 } as SearchSectionResult<Work>,
+      onlineEvents: { data: [], total: 0 } as SearchSectionResult<OnlineEvent>,
+      offlineEvents: { data: [], total: 0 } as SearchSectionResult<OfflineEvent>,
+      students: { data: [], total: 0 } as SearchSectionResult<Student>,
+    }
+  }
+
+  const [announcements, works, onlineEvents, offlineEvents, students] = await Promise.all([
+    safeSearch('announcements', searchAnnouncements(query, locale)),
+    safeSearch('works', searchWorks(query, locale)),
+    safeSearch('online events', searchOnlineEvents(query, locale)),
+    safeSearch('offline events', searchOfflineEvents(query, locale)),
+    safeSearch('students', searchStudents(query, locale)),
+  ])
+
+  return { announcements, works, onlineEvents, offlineEvents, students }
 }
 
 /**

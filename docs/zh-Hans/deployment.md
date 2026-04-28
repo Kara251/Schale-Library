@@ -38,9 +38,19 @@ ENCRYPTION_KEY=
 ADMIN_PANEL_ALLOWED_ROLES=maintainer,admin
 PANEL_INTERNAL_TOKEN=
 RATE_LIMIT_HASH_SECRET=
+CRON_ENABLED=false
 ```
 
 `PANEL_INTERNAL_TOKEN` 必须在后端和前端环境中保持一致。
+生产环境必须显式设置 `CRON_ENABLED`。多实例 serverless 部署通常只应有一个后端实例开启 cron。
+
+部署前可运行：
+
+```bash
+NODE_ENV=production pnpm verify:deploy
+```
+
+备份、恢复和空库种子数据见 [backup-restore.md](./backup-restore.md)。
 
 ## 自研后台维护账号恢复
 

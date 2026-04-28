@@ -18,7 +18,13 @@ export interface AdminListQuery {
   page?: number
   pageSize?: number
   search?: string
-  status?: AdminPublishStatus
+  status?: AdminPublishStatus | string
+  action?: string
+  actor?: string
+  collection?: string
+  from?: string
+  to?: string
+  stage?: string
 }
 
 export interface AdminStrapiEntry {
@@ -50,6 +56,52 @@ export interface AdminDashboardItem {
   href: string
 }
 
+export interface AdminSystemHealthCheck {
+  key: string
+  label: string
+  status: 'ok' | 'warning' | 'error'
+  message: string
+}
+
+export interface AdminSystemHealth {
+  status: 'ok' | 'warning' | 'error'
+  generatedAt: string
+  checks: AdminSystemHealthCheck[]
+}
+
+export interface ContentQualityIssue extends AdminStrapiEntry {
+  issueType: string
+  severity: 'info' | 'warning' | 'error'
+  status: 'open' | 'resolved'
+  collection: string
+  targetId?: number
+  targetDocumentId?: string
+  locale?: string
+  title?: string
+  message: string
+  detectedAt: string
+}
+
+export interface ContentQualityQuery {
+  page?: number
+  pageSize?: number
+  status?: string
+  severity?: string
+  collection?: string
+  issueType?: string
+}
+
+export interface BulkActionPayload {
+  collection: AdminCollectionKey
+  action: string
+  ids: number[]
+  locale?: string
+  studentIds?: number[]
+  sourcePlatform?: string
+  school?: string
+  organization?: string
+}
+
 function buildCollectionQuery(key: AdminCollectionKey, query: AdminListQuery): URLSearchParams {
   const config = ADMIN_COLLECTION_CONFIG[key]
   const params = new URLSearchParams()
@@ -69,6 +121,14 @@ function buildCollectionQuery(key: AdminCollectionKey, query: AdminListQuery): U
 
   if (config.supportsDraft && query.status && query.status !== 'all') {
     params.set('status', query.status)
+  } else if (!config.supportsDraft && query.status && query.status !== 'all') {
+    params.set('status', query.status)
+  }
+
+  for (const key of ['action', 'actor', 'collection', 'from', 'to', 'stage'] as const) {
+    if (query[key]) {
+      params.set(key, String(query[key]))
+    }
   }
 
   return params
@@ -116,6 +176,42 @@ export async function listAdminCollection<T extends AdminStrapiEntry>(
   const config = ADMIN_COLLECTION_CONFIG[key]
   const searchParams = buildCollectionQuery(key, query)
   return adminFetchJson<AdminListResponse<T>>(session, `/api/panel/${config.endpoint}?${searchParams.toString()}`)
+}
+
+export async function getSystemHealth(session: AdminSession): Promise<AdminSystemHealth> {
+  return adminFetchJson<AdminSystemHealth>(session, '/api/panel/system/health')
+}
+
+export async function listContentQualityIssues(
+  session: AdminSession,
+  query: ContentQualityQuery
+): Promise<AdminListResponse<ContentQualityIssue>> {
+  const params = new URLSearchParams()
+  params.set('page', String(Math.max(1, query.page || 1)))
+  params.set('pageSize', String(Math.min(100, Math.max(1, query.pageSize || 20))))
+  if (query.status) params.set('status', query.status)
+  if (query.severity) params.set('severity', query.severity)
+  if (query.collection) params.set('collection', query.collection)
+  if (query.issueType) params.set('issueType', query.issueType)
+
+  return adminFetchJson<AdminListResponse<ContentQualityIssue>>(session, `/api/panel/quality/issues?${params.toString()}`)
+}
+
+export async function scanContentQuality(session: AdminSession): Promise<{ success: boolean; count: number }> {
+  return adminFetchJson<{ success: boolean; count: number }>(session, '/api/panel/quality/scan', {
+    method: 'POST',
+    body: {},
+  })
+}
+
+export async function runBulkAction(
+  session: AdminSession,
+  payload: BulkActionPayload
+): Promise<{ success: boolean; updated: number; failed: number; errors: string[] }> {
+  return adminFetchJson<{ success: boolean; updated: number; failed: number; errors: string[] }>(session, '/api/panel/bulk-action', {
+    method: 'POST',
+    body: { ...payload },
+  })
 }
 
 export async function getAdminCollectionItem<T extends AdminStrapiEntry>(

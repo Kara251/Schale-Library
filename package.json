@@ -10,7 +10,9 @@
     "lint": "pnpm --dir frontend lint",
     "test:regression": "node scripts/regression-check.mjs",
     "test:e2e": "playwright test",
-    "test:e2e:ci": "playwright test --reporter=line"
+    "test:e2e:ci": "playwright test --reporter=line",
+    "verify:deploy": "node scripts/verify-deploy.mjs",
+    "seed:basics": "node scripts/seed-basics.mjs"
   },
   "pnpm": {
     "overrides": {

@@ -36,6 +36,7 @@ function assertProductionEnv(strapi: Core.Strapi) {
     'ADMIN_PANEL_ALLOWED_ROLES',
     'PANEL_INTERNAL_TOKEN',
     'RATE_LIMIT_HASH_SECRET',
+    'CRON_ENABLED',
   ];
   const missing = required.filter((key) => isPlaceholder(process.env[key]));
 

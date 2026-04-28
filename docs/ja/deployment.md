@@ -38,9 +38,19 @@ ENCRYPTION_KEY=
 ADMIN_PANEL_ALLOWED_ROLES=maintainer,admin
 PANEL_INTERNAL_TOKEN=
 RATE_LIMIT_HASH_SECRET=
+CRON_ENABLED=false
 ```
 
 `PANEL_INTERNAL_TOKEN` はバックエンドとフロントエンドの環境で同一にする必要があります。
+本番環境では `CRON_ENABLED` を明示的に設定してください。複数インスタンスの serverless 構成では、通常 cron を有効にするバックエンドは 1 つだけにします。
+
+デプロイ前に確認します。
+
+```bash
+NODE_ENV=production pnpm verify:deploy
+```
+
+バックアップ、復元、空 DB のシードについては [backup-restore.md](./backup-restore.md) を参照してください。
 
 ## 独自管理パネルのメンテナー復旧
 

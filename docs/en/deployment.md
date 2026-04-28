@@ -38,9 +38,19 @@ ENCRYPTION_KEY=
 ADMIN_PANEL_ALLOWED_ROLES=maintainer,admin
 PANEL_INTERNAL_TOKEN=
 RATE_LIMIT_HASH_SECRET=
+CRON_ENABLED=false
 ```
 
 `PANEL_INTERNAL_TOKEN` must be identical in the backend and frontend environments.
+Production must explicitly set `CRON_ENABLED`. In multi-instance serverless deployments, only one backend instance should normally run cron.
+
+Before deployment, run:
+
+```bash
+NODE_ENV=production pnpm verify:deploy
+```
+
+Backup, restore, and empty-database seed notes are in [backup-restore.md](./backup-restore.md).
 
 ## Custom Panel Maintainer Recovery
 

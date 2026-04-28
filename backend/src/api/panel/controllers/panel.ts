@@ -127,8 +127,10 @@ const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
 const SUPPORTED_LOCALES = new Set(['zh-Hans', 'en', 'ja'])
 const RATE_LIMIT_UID = 'api::rate-limit-record.rate-limit-record' as any
 const AUDIT_LOG_UID = 'api::admin-audit-log.admin-audit-log' as any
+const CONTENT_QUALITY_UID = 'api::content-quality-issue.content-quality-issue' as any
 const DEFAULT_RATE_LIMIT = 60
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60 * 1000
+const SUPPORTED_QUALITY_LOCALES = ['zh-Hans', 'en', 'ja']
 
 function isPanelCollectionKey(value: string): value is PanelCollectionKey {
   return value in COLLECTIONS
@@ -175,6 +177,57 @@ function buildStatusFilters(status: string | undefined, supportsDraft: boolean) 
       $null: true,
     },
   }
+}
+
+function buildCollectionSpecificFilters(collection: PanelCollectionKey, query: Record<string, unknown>) {
+  if (collection === 'admin-audit-logs') {
+    const filters: Record<string, unknown> = {}
+
+    if (typeof query.action === 'string' && query.action) {
+      filters.action = { $eq: query.action }
+    }
+
+    if (typeof query.status === 'string' && query.status && query.status !== 'all') {
+      filters.status = { $eq: query.status }
+    }
+
+    if (typeof query.collection === 'string' && query.collection) {
+      filters.targetCollection = { $eq: query.collection }
+    }
+
+    if (typeof query.actor === 'string' && query.actor.trim()) {
+      filters.$or = [
+        { actorEmail: { $containsi: query.actor.trim() } },
+        { actorUsername: { $containsi: query.actor.trim() } },
+      ]
+    }
+
+    const createdAt: Record<string, string> = {}
+    if (typeof query.from === 'string' && query.from) {
+      createdAt.$gte = new Date(query.from).toISOString()
+    }
+    if (typeof query.to === 'string' && query.to) {
+      createdAt.$lte = new Date(query.to).toISOString()
+    }
+    if (Object.keys(createdAt).length > 0) {
+      filters.createdAt = createdAt
+    }
+
+    return filters
+  }
+
+  if (collection === 'sync-logs') {
+    const filters: Record<string, unknown> = {}
+    if (typeof query.status === 'string' && query.status && query.status !== 'all') {
+      filters.status = { $eq: query.status }
+    }
+    if (typeof query.stage === 'string' && query.stage && query.stage !== 'all') {
+      filters.stage = { $eq: query.stage }
+    }
+    return filters
+  }
+
+  return {}
 }
 
 function mergeFilters(...filters: Array<Record<string, unknown>>) {
@@ -491,6 +544,360 @@ async function cleanupExpiredRateLimits(now: Date) {
   }
 }
 
+function getEnvFlag(name: string) {
+  const value = process.env[name]
+  if (value === undefined) {
+    return undefined
+  }
+
+  return value === 'true' || value === '1'
+}
+
+function getPlaceholderStatus(value?: string) {
+  const normalized = String(value || '').trim().toLowerCase()
+  return !normalized || normalized === 'change-me' || normalized === 'change-me-too' || normalized.includes('tobemodified')
+}
+
+function createHealthCheck(key: string, label: string, ok: boolean, message: string, warning = false) {
+  return {
+    key,
+    label,
+    status: ok ? 'ok' : warning ? 'warning' : 'error',
+    message,
+  }
+}
+
+async function checkUsersPermissionsRole(type: string) {
+  return strapi.db.query('plugin::users-permissions.role').findOne({
+    where: { type },
+    populate: ['permissions'],
+  })
+}
+
+async function getUnsafeRolePermissions(type: string) {
+  const role = await checkUsersPermissionsRole(type)
+  const permissions = Array.isArray(role?.permissions) ? role.permissions : []
+
+  return permissions
+    .filter((permission: any) => permission?.enabled)
+    .map((permission: any) => String(permission.action || ''))
+    .filter((action: string) => {
+      const isCoreRead = /\.(find|findOne)$/.test(action)
+      const isUserSelfRead = action.includes('plugin::users-permissions.user.me')
+      const isAuthAction = action.includes('plugin::users-permissions.auth.')
+      return !isCoreRead && !isUserSelfRead && !isAuthAction
+    })
+}
+
+async function checkRssHubHealth() {
+  const service = strapi.service('api::bilibili-subscription.bilibili-subscription')
+  const instance = (service.getRssHubInstances?.() || [process.env.RSSHUB_URL || 'http://localhost:1200'])[0]
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 3000)
+
+  try {
+    const response = await fetch(instance, { signal: controller.signal })
+    return {
+      instance,
+      ok: response.ok || response.status === 404,
+      message: `RSSHub ${instance} responded with ${response.status}`,
+    }
+  } catch (error) {
+    return {
+      instance,
+      ok: false,
+      message: `RSSHub ${instance} unavailable: ${(error as Error).message}`,
+    }
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
+async function getSystemHealth() {
+  const requiredEnv = [
+    'APP_KEYS',
+    'API_TOKEN_SALT',
+    'ADMIN_JWT_SECRET',
+    'TRANSFER_TOKEN_SALT',
+    'JWT_SECRET',
+    'ENCRYPTION_KEY',
+    'ADMIN_PANEL_ALLOWED_ROLES',
+    'PANEL_INTERNAL_TOKEN',
+    'RATE_LIMIT_HASH_SECRET',
+  ]
+  const missingEnv = requiredEnv.filter((name) => getPlaceholderStatus(process.env[name]))
+  const checks: Array<Record<string, unknown>> = []
+
+  checks.push(createHealthCheck(
+    'production-env',
+    'Production secrets',
+    missingEnv.length === 0 || process.env.NODE_ENV !== 'production',
+    missingEnv.length === 0 ? 'Required production secrets are configured.' : `Missing or placeholder values: ${missingEnv.join(', ')}`,
+    process.env.NODE_ENV !== 'production'
+  ))
+
+  const databaseClient = process.env.DATABASE_CLIENT || 'sqlite'
+  checks.push(createHealthCheck(
+    'database',
+    'Database',
+    process.env.NODE_ENV !== 'production' || databaseClient === 'postgres' || getEnvFlag('ALLOW_PRODUCTION_SQLITE') === true,
+    `DATABASE_CLIENT=${databaseClient}`,
+    process.env.NODE_ENV !== 'production'
+  ))
+
+  const cloudinaryValues = [process.env.CLOUDINARY_NAME, process.env.CLOUDINARY_KEY, process.env.CLOUDINARY_SECRET]
+  const cloudinaryConfigured = cloudinaryValues.every(Boolean)
+  const cloudinaryPartial = cloudinaryValues.some(Boolean) && !cloudinaryConfigured
+  checks.push(createHealthCheck(
+    'cloudinary',
+    'Upload provider',
+    !cloudinaryPartial,
+    cloudinaryConfigured ? 'Cloudinary is configured.' : cloudinaryPartial ? 'Cloudinary variables must be configured together.' : 'Using local upload provider.',
+    !cloudinaryConfigured && !cloudinaryPartial
+  ))
+
+  const allowedRoles = (process.env.ADMIN_PANEL_ALLOWED_ROLES || '')
+    .split(',')
+    .map((role) => role.trim().toLowerCase())
+    .filter(Boolean)
+  const missingRoles: string[] = []
+  for (const role of allowedRoles) {
+    if (!await checkUsersPermissionsRole(role)) {
+      missingRoles.push(role)
+    }
+  }
+  checks.push(createHealthCheck(
+    'panel-roles',
+    'Panel roles',
+    allowedRoles.length > 0 && missingRoles.length === 0,
+    allowedRoles.length === 0 ? 'ADMIN_PANEL_ALLOWED_ROLES is empty.' : missingRoles.length > 0 ? `Missing roles: ${missingRoles.join(', ')}` : `Allowed roles exist: ${allowedRoles.join(', ')}`
+  ))
+
+  const [publicUnsafe, authenticatedUnsafe] = await Promise.all([
+    getUnsafeRolePermissions('public').catch(() => []),
+    getUnsafeRolePermissions('authenticated').catch(() => []),
+  ])
+  checks.push(createHealthCheck(
+    'public-permissions',
+    'Public permissions',
+    publicUnsafe.length === 0,
+    publicUnsafe.length > 0 ? `Unsafe public actions: ${publicUnsafe.join(', ')}` : 'No unsafe public write actions detected.'
+  ))
+  checks.push(createHealthCheck(
+    'authenticated-permissions',
+    'Authenticated permissions',
+    authenticatedUnsafe.length === 0,
+    authenticatedUnsafe.length > 0 ? `Unsafe authenticated actions: ${authenticatedUnsafe.join(', ')}` : 'No unsafe authenticated write actions detected.'
+  ))
+
+  const rss = await checkRssHubHealth()
+  checks.push(createHealthCheck('rsshub', 'RSSHub', rss.ok, rss.message, true))
+
+  return {
+    status: checks.some((check) => check.status === 'error') ? 'error' : checks.some((check) => check.status === 'warning') ? 'warning' : 'ok',
+    generatedAt: new Date().toISOString(),
+    checks,
+  }
+}
+
+function getEntryTitle(entry: any) {
+  return String(entry?.title || entry?.name || entry?.upName || entry?.targetName || `#${entry?.id || ''}`).trim()
+}
+
+function toIssue(input: {
+  issueType: string
+  severity?: string
+  collection: string
+  entry?: any
+  locale?: string
+  message: string
+  details?: Record<string, unknown>
+}) {
+  return {
+    issueType: input.issueType,
+    severity: input.severity || 'warning',
+    status: 'open',
+    collection: input.collection,
+    targetId: typeof input.entry?.id === 'number' ? input.entry.id : undefined,
+    targetDocumentId: typeof input.entry?.documentId === 'string' ? input.entry.documentId : undefined,
+    locale: input.locale || input.entry?.locale,
+    title: input.entry ? getEntryTitle(input.entry) : undefined,
+    message: input.message,
+    details: input.details,
+    detectedAt: new Date().toISOString(),
+  }
+}
+
+function addMissingTranslations(issues: any[], collection: string, entries: any[]) {
+  const byDocumentId = new Map<string, any[]>()
+  for (const entry of entries) {
+    if (!entry?.documentId) {
+      continue
+    }
+    const list = byDocumentId.get(entry.documentId) || []
+    list.push(entry)
+    byDocumentId.set(entry.documentId, list)
+  }
+
+  for (const entriesForDocument of byDocumentId.values()) {
+    const locales = new Set(entriesForDocument.map((entry) => entry.locale).filter(Boolean))
+    const representative = entriesForDocument[0]
+    for (const locale of SUPPORTED_QUALITY_LOCALES) {
+      if (!locales.has(locale)) {
+        issues.push(toIssue({
+          issueType: 'missing-translation',
+          collection,
+          entry: representative,
+          locale,
+          message: `${collection} 缺少 ${locale} 版本`,
+          severity: 'info',
+        }))
+      }
+    }
+  }
+}
+
+async function findAllForQuality(uid: any, options: Record<string, unknown> = {}) {
+  return strapi.entityService.findMany(uid, {
+    ...options,
+    locale: 'all',
+    limit: 1000,
+  } as any) as Promise<any[]>
+}
+
+async function scanContentQuality() {
+  const issues: any[] = []
+  const [works, students, onlineEvents, offlineEvents, announcements] = await Promise.all([
+    findAllForQuality('api::work.work', { populate: { coverImage: true, students: true } }),
+    findAllForQuality('api::student.student', { populate: { avatar: true } }),
+    findAllForQuality('api::online-event.online-event', { populate: { coverImage: true } }),
+    findAllForQuality('api::offline-event.offline-event', { populate: { coverImage: true } }),
+    findAllForQuality('api::announcement.announcement', { populate: { coverImage: true } }),
+  ])
+
+  addMissingTranslations(issues, 'works', works)
+  addMissingTranslations(issues, 'students', students)
+  addMissingTranslations(issues, 'online-events', onlineEvents)
+  addMissingTranslations(issues, 'offline-events', offlineEvents)
+  addMissingTranslations(issues, 'announcements', announcements)
+
+  const sourceGroups = new Map<string, any[]>()
+  for (const work of works) {
+    if (!work.coverImage && !work.coverImageUrl) {
+      issues.push(toIssue({ issueType: 'missing-image', collection: 'works', entry: work, message: '作品缺少封面图或远程封面地址' }))
+    }
+    if (!Array.isArray(work.students) || work.students.length === 0) {
+      issues.push(toIssue({ issueType: 'missing-students', collection: 'works', entry: work, message: '作品尚未关联学生' }))
+    }
+    if (!work.link && !work.sourceUrl) {
+      issues.push(toIssue({ issueType: 'missing-link', collection: 'works', entry: work, message: '作品缺少外链或来源地址' }))
+    }
+    if (!work.publishedAt) {
+      issues.push(toIssue({ issueType: 'draft', severity: 'info', collection: 'works', entry: work, message: '作品仍处于草稿状态' }))
+    }
+
+    const sourceKey = work.sourceUrl || (work.sourcePlatform && work.sourceId ? `${work.sourcePlatform}:${work.sourceId}` : '')
+    if (sourceKey) {
+      const list = sourceGroups.get(sourceKey) || []
+      list.push(work)
+      sourceGroups.set(sourceKey, list)
+    }
+  }
+
+  for (const duplicates of sourceGroups.values()) {
+    if (duplicates.length > 1) {
+      for (const work of duplicates) {
+        issues.push(toIssue({
+          issueType: 'duplicate-source',
+          severity: 'error',
+          collection: 'works',
+          entry: work,
+          message: '存在重复来源的作品',
+          details: { duplicateIds: duplicates.map((item) => item.id) },
+        }))
+      }
+    }
+  }
+
+  for (const student of students) {
+    if (!student.avatar) {
+      issues.push(toIssue({ issueType: 'missing-image', collection: 'students', entry: student, message: '学生缺少头像', severity: 'info' }))
+    }
+    if (!student.school) {
+      issues.push(toIssue({ issueType: 'missing-link', collection: 'students', entry: student, message: '学生缺少学校信息', severity: 'info' }))
+    }
+    if (!student.publishedAt) {
+      issues.push(toIssue({ issueType: 'draft', severity: 'info', collection: 'students', entry: student, message: '学生仍处于草稿状态' }))
+    }
+  }
+
+  for (const [collection, events] of [['online-events', onlineEvents], ['offline-events', offlineEvents]] as const) {
+    for (const event of events) {
+      if (!event.coverImage) {
+        issues.push(toIssue({ issueType: 'missing-image', collection, entry: event, message: '活动缺少封面图', severity: 'info' }))
+      }
+      if (!event.link) {
+        issues.push(toIssue({ issueType: 'missing-link', collection, entry: event, message: '活动缺少外链', severity: 'info' }))
+      }
+      if (event.startTime && event.endTime && new Date(event.startTime).getTime() > new Date(event.endTime).getTime()) {
+        issues.push(toIssue({ issueType: 'invalid-event-time', severity: 'error', collection, entry: event, message: '活动结束时间早于开始时间' }))
+      }
+      if (!event.publishedAt) {
+        issues.push(toIssue({ issueType: 'draft', severity: 'info', collection, entry: event, message: '活动仍处于草稿状态' }))
+      }
+    }
+  }
+
+  await strapi.db.query(CONTENT_QUALITY_UID).deleteMany({ where: { status: 'open' } })
+  for (const issue of issues) {
+    await strapi.entityService.create(CONTENT_QUALITY_UID, { data: issue })
+  }
+
+  return issues
+}
+
+async function listQualityIssues(ctx: any) {
+  const page = Math.max(1, toNumber(ctx.query.page, 1))
+  const pageSize = Math.min(100, Math.max(1, toNumber(ctx.query.pageSize, 20)))
+  const start = (page - 1) * pageSize
+  const filters: Record<string, unknown> = {}
+
+  if (typeof ctx.query.status === 'string' && ctx.query.status && ctx.query.status !== 'all') {
+    filters.status = { $eq: ctx.query.status }
+  }
+  if (typeof ctx.query.severity === 'string' && ctx.query.severity && ctx.query.severity !== 'all') {
+    filters.severity = { $eq: ctx.query.severity }
+  }
+  if (typeof ctx.query.collection === 'string' && ctx.query.collection && ctx.query.collection !== 'all') {
+    filters.collection = { $eq: ctx.query.collection }
+  }
+  if (typeof ctx.query.issueType === 'string' && ctx.query.issueType && ctx.query.issueType !== 'all') {
+    filters.issueType = { $eq: ctx.query.issueType }
+  }
+
+  const [data, total] = await Promise.all([
+    strapi.entityService.findMany(CONTENT_QUALITY_UID, {
+      filters,
+      sort: 'detectedAt:desc',
+      start,
+      limit: pageSize,
+    }),
+    strapi.documents(CONTENT_QUALITY_UID).count({ filters }),
+  ])
+
+  return {
+    data,
+    meta: {
+      pagination: {
+        page,
+        pageSize,
+        pageCount: Math.max(1, Math.ceil(total / pageSize)),
+        total,
+      },
+    },
+  }
+}
+
 async function checkRateLimit(ctx: any) {
   validateInternalToken(ctx)
 
@@ -559,7 +966,8 @@ async function listCollection(ctx: any, collection: PanelCollectionKey) {
 
   const filters = mergeFilters(
     buildSearchFilters(config.searchFields, ctx.query.search),
-    buildStatusFilters(typeof ctx.query.status === 'string' ? ctx.query.status : undefined, config.supportsDraft)
+    buildStatusFilters(typeof ctx.query.status === 'string' ? ctx.query.status : undefined, config.supportsDraft),
+    buildCollectionSpecificFilters(collection, ctx.query)
   )
 
   const queryOptions: Record<string, unknown> = {
@@ -696,7 +1104,183 @@ async function uploadMedia(ctx: any) {
   }
 }
 
+function escapeCsv(value: unknown) {
+  const text = value === null || value === undefined ? '' : String(value)
+  return `"${text.replace(/"/g, '""')}"`
+}
+
+async function exportAdminAuditLogs(ctx: any) {
+  const filters = mergeFilters(
+    buildSearchFilters(COLLECTIONS['admin-audit-logs'].searchFields, ctx.query.search),
+    buildCollectionSpecificFilters('admin-audit-logs', ctx.query)
+  )
+  const rows = await strapi.entityService.findMany(AUDIT_LOG_UID, {
+    filters,
+    sort: 'createdAt:desc',
+    limit: 1000,
+  }) as any[]
+  const header = ['createdAt', 'action', 'status', 'actorEmail', 'actorUsername', 'targetCollection', 'targetId', 'targetName', 'locale', 'message']
+  const csv = [
+    header.join(','),
+    ...rows.map((row) => header.map((key) => escapeCsv(row[key])).join(',')),
+  ].join('\n')
+
+  ctx.set('Content-Type', 'text/csv; charset=utf-8')
+  ctx.set('Content-Disposition', 'attachment; filename="admin-audit-logs.csv"')
+  ctx.body = csv
+}
+
+function normalizeIds(value: unknown) {
+  if (!Array.isArray(value)) {
+    throw new ApplicationError('ids 必须是数组')
+  }
+
+  const ids = value
+    .map((id) => Number(id))
+    .filter((id) => Number.isFinite(id))
+
+  if (ids.length === 0) {
+    throw new ApplicationError('未选择任何内容')
+  }
+
+  return ids
+}
+
+async function runBulkAction(ctx: any) {
+  const body = ctx.request.body || {}
+  const collection = ensureCollection(String(body.collection || ''))
+  ensureWritableCollection(collection)
+
+  const action = String(body.action || '')
+  const ids = normalizeIds(body.ids)
+  const locale = mapLocale(body.locale)
+  const config = COLLECTIONS[collection]
+  let updated = 0
+  const errors: string[] = []
+
+  for (const id of ids) {
+    try {
+      const data: Record<string, unknown> = {}
+
+      switch (action) {
+        case 'publish':
+          if (!config.supportsDraft) throw new ApplicationError('该集合不支持发布状态')
+          data.publishedAt = new Date().toISOString()
+          break
+        case 'unpublish':
+          if (!config.supportsDraft) throw new ApplicationError('该集合不支持发布状态')
+          data.publishedAt = null
+          break
+        case 'activate':
+          if (!config.fields.includes('isActive')) throw new ApplicationError('该集合不支持启用状态')
+          data.isActive = true
+          break
+        case 'deactivate':
+          if (!config.fields.includes('isActive')) throw new ApplicationError('该集合不支持启用状态')
+          data.isActive = false
+          break
+        case 'set-students':
+          if (collection !== 'works') throw new ApplicationError('仅作品支持批量关联学生')
+          data.students = normalizeRelationList(body.studentIds)
+          break
+        case 'set-source-platform':
+          if (collection !== 'works') throw new ApplicationError('仅作品支持批量设置来源平台')
+          data.sourcePlatform = String(body.sourcePlatform || 'manual')
+          break
+        case 'set-student-school':
+          if (collection !== 'students') throw new ApplicationError('仅学生支持批量设置学校')
+          data.school = String(body.school || 'other')
+          break
+        case 'set-student-organization':
+          if (collection !== 'students') throw new ApplicationError('仅学生支持批量设置组织')
+          data.organization = String(body.organization || '')
+          break
+        default:
+          throw new ApplicationError('不支持的批量操作')
+      }
+
+      await strapi.entityService.update(config.uid as any, id, {
+        data,
+        locale: config.localized ? locale : undefined,
+      } as any)
+      updated++
+    } catch (error) {
+      errors.push(`#${id}: ${(error as Error).message}`)
+    }
+  }
+
+  await recordAdminAuditLog(ctx, {
+    action: 'update',
+    status: errors.length > 0 ? 'failed' : 'success',
+    targetCollection: collection,
+    locale,
+    message: `批量操作 ${action}: 成功 ${updated}/${ids.length}`,
+    details: { action, ids, errors },
+  })
+
+  return {
+    success: errors.length === 0,
+    updated,
+    failed: errors.length,
+    errors,
+  }
+}
+
 export default {
+  async systemHealth(ctx: any) {
+    try {
+      ctx.body = await getSystemHealth()
+    } catch (error) {
+      ctx.badRequest((error as Error).message)
+    }
+  },
+
+  async qualityIssues(ctx: any) {
+    try {
+      ctx.body = await listQualityIssues(ctx)
+    } catch (error) {
+      ctx.badRequest((error as Error).message)
+    }
+  },
+
+  async scanQuality(ctx: any) {
+    try {
+      const issues = await scanContentQuality()
+      await recordAdminAuditLog(ctx, {
+        action: 'update',
+        status: 'success',
+        targetCollection: 'content-quality-issues',
+        message: `内容质量扫描完成，发现 ${issues.length} 个问题`,
+        details: { count: issues.length },
+      })
+      ctx.body = { success: true, count: issues.length }
+    } catch (error) {
+      await recordAdminAuditLog(ctx, {
+        action: 'update',
+        status: 'failed',
+        targetCollection: 'content-quality-issues',
+        message: (error as Error).message,
+      })
+      ctx.badRequest((error as Error).message)
+    }
+  },
+
+  async bulkAction(ctx: any) {
+    try {
+      ctx.body = await runBulkAction(ctx)
+    } catch (error) {
+      ctx.badRequest((error as Error).message)
+    }
+  },
+
+  async exportAuditLogs(ctx: any) {
+    try {
+      await exportAdminAuditLogs(ctx)
+    } catch (error) {
+      ctx.badRequest((error as Error).message)
+    }
+  },
+
   async list(ctx: any) {
     try {
       const collection = ensureCollection(ctx.params.collection)

@@ -38,6 +38,25 @@ jobs:
       - name: Run regression checks
         run: pnpm test:regression
 
+      - name: Verify deploy environment contract
+        run: pnpm verify:deploy
+        env:
+          NODE_ENV: production
+          DATABASE_CLIENT: postgres
+          DATABASE_URL: postgres://user:pass@example.com:5432/db
+          CRON_ENABLED: false
+          APP_KEYS: ciKey1,ciKey2
+          API_TOKEN_SALT: ci-token-salt
+          ADMIN_JWT_SECRET: ci-admin-jwt-secret
+          TRANSFER_TOKEN_SALT: ci-transfer-token-salt
+          JWT_SECRET: ci-jwt-secret
+          ENCRYPTION_KEY: ci-encryption-key-32-characters
+          ADMIN_PANEL_ALLOWED_ROLES: maintainer,admin
+          PANEL_INTERNAL_TOKEN: ci-panel-token
+          RATE_LIMIT_HASH_SECRET: ci-rate-limit-secret
+          NEXT_PUBLIC_API_URL: http://127.0.0.1:59999
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+
       - name: Build backend
         run: pnpm --dir backend build
         env:
