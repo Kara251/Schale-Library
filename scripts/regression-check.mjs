@@ -15,6 +15,13 @@ function assertContains(path, expected) {
   }
 }
 
+function assertNotContains(path, unexpected) {
+  const content = read(path)
+  if (content.includes(unexpected)) {
+    throw new Error(`${path} still contains unexpected content: ${unexpected}`)
+  }
+}
+
 function assertExists(path) {
   if (!existsSync(join(root, path))) {
     throw new Error(`${path} does not exist`)
@@ -82,5 +89,17 @@ assertContains('frontend/src/app/[locale]/manage/content-quality/page.tsx', 'Con
 assertContains('frontend/src/app/[locale]/manage/bulk-actions/page.tsx', 'Bulk Actions')
 assertContains('frontend/src/app/sitemap.ts', 'sitemapEntry')
 assertContains('frontend/src/app/sitemap.ts', 'getAllCollectionItems')
+assertContains('backend/config/cron-tasks.ts', 'locked_until')
+assertContains('backend/config/cron-tasks.ts', 'where({ id: lock.id, owner: lock.owner })')
+assertContains('backend/src/api/panel/controllers/panel.ts', 'RATE_LIMIT_TABLE')
+assertContains('backend/src/api/panel/controllers/panel.ts', 'transaction(async')
+assertContains('backend/src/api/panel/controllers/panel.ts', 'QUALITY_SCAN_PAGE_SIZE')
+assertContains('backend/src/api/panel/controllers/panel.ts', 'replacementDetectedAt')
+assertNotContains('backend/src/api/panel/controllers/panel.ts', 'limit: 1000')
+assertContains('backend/src/api/panel/controllers/panel.ts', 'AUDIT_EXPORT_MAX_ROWS')
+assertContains('backend/src/api/panel/controllers/panel.ts', 'X-Export-Truncated')
+assertContains('backend/src/api/bilibili-subscription/services/bilibili-subscription.ts', 'processDueRetries')
+assertContains('backend/src/api/bilibili-subscription/services/bilibili-subscription.ts', 'scheduleSubscriptionRetry')
+assertNotContains('backend/src/api/bilibili-subscription/services/bilibili-subscription.ts', '5 * 60 * 1000); // 5分钟')
 
 console.log('Regression checks passed')

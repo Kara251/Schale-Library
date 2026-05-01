@@ -132,8 +132,12 @@ const SUPPORTED_LOCALES = new Set(['zh-Hans', 'en', 'ja'])
 const RATE_LIMIT_UID = 'api::rate-limit-record.rate-limit-record' as any
 const AUDIT_LOG_UID = 'api::admin-audit-log.admin-audit-log' as any
 const CONTENT_QUALITY_UID = 'api::content-quality-issue.content-quality-issue' as any
+const RATE_LIMIT_TABLE = 'rate_limit_records'
 const DEFAULT_RATE_LIMIT = 60
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60 * 1000
+const QUALITY_SCAN_PAGE_SIZE = 100
+const AUDIT_EXPORT_PAGE_SIZE = 100
+const AUDIT_EXPORT_MAX_ROWS = 10000
 const SUPPORTED_QUALITY_LOCALES = ['zh-Hans', 'en', 'ja']
 
 function isPanelCollectionKey(value: string): value is PanelCollectionKey {
@@ -545,6 +549,12 @@ function normalizeRateLimitInput(ctx: any) {
   return { scope, identifier, limit, windowMs }
 }
 
+function isUniqueConstraintError(error: unknown) {
+  const code = (error as { code?: string })?.code
+  const message = (error as Error)?.message || ''
+  return code === '23505' || code === 'SQLITE_CONSTRAINT' || /unique constraint/i.test(message)
+}
+
 async function cleanupExpiredRateLimits(now: Date) {
   if (Math.random() > 0.02) {
     return
@@ -777,11 +787,25 @@ function addMissingTranslations(issues: any[], collection: string, entries: any[
 }
 
 async function findAllForQuality(uid: any, options: Record<string, unknown> = {}) {
-  return strapi.entityService.findMany(uid, {
-    ...options,
-    locale: 'all',
-    limit: 1000,
-  } as any) as Promise<any[]>
+  const entries: any[] = []
+  let start = 0
+
+  while (true) {
+    const page = await strapi.entityService.findMany(uid, {
+      ...options,
+      locale: 'all',
+      sort: options.sort || 'id:asc',
+      start,
+      limit: QUALITY_SCAN_PAGE_SIZE,
+    } as any) as any[]
+
+    entries.push(...page)
+    if (page.length < QUALITY_SCAN_PAGE_SIZE) {
+      return entries
+    }
+
+    start += QUALITY_SCAN_PAGE_SIZE
+  }
 }
 
 async function scanContentQuality() {
@@ -879,10 +903,28 @@ async function scanContentQuality() {
     }
   }
 
-  await strapi.db.query(CONTENT_QUALITY_UID).deleteMany({ where: { status: 'open' } })
+  const scanId = crypto.randomUUID()
+  const replacementDetectedAt = new Date().toISOString()
   for (const issue of issues) {
-    await strapi.entityService.create(CONTENT_QUALITY_UID, { data: issue })
+    await strapi.entityService.create(CONTENT_QUALITY_UID, {
+      data: {
+        ...issue,
+        detectedAt: replacementDetectedAt,
+        details: {
+          ...(issue.details || {}),
+          scanId,
+        },
+      },
+    })
   }
+  await strapi.db.query(CONTENT_QUALITY_UID).deleteMany({
+    where: {
+      status: 'open',
+      detectedAt: {
+        $lt: replacementDetectedAt,
+      },
+    },
+  })
 
   return issues
 }
@@ -934,58 +976,95 @@ async function checkRateLimit(ctx: any) {
 
   const { scope, identifier, limit, windowMs } = normalizeRateLimitInput(ctx)
   const now = new Date()
-  const resetAt = new Date(now.getTime() + windowMs)
   const key = hashRateLimitKey(scope, identifier)
 
   await cleanupExpiredRateLimits(now)
 
-  const records = await strapi.entityService.findMany(RATE_LIMIT_UID, {
-    filters: { key },
-    limit: 1,
-  }) as Array<{ id: number; count?: number; resetAt?: string }>
-  const record = records[0]
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await updateRateLimitWindow({ key, scope, limit, windowMs, now })
+    } catch (error) {
+      if (attempt === 0 && isUniqueConstraintError(error)) {
+        continue
+      }
+      throw error
+    }
+  }
 
-  if (!record || !record.resetAt || new Date(record.resetAt).getTime() <= now.getTime()) {
-    const data = {
-      key,
-      scope,
-      count: 1,
-      resetAt: resetAt.toISOString(),
+  throw new ApplicationError('限流状态更新失败')
+}
+
+async function updateRateLimitWindow(input: {
+  key: string
+  scope: string
+  limit: number
+  windowMs: number
+  now: Date
+}) {
+  const { key, scope, limit, windowMs, now } = input
+  const resetAt = new Date(now.getTime() + windowMs)
+  const nowIso = now.toISOString()
+  const resetAtIso = resetAt.toISOString()
+
+  return strapi.db.connection.transaction(async (trx: any) => {
+    const table = strapi.db.connection(RATE_LIMIT_TABLE).transacting(trx)
+    const recordQuery = table
+      .select(['id', 'count', 'reset_at'])
+      .where({ key })
+      .first()
+
+    const client = String(strapi.db.connection?.client?.config?.client || '')
+    if (!client.includes('sqlite') && typeof recordQuery.forUpdate === 'function') {
+      recordQuery.forUpdate()
     }
 
-    if (record) {
-      await strapi.entityService.update(RATE_LIMIT_UID, record.id, { data })
-    } else {
-      await strapi.entityService.create(RATE_LIMIT_UID, { data })
+    const record = await recordQuery as { id: number; count?: number; reset_at?: string } | undefined
+
+    if (!record || !record.reset_at || new Date(record.reset_at).getTime() <= now.getTime()) {
+      const data = {
+        key,
+        scope,
+        count: 1,
+        reset_at: resetAtIso,
+        updated_at: nowIso,
+      }
+
+      if (record) {
+        await table.where({ id: record.id }).update(data)
+      } else {
+        await table.insert({
+          ...data,
+          created_at: nowIso,
+        })
+      }
+
+      return {
+        allowed: true,
+        remaining: Math.max(0, limit - 1),
+        resetAt: resetAtIso,
+      }
     }
+
+    const currentCount = Number(record.count || 0)
+    if (currentCount >= limit) {
+      return {
+        allowed: false,
+        remaining: 0,
+        resetAt: record.reset_at,
+      }
+    }
+
+    await table.where({ id: record.id }).update({
+      count: currentCount + 1,
+      updated_at: nowIso,
+    })
 
     return {
       allowed: true,
-      remaining: Math.max(0, limit - 1),
-      resetAt: resetAt.toISOString(),
+      remaining: Math.max(0, limit - currentCount - 1),
+      resetAt: record.reset_at,
     }
-  }
-
-  const currentCount = Number(record.count || 0)
-  if (currentCount >= limit) {
-    return {
-      allowed: false,
-      remaining: 0,
-      resetAt: record.resetAt,
-    }
-  }
-
-  await strapi.entityService.update(RATE_LIMIT_UID, record.id, {
-    data: {
-      count: currentCount + 1,
-    },
   })
-
-  return {
-    allowed: true,
-    remaining: Math.max(0, limit - currentCount - 1),
-    resetAt: record.resetAt,
-  }
 }
 
 async function listCollection(ctx: any, collection: PanelCollectionKey) {
@@ -1145,19 +1224,38 @@ async function exportAdminAuditLogs(ctx: any) {
     buildSearchFilters(COLLECTIONS['admin-audit-logs'].searchFields, ctx.query.search),
     buildCollectionSpecificFilters('admin-audit-logs', ctx.query)
   )
-  const rows = await strapi.entityService.findMany(AUDIT_LOG_UID, {
-    filters,
-    sort: 'createdAt:desc',
-    limit: 1000,
-  }) as any[]
+  const rows: any[] = []
+  let start = 0
+  let truncated = false
+
+  while (rows.length < AUDIT_EXPORT_MAX_ROWS) {
+    const page = await strapi.entityService.findMany(AUDIT_LOG_UID, {
+      filters,
+      sort: 'createdAt:desc',
+      start,
+      limit: Math.min(AUDIT_EXPORT_PAGE_SIZE, AUDIT_EXPORT_MAX_ROWS - rows.length),
+    }) as any[]
+
+    rows.push(...page)
+    if (page.length < AUDIT_EXPORT_PAGE_SIZE) {
+      break
+    }
+
+    start += AUDIT_EXPORT_PAGE_SIZE
+  }
+
+  const total = await strapi.documents(AUDIT_LOG_UID).count({ filters })
+  truncated = total > rows.length
   const header = ['createdAt', 'action', 'status', 'actorEmail', 'actorUsername', 'targetCollection', 'targetId', 'targetName', 'locale', 'message']
   const csv = [
+    ...(truncated ? [`# Export truncated to ${AUDIT_EXPORT_MAX_ROWS} of ${total} matching rows`] : []),
     header.join(','),
     ...rows.map((row) => header.map((key) => escapeCsv(row[key])).join(',')),
   ].join('\n')
 
   ctx.set('Content-Type', 'text/csv; charset=utf-8')
   ctx.set('Content-Disposition', 'attachment; filename="admin-audit-logs.csv"')
+  ctx.set('X-Export-Truncated', truncated ? 'true' : 'false')
   ctx.body = csv
 }
 

@@ -77,6 +77,9 @@ export default factories.createCoreController('api::bilibili-subscription.bilibi
 
             const result = await service.syncSubscription(subscription);
             const message = `同步完成，新增 ${result.created} 个视频`;
+            if (result.errors.length > 0 && result.created === 0) {
+                await service.scheduleSubscriptionRetry(subscription, result.errors[0], 'bilibili-sync-one');
+            }
             await service.recordSyncLog({
                 action: 'bilibili-sync-one',
                 message,

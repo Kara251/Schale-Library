@@ -3,10 +3,10 @@
  * 定期同步 B站 RSS
  */
 
-const JOB_LOCK_UID = 'api::job-lock.job-lock' as any;
 const ADMIN_AUDIT_LOG_UID = 'api::admin-audit-log.admin-audit-log' as any;
 const RATE_LIMIT_UID = 'api::rate-limit-record.rate-limit-record' as any;
 const SYNC_LOG_UID = 'api::sync-log.sync-log' as any;
+const JOB_LOCK_TABLE = 'job_locks';
 
 function getRetentionDays(name: string, fallback: number) {
     const value = Number(process.env[name] || fallback);
@@ -17,28 +17,66 @@ function daysAgo(days: number) {
     return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 }
 
+function isUniqueConstraintError(error: unknown) {
+    const code = (error as { code?: string })?.code;
+    const message = (error as Error)?.message || '';
+    return code === '23505' || code === 'SQLITE_CONSTRAINT' || /unique constraint/i.test(message);
+}
+
+function jsonValueForDb(strapi: any, value: Record<string, unknown>) {
+    const client = String(strapi.db.connection?.client?.config?.client || '');
+    return client.includes('sqlite') ? JSON.stringify(value) : value;
+}
+
+async function findOwnedLock(strapi: any, name: string, owner: string) {
+    return strapi.db.connection(JOB_LOCK_TABLE)
+        .select('id')
+        .where({ name, owner })
+        .first();
+}
+
 async function acquireJobLock(strapi: any, name: string, ttlMs: number) {
     const now = new Date();
+    const nowIso = now.toISOString();
     const lockedUntil = new Date(now.getTime() + ttlMs).toISOString();
     const owner = `${process.env.HOST || 'strapi'}:${process.pid}:${Date.now()}`;
-    const existing = await strapi.db.query(JOB_LOCK_UID).findOne({ where: { name } });
+    const table = strapi.db.connection(JOB_LOCK_TABLE);
 
-    if (existing && new Date(existing.lockedUntil).getTime() > now.getTime()) {
+    try {
+        await table.insert({
+            name,
+            owner,
+            locked_until: lockedUntil,
+            details: jsonValueForDb(strapi, { createdAt: nowIso }),
+            created_at: nowIso,
+            updated_at: nowIso,
+        });
+        const created = await findOwnedLock(strapi, name, owner);
+        return created ? { id: created.id, owner } : null;
+    } catch (error) {
+        if (!isUniqueConstraintError(error)) {
+            throw error;
+        }
+    }
+
+    const updated = await table
+        .where({ name })
+        .where((builder: any) => {
+            builder.where('locked_until', '<=', nowIso).orWhereNull('locked_until');
+        })
+        .update({
+            owner,
+            locked_until: lockedUntil,
+            details: jsonValueForDb(strapi, { refreshedAt: nowIso }),
+            updated_at: nowIso,
+        });
+
+    if (Number(updated) === 0) {
         return null;
     }
 
-    if (existing) {
-        await strapi.entityService.update(JOB_LOCK_UID, existing.id, {
-            data: { owner, lockedUntil, details: { refreshedAt: now.toISOString() } },
-        });
-        return { id: existing.id, owner };
-    }
-
-    const created = await strapi.entityService.create(JOB_LOCK_UID, {
-        data: { name, owner, lockedUntil, details: { createdAt: now.toISOString() } },
-    });
-
-    return { id: created.id, owner };
+    const refreshed = await findOwnedLock(strapi, name, owner);
+    return refreshed ? { id: refreshed.id, owner } : null;
 }
 
 async function releaseJobLock(strapi: any, lock: { id: number; owner: string } | null) {
@@ -47,13 +85,14 @@ async function releaseJobLock(strapi: any, lock: { id: number; owner: string } |
     }
 
     try {
-        await strapi.entityService.update(JOB_LOCK_UID, lock.id, {
-            data: {
+        await strapi.db.connection(JOB_LOCK_TABLE)
+            .where({ id: lock.id, owner: lock.owner })
+            .update({
                 owner: null,
-                lockedUntil: new Date(0).toISOString(),
-                details: { releasedAt: new Date().toISOString() },
-            },
-        });
+                locked_until: new Date(0).toISOString(),
+                details: jsonValueForDb(strapi, { releasedAt: new Date().toISOString() }),
+                updated_at: new Date().toISOString(),
+            });
     } catch (error) {
         strapi.log.warn(`[Cron] 释放任务锁失败: ${(error as Error).message}`);
     }

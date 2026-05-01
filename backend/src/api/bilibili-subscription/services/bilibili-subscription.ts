@@ -75,6 +75,13 @@ interface RssFetchResult {
     instance: string;
 }
 
+interface RetrySyncResult {
+    total: number;
+    created: number;
+    skipped: number;
+    errors: string[];
+}
+
 function getErrorMessage(error: unknown): string {
     if (error instanceof Error) {
         return error.message;
@@ -107,6 +114,8 @@ const rssCache = new Map<string, { data: RSSItem[]; expires: number }>();
 const RSS_CACHE_TTL = 5 * 60 * 1000; // 5分钟
 const RSS_FETCH_TIMEOUT_MS = 15000;
 const RSS_SYNC_CONCURRENCY = Math.max(1, Math.min(10, Number(process.env.RSS_SYNC_CONCURRENCY || '3')));
+const RSS_RETRY_DELAY_MS = Math.max(60 * 1000, Number(process.env.RSS_RETRY_DELAY_MS || '300000'));
+const RSS_RETRY_BATCH_SIZE = 50;
 const rssParser = new XMLParser({
     ignoreAttributes: false,
     cdataPropName: '__cdata',
@@ -166,6 +175,154 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
         } catch (error) {
             strapi.log.warn(`同步日志写入失败: ${getErrorMessage(error)}`);
         }
+    },
+
+    async scheduleSubscriptionRetry(
+        subscription: BilibiliSubscription,
+        reason: string,
+        action: SyncLogAction = 'bilibili-sync-all'
+    ): Promise<void> {
+        const now = new Date();
+        const nextRetryAt = new Date(now.getTime() + RSS_RETRY_DELAY_MS);
+        const retryDetails = {
+            retry: true,
+            retryState: 'queued',
+            subscriptionId: subscription.id,
+            upName: subscription.upName,
+            reason,
+            nextRetryAt: nextRetryAt.toISOString(),
+        };
+        const existing = await strapi.entityService.findMany('api::sync-log.sync-log' as any, {
+            filters: {
+                status: 'retry',
+                stage: 'retry',
+                targetId: subscription.id,
+            },
+            sort: 'createdAt:desc',
+            limit: 1,
+        }) as any[];
+
+        if (existing[0]) {
+            await strapi.entityService.update('api::sync-log.sync-log' as any, existing[0].id, {
+                data: {
+                    message: `订阅 "${subscription.upName}" 同步失败，已刷新重试时间`,
+                    errors: [reason],
+                    errorCount: 1,
+                    details: retryDetails,
+                    finishedAt: now.toISOString(),
+                },
+            });
+            return;
+        }
+
+        await this.recordSyncLog({
+            action,
+            status: 'retry',
+            stage: 'retry',
+            message: `订阅 "${subscription.upName}" 同步失败，已安排重试`,
+            targetId: subscription.id,
+            targetName: subscription.upName,
+            total: 1,
+            errors: [reason],
+            errorCategory: 'retry-scheduled',
+            details: retryDetails,
+            startedAt: now,
+            finishedAt: now,
+        });
+    },
+
+    async processDueRetries(action: SyncLogAction = 'bilibili-sync-all'): Promise<RetrySyncResult> {
+        const now = new Date();
+        const retryLogs = await strapi.entityService.findMany('api::sync-log.sync-log' as any, {
+            filters: {
+                status: 'retry',
+                stage: 'retry',
+            },
+            sort: 'createdAt:asc',
+            limit: RSS_RETRY_BATCH_SIZE,
+        }) as any[];
+        const result: RetrySyncResult = {
+            total: 0,
+            created: 0,
+            skipped: 0,
+            errors: [],
+        };
+
+        for (const retryLog of retryLogs) {
+            const details = retryLog.details && typeof retryLog.details === 'object' ? retryLog.details : {};
+            const nextRetryAt = typeof details.nextRetryAt === 'string' ? new Date(details.nextRetryAt) : now;
+            if (!details.retry || nextRetryAt.getTime() > now.getTime()) {
+                continue;
+            }
+
+            result.total++;
+            try {
+                const subscriptionId = Number(details.subscriptionId || retryLog.targetId);
+                if (!Number.isFinite(subscriptionId)) {
+                    throw new Error('重试记录缺少订阅 ID');
+                }
+
+                const subscription = await strapi.entityService.findOne(
+                    'api::bilibili-subscription.bilibili-subscription',
+                    subscriptionId
+                ) as BilibiliSubscription | null;
+                if (!subscription) {
+                    throw new Error(`订阅不存在: ${subscriptionId}`);
+                }
+
+                const retryResult = await this.syncSubscription(subscription);
+                result.created += retryResult.created;
+                result.skipped += retryResult.skipped;
+                result.errors.push(...retryResult.errors);
+
+                const failed = retryResult.errors.length > 0 && retryResult.created === 0;
+                await strapi.entityService.update('api::sync-log.sync-log' as any, retryLog.id, {
+                    data: {
+                        status: failed ? 'failed' : 'success',
+                        stage: failed ? 'failed' : 'success',
+                        message: failed
+                            ? `订阅 "${subscription.upName}" 重试失败`
+                            : `订阅 "${subscription.upName}" 重试完成，新增 ${retryResult.created} 个视频`,
+                        created: retryResult.created,
+                        skipped: retryResult.skipped,
+                        errorCount: retryResult.errors.length,
+                        errors: retryResult.errors,
+                        errorCategory: failed ? categorizeSyncError(retryResult.errors[0]) : undefined,
+                        finishedAt: new Date().toISOString(),
+                        details: {
+                            ...details,
+                            retryState: failed ? 'failed' : 'success',
+                            retryFinishedAt: new Date().toISOString(),
+                        },
+                    },
+                });
+
+                if (failed) {
+                    await this.scheduleSubscriptionRetry(subscription, retryResult.errors[0], action);
+                }
+            } catch (error) {
+                const errorMessage = getErrorMessage(error);
+                result.errors.push(errorMessage);
+                await strapi.entityService.update('api::sync-log.sync-log' as any, retryLog.id, {
+                    data: {
+                        status: 'failed',
+                        stage: 'failed',
+                        message: `订阅重试失败: ${errorMessage}`,
+                        errorCount: 1,
+                        errors: [errorMessage],
+                        errorCategory: categorizeSyncError(errorMessage),
+                        finishedAt: new Date().toISOString(),
+                        details: {
+                            ...details,
+                            retryState: 'failed',
+                            retryFinishedAt: new Date().toISOString(),
+                        },
+                    },
+                });
+            }
+        }
+
+        return result;
     },
 
     /**
@@ -477,6 +634,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
      * 同步所有活跃订阅（并发处理）
      */
     async syncAllSubscriptions(): Promise<{ total: number; created: number; skipped: number; errors: string[] }> {
+        const retryResult = await this.processDueRetries('bilibili-sync-all');
         const subscriptions = await strapi.entityService.findMany(
             'api::bilibili-subscription.bilibili-subscription',
             {
@@ -487,10 +645,10 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
         ) as BilibiliSubscription[];
 
         const totalResult = {
-            total: subscriptions.length,
-            created: 0,
-            skipped: 0,
-            errors: [] as string[],
+            total: subscriptions.length + retryResult.total,
+            created: retryResult.created,
+            skipped: retryResult.skipped,
+            errors: [...retryResult.errors] as string[],
         };
 
         const failedSubscriptions: BilibiliSubscription[] = [];
@@ -534,58 +692,12 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
 
         strapi.log.info(`批量同步完成: ${totalResult.total} 个订阅, ${totalResult.created} 个新视频`);
 
-        // 如果有失败的订阅，5分钟后自动重试
+        // 如果有失败的订阅，记录到数据库，由下一轮 cron 或手动同步拾取。
         if (failedSubscriptions.length > 0) {
-            strapi.log.info(`${failedSubscriptions.length} 个订阅失败，将在5分钟后重试`);
-            await this.recordSyncLog({
-                action: 'bilibili-sync-all',
-                status: 'retry',
-                stage: 'retry',
-                message: `${failedSubscriptions.length} 个订阅失败，已安排 5 分钟后重试`,
-                total: failedSubscriptions.length,
-                errorCategory: 'retry-scheduled',
-                errors: failedSubscriptions.map((subscription) => subscription.upName),
-                startedAt: new Date(),
-                finishedAt: new Date(),
-            });
-
-            setTimeout(async () => {
-                strapi.log.info(`开始重试 ${failedSubscriptions.length} 个失败的订阅`);
-                const retryStartedAt = new Date();
-                let retryCreated = 0;
-                let retrySkipped = 0;
-                const retryErrors: string[] = [];
-
-                for (const subscription of failedSubscriptions) {
-                    try {
-                        const result = await this.syncSubscription(subscription);
-                        retryCreated += result.created;
-                        retrySkipped += result.skipped;
-                        retryErrors.push(...result.errors);
-                        if (result.created > 0) {
-                            strapi.log.info(`重试成功: ${subscription.upName}, 新增 ${result.created} 个视频`);
-                        } else if (result.errors.length > 0) {
-                            strapi.log.warn(`重试仍失败: ${subscription.upName}`);
-                        }
-                    } catch (error) {
-                        strapi.log.error(`重试出错: ${subscription.upName}`, error);
-                        retryErrors.push(`重试出错 "${subscription.upName}": ${getErrorMessage(error)}`);
-                    }
-                }
-
-                await this.recordSyncLog({
-                    action: 'bilibili-sync-all',
-                    message: `重试完成，共处理 ${failedSubscriptions.length} 个订阅，新增 ${retryCreated} 个视频`,
-                    stage: retryErrors.length > 0 ? 'failed' : 'success',
-                    total: failedSubscriptions.length,
-                    created: retryCreated,
-                    skipped: retrySkipped,
-                    errors: retryErrors,
-                    errorCategory: retryErrors.length > 0 ? categorizeSyncError(retryErrors[0]) : undefined,
-                    startedAt: retryStartedAt,
-                    finishedAt: new Date(),
-                });
-            }, 5 * 60 * 1000); // 5分钟
+            strapi.log.info(`${failedSubscriptions.length} 个订阅失败，已记录为数据库重试队列`);
+            for (const subscription of failedSubscriptions) {
+                await this.scheduleSubscriptionRetry(subscription, totalResult.errors[0] || '同步失败', 'bilibili-sync-all');
+            }
         }
 
         return totalResult;
