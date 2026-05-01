@@ -1,5 +1,7 @@
 # 安全说明
 
+[English](../en/security.md) | [日本語](../ja/security.md)
+
 ## 依赖审计状态
 
 `pnpm audit --prod --audit-level moderate` 目前会报告 Strapi 依赖链中的传递性安全提示：

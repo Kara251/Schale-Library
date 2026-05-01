@@ -1,5 +1,7 @@
 # Security Notes
 
+[简体中文](../zh-Hans/security.md) | [日本語](../ja/security.md)
+
 ## Dependency Audit Status
 
 `pnpm audit --prod --audit-level moderate` currently reports transitive advisories through Strapi packages:

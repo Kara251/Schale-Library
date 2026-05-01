@@ -1,5 +1,7 @@
 # セキュリティメモ
 
+[简体中文](../zh-Hans/security.md) | [English](../en/security.md)
+
 ## 依存関係監査の状態
 
 `pnpm audit --prod --audit-level moderate` は、現在 Strapi の依存関係を経由した推移的な advisory を報告します。
