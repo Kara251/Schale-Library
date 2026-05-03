@@ -1,5 +1,5 @@
-import type React from "react"
 import type { Metadata } from "next"
+import { headers } from "next/headers"
 import { Analytics } from "@vercel/analytics/next"
 import { BackToTop } from "@/components/back-to-top"
 import { BackgroundImage } from "@/components/background-image"
@@ -8,6 +8,18 @@ import { LocaleProvider } from "@/contexts/locale-context"
 import { ToastProvider } from "@/contexts/toast-context"
 import { GoogleAnalytics, Clarity } from "@/components/third-party-analytics"
 import "./globals.css"
+
+type Locale = 'zh-Hans' | 'en' | 'ja'
+
+const htmlLangByLocale: Record<Locale, string> = {
+  'zh-Hans': 'zh-Hans',
+  en: 'en',
+  ja: 'ja',
+}
+
+function getHtmlLang(locale: string | null) {
+  return htmlLangByLocale[locale as Locale] || htmlLangByLocale['zh-Hans']
+}
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
@@ -24,13 +36,16 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children?: React.ReactNode
 }>) {
+  const requestHeaders = await headers()
+  const htmlLang = getHtmlLang(requestHeaders.get('x-schale-locale'))
+
   return (
-    <html lang="zh-CN" suppressHydrationWarning>
+    <html lang={htmlLang} suppressHydrationWarning>
       <head>
         {/* 字体 - 使用 loli.net 国内 CDN 镜像（全球可用） */}
         <link rel="preconnect" href="https://fonts.loli.net" crossOrigin="anonymous" />

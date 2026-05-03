@@ -66,6 +66,12 @@ function getLocaleFromPath(pathname: string): Locale | null {
     return resolveLocale(firstSegment)
 }
 
+function setLocaleRequestHeader(request: NextRequest, locale: Locale) {
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set('x-schale-locale', locale)
+    return requestHeaders
+}
+
 export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl
 
@@ -80,7 +86,25 @@ export function proxy(request: NextRequest) {
 
     const pathnameLocale = getLocaleFromPath(pathname)
     if (pathnameLocale) {
-        const response = NextResponse.next()
+        const firstSegment = pathname.split('/')[1]
+        if (firstSegment !== pathnameLocale) {
+            const canonicalUrl = request.nextUrl.clone()
+            const segments = canonicalUrl.pathname.split('/')
+            segments[1] = pathnameLocale
+            canonicalUrl.pathname = segments.join('/')
+            const response = NextResponse.redirect(canonicalUrl)
+            response.cookies.set('NEXT_LOCALE', pathnameLocale, {
+                path: '/',
+                maxAge: 60 * 60 * 24 * 365,
+            })
+            return response
+        }
+
+        const response = NextResponse.next({
+            request: {
+                headers: setLocaleRequestHeader(request, pathnameLocale),
+            },
+        })
         response.cookies.set('NEXT_LOCALE', pathnameLocale, {
             path: '/',
             maxAge: 60 * 60 * 24 * 365,

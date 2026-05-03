@@ -26,6 +26,7 @@ const getNavItems = (locale: Locale) => {
       offline: '线下活动',
       search: '搜索图书馆',
       login: '登录',
+      menu: '导航菜单',
     },
     'en': {
       announcements: 'Announcements',
@@ -35,6 +36,7 @@ const getNavItems = (locale: Locale) => {
       offline: 'Offline Events',
       search: 'Search library',
       login: 'Login',
+      menu: 'Navigation menu',
     },
     'ja': {
       announcements: 'お知らせ',
@@ -44,6 +46,7 @@ const getNavItems = (locale: Locale) => {
       offline: 'オフライン',
       search: '図書館を検索',
       login: 'ログイン',
+      menu: 'ナビゲーションメニュー',
     },
   }
   const t = labels[locale] || labels['zh-Hans']
@@ -73,10 +76,10 @@ export function Header() {
 
   const navItems = getNavItems(locale)
   const labels = {
-    'zh-Hans': { search: '搜索图书馆', login: '登录', themeLocale: '主题 & 语言' },
-    'en': { search: 'Search library', login: 'Login', themeLocale: 'Theme & Language' },
-    'ja': { search: '図書館を検索', login: 'ログイン', themeLocale: 'テーマ & 言語' },
-  }[locale] || { search: '搜索图书馆', login: '登录', themeLocale: '主题 & 语言' }
+    'zh-Hans': { search: '搜索图书馆', login: '登录', themeLocale: '主题 & 语言', menu: '导航菜单' },
+    'en': { search: 'Search library', login: 'Login', themeLocale: 'Theme & Language', menu: 'Navigation menu' },
+    'ja': { search: '図書館を検索', login: 'ログイン', themeLocale: 'テーマ & 言語', menu: 'ナビゲーションメニュー' },
+  }[locale] || { search: '搜索图书馆', login: '登录', themeLocale: '主题 & 语言', menu: '导航菜单' }
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && searchQuery.trim()) {
@@ -159,7 +162,7 @@ export function Header() {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-80 p-0" title="导航菜单">
+              <SheetContent side="right" className="w-80 p-0" title={labels.menu}>
 
                 {/* 搜索框 - 只在lg以下显示（当顶部搜索框隐藏时） */}
                 <div className="p-4 pt-12 border-b lg:hidden">

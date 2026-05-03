@@ -9,19 +9,26 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useLocale } from '@/contexts/locale-context'
-import { locales, localeNames } from '@/lib/i18n'
+import { locales, localeNames, type Locale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+
+const labels: Record<Locale, string> = {
+  'zh-Hans': '切换语言',
+  en: 'Change language',
+  ja: '言語を切り替え',
+}
 
 /**
  * 语言切换组件
  */
 export function LocaleToggle() {
   const { locale, setLocale } = useLocale()
+  const label = labels[locale] || labels['zh-Hans']
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="切换语言" className="cursor-pointer">
+        <Button variant="ghost" size="icon" aria-label={label} className="cursor-pointer">
           <Languages className="h-5 w-5" />
         </Button>
       </DropdownMenuTrigger>
