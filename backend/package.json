@@ -15,10 +15,10 @@
     "upgrade:dry": "pnpm dlx @strapi/upgrade latest --dry"
   },
   "dependencies": {
-    "@strapi/plugin-users-permissions": "5.43.0",
-    "@strapi/provider-upload-cloudinary": "^5.43.0",
-    "@strapi/strapi": "5.43.0",
-    "@strapi/utils": "5.43.0",
+    "@strapi/plugin-users-permissions": "5.44.0",
+    "@strapi/provider-upload-cloudinary": "5.44.0",
+    "@strapi/strapi": "5.44.0",
+    "@strapi/utils": "5.44.0",
     "better-sqlite3": "^12.9.0",
     "fast-xml-parser": "^5.7.2",
     "pg": "^8.20.0",

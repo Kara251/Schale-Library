@@ -54,6 +54,12 @@ jobs:
           ADMIN_PANEL_ALLOWED_ROLES: maintainer,admin
           PANEL_INTERNAL_TOKEN: ci-panel-token
           RATE_LIMIT_HASH_SECRET: ci-rate-limit-secret
+          ADMIN_PATH: /strapi-console-ci
+          STRAPI_CORS_ORIGINS: https://bakivo.com
+          STRAPI_ADMIN_WAF_CONFIRMED: true
+          CLOUDINARY_NAME: ci-cloudinary-name
+          CLOUDINARY_KEY: ci-cloudinary-key
+          CLOUDINARY_SECRET: ci-cloudinary-secret
           NEXT_PUBLIC_API_URL: http://127.0.0.1:59999
           NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
 

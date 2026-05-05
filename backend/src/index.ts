@@ -9,6 +9,11 @@ function splitList(value?: string) {
     .filter(Boolean);
 }
 
+function normalizePath(value?: string) {
+  const path = String(value || '').trim();
+  return path.endsWith('/') && path.length > 1 ? path.slice(0, -1) : path;
+}
+
 function isPlaceholder(value?: string) {
   const normalized = String(value || '').trim().toLowerCase();
   if (PLACEHOLDER_VALUES.has(normalized)) {
@@ -37,6 +42,9 @@ function assertProductionEnv(strapi: Core.Strapi) {
     'PANEL_INTERNAL_TOKEN',
     'RATE_LIMIT_HASH_SECRET',
     'CRON_ENABLED',
+    'ADMIN_PATH',
+    'STRAPI_CORS_ORIGINS',
+    'STRAPI_ADMIN_WAF_CONFIRMED',
   ];
   const missing = required.filter((key) => isPlaceholder(process.env[key]));
 
@@ -46,6 +54,20 @@ function assertProductionEnv(strapi: Core.Strapi) {
 
   if (process.env.DATABASE_CLIENT === 'postgres' && isPlaceholder(process.env.DATABASE_URL)) {
     throw new Error('DATABASE_URL is required for production PostgreSQL deployments.');
+  }
+
+  const adminPath = normalizePath(process.env.ADMIN_PATH);
+  if (!adminPath.startsWith('/') || adminPath === '/admin') {
+    throw new Error('ADMIN_PATH must be a non-default absolute path in production, for example /strapi-console-<random>.');
+  }
+
+  if (process.env.STRAPI_ADMIN_WAF_CONFIRMED !== 'true') {
+    throw new Error('STRAPI_ADMIN_WAF_CONFIRMED=true is required before exposing Strapi Admin publicly.');
+  }
+
+  const cloudinaryValues = [process.env.CLOUDINARY_NAME, process.env.CLOUDINARY_KEY, process.env.CLOUDINARY_SECRET];
+  if (cloudinaryValues.some((value) => isPlaceholder(value))) {
+    throw new Error('CLOUDINARY_NAME, CLOUDINARY_KEY, and CLOUDINARY_SECRET are required for formal production deployments.');
   }
 
   if (process.env.DATABASE_CLIENT !== 'postgres') {

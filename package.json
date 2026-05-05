@@ -17,6 +17,8 @@
   "pnpm": {
     "overrides": {
       "@rushstack/node-core-library>ajv": "8.18.0",
+      "@strapi/admin>axios": "1.16.0",
+      "@strapi/cloud-cli>axios": "1.16.0",
       "esbuild": "0.25.12",
       "markdown-it": "14.1.1",
       "next>postcss": "8.5.10"

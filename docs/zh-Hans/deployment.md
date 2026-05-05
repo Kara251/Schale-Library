@@ -39,10 +39,17 @@ ADMIN_PANEL_ALLOWED_ROLES=maintainer,admin
 PANEL_INTERNAL_TOKEN=
 RATE_LIMIT_HASH_SECRET=
 CRON_ENABLED=false
+ADMIN_PATH=/strapi-console-<random>
+STRAPI_CORS_ORIGINS=https://bakivo.com,https://www.bakivo.com
+STRAPI_ADMIN_WAF_CONFIRMED=true
+CLOUDINARY_NAME=
+CLOUDINARY_KEY=
+CLOUDINARY_SECRET=
 ```
 
 `PANEL_INTERNAL_TOKEN` 必须在后端和前端环境中保持一致。
 生产环境必须显式设置 `CRON_ENABLED`。多实例 serverless 部署通常只应有一个后端实例开启 cron。
+正式生产必须完整配置 Cloudinary 三项；缺失时只适合演示站，不应作为正式生产通过。
 
 部署前可运行：
 
@@ -76,6 +83,15 @@ ADMIN_PANEL_BOOTSTRAP_PASSWORD=use-a-long-random-password
 ## Strapi 内置管理面板
 
 Strapi 内置管理面板使用独立的 admin 用户表。跨部署应保持 `ADMIN_JWT_SECRET`、`TRANSFER_TOKEN_SALT` 和 `ENCRYPTION_KEY` 稳定。如果重建了空数据库，需要重新从 Strapi 管理界面创建第一个 Strapi admin 用户。
+
+如果 Strapi Admin 公网开放：
+
+- 生产环境必须设置非默认 `ADMIN_PATH`，不能使用 `/admin`；
+- `STRAPI_CORS_ORIGINS` 必须只包含正式前端、预览域名和必要的自研面板域名；
+- 部署层必须为 Strapi Admin 登录、`/api/auth/local` 和异常静态资源请求配置 WAF / rate limit；
+- 完成部署层防护后才设置 `STRAPI_ADMIN_WAF_CONFIRMED=true`；
+- Strapi Admin 管理员密码和自研后台 bootstrap 密码都应至少 16 位，并删除默认或临时账号；
+- 如果 `pnpm audit --prod` 仍残留 high advisory，不应公网开放 Strapi Admin。
 
 ## Cloudflare
 

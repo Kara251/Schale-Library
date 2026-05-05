@@ -39,10 +39,17 @@ ADMIN_PANEL_ALLOWED_ROLES=maintainer,admin
 PANEL_INTERNAL_TOKEN=
 RATE_LIMIT_HASH_SECRET=
 CRON_ENABLED=false
+ADMIN_PATH=/strapi-console-<random>
+STRAPI_CORS_ORIGINS=https://bakivo.com,https://www.bakivo.com
+STRAPI_ADMIN_WAF_CONFIRMED=true
+CLOUDINARY_NAME=
+CLOUDINARY_KEY=
+CLOUDINARY_SECRET=
 ```
 
 `PANEL_INTERNAL_TOKEN` must be identical in the backend and frontend environments.
 Production must explicitly set `CRON_ENABLED`. In multi-instance serverless deployments, only one backend instance should normally run cron.
+Formal production must configure all three Cloudinary variables. If they are missing, treat the deployment as a demo site rather than production-ready.
 
 Before deployment, run:
 
@@ -76,6 +83,15 @@ Remove `ADMIN_PANEL_BOOTSTRAP_PASSWORD` after login is confirmed.
 ## Built-In Strapi Admin Panel
 
 The built-in Strapi admin panel uses a separate admin user table. Keep `ADMIN_JWT_SECRET`, `TRANSFER_TOKEN_SALT`, and `ENCRYPTION_KEY` stable across deployments. If an empty database is rebuilt, create the first Strapi admin user from the Strapi admin UI again.
+
+If Strapi Admin is publicly exposed:
+
+- production must use a non-default `ADMIN_PATH`; `/admin` is not allowed;
+- `STRAPI_CORS_ORIGINS` must list only the production frontend, preview domains, and required custom panel domains;
+- the deployment layer must add WAF / rate limits for Strapi Admin login, `/api/auth/local`, and abnormal static asset requests;
+- set `STRAPI_ADMIN_WAF_CONFIRMED=true` only after those deployment-layer controls are in place;
+- Strapi Admin passwords and custom panel bootstrap passwords should be at least 16 characters, and default or temporary accounts should be removed;
+- if `pnpm audit --prod` still reports a high advisory, do not expose Strapi Admin publicly.
 
 ## Cloudflare
 
