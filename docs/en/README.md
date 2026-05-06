@@ -34,6 +34,10 @@ Deployment, database, and maintainer account recovery notes are available in [De
 
 Security compensating controls and dependency audit notes are available in [Security Notes](security.md).
 
+Formal launch gates are available in [Production Readiness](production-readiness.md).
+
+PostgreSQL/Supabase performance index recommendations are available in [PostgreSQL Index Recommendations](database-indexes.md).
+
 ## Copyright
 
 - **Code:** Source code in this repository is licensed under the [MIT License](../../LICENSE).

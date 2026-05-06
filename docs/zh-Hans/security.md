@@ -31,3 +31,5 @@
 - 生产 CORS 由 `STRAPI_CORS_ORIGINS` 明确指定，不使用开放默认值。
 
 每次升级 Strapi 后都应重新检查这些 advisories。
+
+CI 和上线前检查应使用 `pnpm audit:prod`。裸 `pnpm audit --prod` 仍会因为已知上游 advisory 返回失败码，但 `audit:prod` 会允许记录过的上游项，并在新增 advisory、路径变化、严重级别变化或 `STRAPI_ADMIN_PUBLIC=true` 且仍有 high advisory 时失败。

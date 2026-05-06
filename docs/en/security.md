@@ -31,3 +31,5 @@ For formal production, do not expose Strapi Admin publicly while any high adviso
 - Production CORS is explicitly controlled by `STRAPI_CORS_ORIGINS` instead of an open default.
 
 Review these advisories again after each Strapi upgrade.
+
+Use `pnpm audit:prod` in CI and before launch. Plain `pnpm audit --prod` still exits non-zero for the known upstream advisories, while `audit:prod` allows the documented upstream items and fails on new advisories, path changes, severity changes, or `STRAPI_ADMIN_PUBLIC=true` with any remaining high advisory.

@@ -31,3 +31,5 @@
 - 本番 CORS は `STRAPI_CORS_ORIGINS` で明示的に制御し、開放的なデフォルト値は使用しません。
 
 Strapi をアップグレードするたびに、これらの advisory を再確認してください。
+
+CI と公開前チェックでは `pnpm audit:prod` を使用してください。通常の `pnpm audit --prod` は既知の上流 advisory でも非ゼロ終了しますが、`audit:prod` は記録済みの上流項目だけを許可し、新しい advisory、依存パスの変化、深刻度の変化、または `STRAPI_ADMIN_PUBLIC=true` かつ high advisory が残っている場合に失敗します。

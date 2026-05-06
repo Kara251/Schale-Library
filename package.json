@@ -11,7 +11,9 @@
     "test:regression": "node scripts/regression-check.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ci": "playwright test --reporter=line",
+    "audit:prod": "node scripts/audit-production.mjs",
     "verify:deploy": "node scripts/verify-deploy.mjs",
+    "verify:staging": "node scripts/verify-staging.mjs",
     "seed:basics": "node scripts/seed-basics.mjs"
   },
   "pnpm": {

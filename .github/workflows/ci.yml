@@ -38,6 +38,9 @@ jobs:
       - name: Run regression checks
         run: pnpm test:regression
 
+      - name: Run production audit gate
+        run: pnpm audit:prod
+
       - name: Verify deploy environment contract
         run: pnpm verify:deploy
         env:
