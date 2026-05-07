@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { WorkCard } from '@/components/work-card'
 import { WorksFilters, type SourcePlatform, type WorkNature, type WorkSortMode, type WorkType } from '@/components/works-filters'
@@ -124,8 +124,21 @@ export function WorksWithFilters({ works, students, title, total, page, pageCoun
     const [selectedStudents, setSelectedStudents] = useState<number[]>(() => parseStudentIds(searchParams.get('students')))
     const [featuredOnly, setFeaturedOnly] = useState(() => searchParams.get('featured') === '1')
     const [sortMode, setSortMode] = useState<WorkSortMode>(() => parseEnumValue(searchParams.get('sort'), workSortModes, 'latest'))
+    const previousFilterKeyRef = useRef<string | null>(null)
+
+    const filterKey = useMemo(() => JSON.stringify({
+        searchQuery: searchQuery.trim(),
+        nature,
+        workType,
+        school,
+        sourcePlatform,
+        selectedStudents,
+        featuredOnly,
+        sortMode,
+    }), [featuredOnly, nature, school, searchQuery, selectedStudents, sortMode, sourcePlatform, workType])
 
     useEffect(() => {
+        const filtersChanged = previousFilterKeyRef.current !== null && previousFilterKeyRef.current !== filterKey
         const nextParams = new URLSearchParams()
         if (searchQuery.trim()) nextParams.set('q', searchQuery.trim())
         if (nature !== 'all') nextParams.set('nature', nature)
@@ -135,14 +148,15 @@ export function WorksWithFilters({ works, students, title, total, page, pageCoun
         if (selectedStudents.length > 0) nextParams.set('students', selectedStudents.join(','))
         if (featuredOnly) nextParams.set('featured', '1')
         if (sortMode !== 'latest') nextParams.set('sort', sortMode)
-        if (searchParams.get('page')) nextParams.set('page', searchParams.get('page') || '1')
+        if (!filtersChanged && searchParams.get('page')) nextParams.set('page', searchParams.get('page') || '1')
+        previousFilterKeyRef.current = filterKey
 
         const nextSearch = nextParams.toString()
         const currentSearch = searchParams.toString()
         if (nextSearch !== currentSearch) {
             router.replace(`${pathname}${nextSearch ? `?${nextSearch}` : ''}`, { scroll: false })
         }
-    }, [featuredOnly, nature, pathname, router, school, searchParams, searchQuery, selectedStudents, sortMode, sourcePlatform, workType])
+    }, [featuredOnly, filterKey, nature, pathname, router, school, searchParams, searchQuery, selectedStudents, sortMode, sourcePlatform, workType])
 
     const handleReset = useCallback(() => {
         setSearchQuery('')

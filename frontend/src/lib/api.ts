@@ -38,6 +38,15 @@ export function getContentEntryPathId(entry: { documentId?: string; id: number }
   return entry.documentId || String(entry.id);
 }
 
+const COVER_IMAGE_POPULATE_PARAMS = {
+  'populate[coverImage]': true,
+} as const;
+
+const WORK_CARD_POPULATE_PARAMS = {
+  'populate[coverImage]': true,
+  'populate[students][populate][avatar]': true,
+} as const;
+
 /**
  * 通用 API 请求函数
  * 支持 Next.js 服务端缓存和重验证
@@ -90,6 +99,19 @@ export async function getAnnouncements(locale: string = 'zh-Hans') {
       'filters[isActive][$eq]': true,
       sort: 'priority:desc',
       populate: '*',
+    })}`
+  );
+}
+
+export async function getHomeAnnouncements(locale: string = 'zh-Hans', limit: number = 3) {
+  const strapiLocale = toStrapiLocale(locale);
+  return fetchAPI<StrapiResponse<Announcement[]>>(
+    `/announcements?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[isActive][$eq]': true,
+      sort: 'priority:desc',
+      'pagination[pageSize]': limit,
+      ...COVER_IMAGE_POPULATE_PARAMS,
     })}`
   );
 }
@@ -163,14 +185,57 @@ function eventPageMeta(page: number, pageSize: number, total: number) {
 
 async function fetchEventPage<T>(
   collection: EventCollection,
-  params: Record<string, string | number | boolean | undefined>
+  params: Record<string, string | number | boolean | undefined>,
+  populateParams: Record<string, string | number | boolean | undefined> = COVER_IMAGE_POPULATE_PARAMS
 ) {
   return fetchAPI<StrapiResponse<T[]>>(
     `/${collection}?${createCollectionQuery({
       ...params,
-      populate: '*',
+      ...populateParams,
     })}`
   );
+}
+
+async function getHomeRelevantEvents<T>(
+  collection: EventCollection,
+  kind: EventKind,
+  limit: number,
+  locale: string
+): Promise<StrapiResponse<T[]>> {
+  const strapiLocale = toStrapiLocale(locale);
+  const nowIso = new Date().toISOString();
+  const base = {
+    locale: strapiLocale,
+  };
+
+  const activeParams: Record<string, string | number | boolean | undefined> = {
+    ...base,
+    sort: 'startTime:asc',
+    'filters[endTime][$gte]': nowIso,
+    'pagination[limit]': limit,
+  };
+  appendEventFilters(activeParams, {}, kind, nowIso);
+
+  const activePage = await fetchEventPage<T>(collection, activeParams);
+  const data = [...(activePage.data || [])];
+  let total = activePage.meta.pagination?.total || data.length;
+
+  if (data.length < limit) {
+    const endedParams: Record<string, string | number | boolean | undefined> = {
+      ...base,
+      sort: 'endTime:desc',
+      'pagination[limit]': limit - data.length,
+    };
+    appendEventFilters(endedParams, {}, kind, nowIso, 'ended');
+    const endedPage = await fetchEventPage<T>(collection, endedParams);
+    total += endedPage.meta.pagination?.total || endedPage.data?.length || 0;
+    data.push(...(endedPage.data || []));
+  }
+
+  return {
+    data: data.slice(0, limit),
+    meta: eventPageMeta(1, limit, total),
+  };
 }
 
 async function getRelevantEvents<T>(
@@ -207,8 +272,8 @@ async function getRelevantEvents<T>(
   appendEventFilters(endedCountParams, options, kind, nowIso, 'ended');
 
   const [activeCount, endedCount] = await Promise.all([
-    fetchEventPage<T>(collection, activeCountParams),
-    fetchEventPage<T>(collection, endedCountParams),
+    fetchEventPage<T>(collection, activeCountParams, {}),
+    fetchEventPage<T>(collection, endedCountParams, {}),
   ]);
   const activeTotal = activeCount.meta.pagination?.total || 0;
   const endedTotal = endedCount.meta.pagination?.total || 0;
@@ -298,6 +363,14 @@ export async function getOfflineEvents(
   options: EventListOptions = {}
 ) {
   return getEventsForCollection<OfflineEvent>('offline-events', 'offline', limit, locale, options);
+}
+
+export async function getHomeOnlineEvents(limit: number = 6, locale: string = 'zh-Hans') {
+  return getHomeRelevantEvents<OnlineEvent>('online-events', 'online', limit, locale);
+}
+
+export async function getHomeOfflineEvents(limit: number = 6, locale: string = 'zh-Hans') {
+  return getHomeRelevantEvents<OfflineEvent>('offline-events', 'offline', limit, locale);
 }
 
 /**
@@ -683,7 +756,7 @@ export async function getWorks(limit: number = 20, locale: string = 'zh-Hans', o
     locale: strapiLocale,
     'filters[isActive][$eq]': true,
     'pagination[pageSize]': options.pageSize || limit,
-    populate: '*',
+    ...WORK_CARD_POPULATE_PARAMS,
   }
   if (options.sort === 'recommended') {
     params['sort[0]'] = 'isFeatured:desc'

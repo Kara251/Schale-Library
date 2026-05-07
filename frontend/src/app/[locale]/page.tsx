@@ -3,7 +3,7 @@ import { Footer } from "@/components/footer"
 import { Carousel } from "@/components/carousel"
 import { EventList } from "@/components/event-list"
 import { WorkCard } from "@/components/work-card"
-import { getAnnouncements, getOnlineEvents, getOfflineEvents, getFeaturedWorks } from "@/lib/api"
+import { getFeaturedWorks, getHomeAnnouncements, getHomeOfflineEvents, getHomeOnlineEvents } from "@/lib/api"
 import { translations, type Locale } from "@/lib/i18n"
 
 interface HomePageProps {
@@ -18,9 +18,9 @@ export default async function HomePage({ params }: HomePageProps) {
 
     // 并行获取数据，传递语言参数
     const [announcementsRes, onlineEventsRes, offlineEventsRes, worksRes] = await Promise.all([
-        getAnnouncements(locale).catch(() => ({ data: [] })),
-        getOnlineEvents(6, locale, { sort: 'relevant', pageSize: 6 }).catch(() => ({ data: [] })),
-        getOfflineEvents(6, locale, { sort: 'relevant', pageSize: 6 }).catch(() => ({ data: [] })),
+        getHomeAnnouncements(locale).catch(() => ({ data: [] })),
+        getHomeOnlineEvents(6, locale).catch(() => ({ data: [] })),
+        getHomeOfflineEvents(6, locale).catch(() => ({ data: [] })),
         getFeaturedWorks(6, locale).catch(() => ({ data: [] })),
     ]);
 

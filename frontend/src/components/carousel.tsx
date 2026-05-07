@@ -1,11 +1,14 @@
 'use client'
 
 import * as React from 'react'
-import Link from 'next/link'
+import Image from 'next/image'
 import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { LocaleLink } from '@/components/locale-link'
+import { useLocale } from '@/contexts/locale-context'
 import { cn } from '@/lib/utils'
-import type { Announcement, OnlineEvent, OfflineEvent } from '@/lib/api'
+import { getContentEntryPathId, type Announcement, type OnlineEvent, type OfflineEvent, type StrapiMedia } from '@/lib/api'
+import type { Locale } from '@/lib/i18n'
 import { getMediaUrl } from '@/lib/media'
 
 // 统一的轮播项类型
@@ -14,7 +17,7 @@ interface CarouselItem {
   type: 'announcement' | 'online-event' | 'offline-event'
   title: string
   description?: string
-  coverImage?: { url: string }
+  coverImage?: StrapiMedia
   href: string
   badge?: string
   badgeVariant?: 'default' | 'secondary'
@@ -28,6 +31,60 @@ interface CarouselProps {
   autoPlayInterval?: number
 }
 
+const labels: Record<Locale, {
+  announcement: string
+  onlineEvent: string
+  offlineEvent: string
+  official: string
+  fanmade: string
+  organizer: string
+  empty: string
+  previous: string
+  next: string
+  goToSlide: string
+}> = {
+  'zh-Hans': {
+    announcement: '公告',
+    onlineEvent: '线上活动',
+    offlineEvent: '线下',
+    official: '官方',
+    fanmade: '同人',
+    organizer: '主办',
+    empty: '暂无内容',
+    previous: '上一张',
+    next: '下一张',
+    goToSlide: '跳转到第 {index} 张',
+  },
+  en: {
+    announcement: 'Announcement',
+    onlineEvent: 'Online Event',
+    offlineEvent: 'Offline',
+    official: 'Official',
+    fanmade: 'Fan-made',
+    organizer: 'Organizer',
+    empty: 'No content yet',
+    previous: 'Previous slide',
+    next: 'Next slide',
+    goToSlide: 'Go to slide {index}',
+  },
+  ja: {
+    announcement: 'お知らせ',
+    onlineEvent: 'オンラインイベント',
+    offlineEvent: 'オフライン',
+    official: '公式',
+    fanmade: '二次創作',
+    organizer: '主催',
+    empty: 'コンテンツはありません',
+    previous: '前のスライド',
+    next: '次のスライド',
+    goToSlide: '{index}枚目へ移動',
+  },
+}
+
+function stripHtml(value: string) {
+  return value.replace(/<[^>]*>/g, '').trim()
+}
+
 /**
  * 首页轮播图组件 - 支持公告和活动
  */
@@ -37,6 +94,8 @@ export function Carousel({
   offlineEvents = [],
   autoPlayInterval = 5000
 }: CarouselProps) {
+  const { locale } = useLocale()
+  const t = labels[locale] || labels['zh-Hans']
   const [currentIndex, setCurrentIndex] = React.useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = React.useState(true)
 
@@ -50,10 +109,10 @@ export function Carousel({
         id: a.id,
         type: 'announcement',
         title: a.title,
-        description: a.content.replace(/<[^>]*>/g, '').substring(0, 100),
+        description: stripHtml(a.content).substring(0, 100),
         coverImage: a.coverImage,
-        href: `/announcements/${a.id}`,
-        badge: '公告',
+        href: `/announcements/${getContentEntryPathId(a)}`,
+        badge: t.announcement,
         badgeVariant: 'default',
       })
     })
@@ -64,10 +123,10 @@ export function Carousel({
         id: e.id,
         type: 'online-event',
         title: e.title,
-        description: e.organizer ? `主办: ${e.organizer}` : undefined,
+        description: e.organizer ? `${t.organizer}: ${e.organizer}` : undefined,
         coverImage: e.coverImage,
-        href: `/online-events/${e.id}`,
-        badge: e.nature === 'official' ? '官方' : '同人',
+        href: `/online-events/${getContentEntryPathId(e)}`,
+        badge: e.nature === 'official' ? t.official : t.fanmade,
         badgeVariant: e.nature === 'official' ? 'default' : 'secondary',
       })
     })
@@ -78,17 +137,17 @@ export function Carousel({
         id: e.id,
         type: 'offline-event',
         title: e.title,
-        description: e.organizer ? `主办: ${e.organizer}` : undefined,
+        description: e.organizer ? `${t.organizer}: ${e.organizer}` : undefined,
         coverImage: e.coverImage,
-        href: `/offline-events/${e.id}`,
-        badge: '线下',
+        href: `/offline-events/${getContentEntryPathId(e)}`,
+        badge: t.offlineEvent,
         badgeVariant: 'secondary',
         location: e.location,
       })
     })
 
     return result
-  }, [announcements, onlineEvents, offlineEvents])
+  }, [announcements, onlineEvents, offlineEvents, t])
 
   const goToSlide = (index: number) => {
     setCurrentIndex(index)
@@ -120,7 +179,7 @@ export function Carousel({
   if (!items || items.length === 0) {
     return (
       <div className="relative w-full h-[400px] bg-muted rounded-lg flex items-center justify-center">
-        <p className="text-muted-foreground">暂无内容</p>
+        <p className="text-muted-foreground">{t.empty}</p>
       </div>
     )
   }
@@ -137,7 +196,7 @@ export function Carousel({
       {/* 轮播图片区域 */}
       <div className="relative w-full h-full overflow-hidden rounded-xl shadow-lg">
         {items.map((item, index) => (
-          <Link
+          <LocaleLink
             key={`${item.type}-${item.id}`}
             href={item.href}
             className={cn(
@@ -147,17 +206,20 @@ export function Carousel({
           >
             {/* 背景图片 */}
             {item.coverImage ? (
-              <div
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                style={{
-                  backgroundImage: `url(${getMediaUrl(item.coverImage.url)})`,
-                }}
-              >
+              <div className="absolute inset-0">
+                <Image
+                  src={getMediaUrl(item.coverImage.url)}
+                  alt={item.coverImage.alternativeText || item.title}
+                  fill
+                  priority={index === 0}
+                  sizes="(max-width: 768px) 100vw, 1200px"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
                 {/* 渐变遮罩 */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
               </div>
             ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-accent/30" />
+              <div className="absolute inset-0 bg-secondary" />
             )}
 
             {/* 内容区域 */}
@@ -168,7 +230,7 @@ export function Carousel({
                   {item.badge}
                 </span>
                 {item.type === 'online-event' && (
-                  <span className="text-white/70">线上活动</span>
+                  <span className="text-white/70">{t.onlineEvent}</span>
                 )}
               </div>
 
@@ -189,7 +251,7 @@ export function Carousel({
                 </div>
               )}
             </div>
-          </Link>
+          </LocaleLink>
         ))}
       </div>
 
@@ -200,6 +262,7 @@ export function Carousel({
             variant="ghost"
             size="icon"
             className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-30 bg-black/40 hover:bg-black/60 text-white h-10 w-10 md:h-12 md:w-12 rounded-full transition-all shadow-lg backdrop-blur-sm"
+            aria-label={t.previous}
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -212,6 +275,7 @@ export function Carousel({
             variant="ghost"
             size="icon"
             className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-30 bg-black/40 hover:bg-black/60 text-white h-10 w-10 md:h-12 md:w-12 rounded-full transition-all shadow-lg backdrop-blur-sm"
+            aria-label={t.next}
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -239,7 +303,7 @@ export function Carousel({
                   ? 'bg-white w-8'
                   : 'bg-white/50 hover:bg-white/70 w-2'
               )}
-              aria-label={`跳转到第 ${index + 1} 张`}
+              aria-label={t.goToSlide.replace('{index}', String(index + 1))}
             />
           ))}
         </div>
