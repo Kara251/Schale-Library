@@ -59,6 +59,30 @@ NODE_ENV=production pnpm verify:deploy
 
 Backup, restore, and empty-database seed notes are in [backup-restore.md](./backup-restore.md).
 
+## Free Hosting Options
+
+Recommended free demo stack:
+
+- Frontend: Vercel Hobby.
+- Backend: either Render Free Web Service or Koyeb Free Instance.
+- Database: Neon Free PostgreSQL. Do not use Render Free Postgres for durable production data.
+- Media: Cloudinary Free.
+- RSSHub: Vercel is acceptable for the current RSSHub deployment.
+- DNS/CDN: Cloudflare.
+
+Render Free and Koyeb Free are suitable for demo deployments, not strict production. Render Free Web Services spin down after roughly 15 minutes of inactivity and need time to wake up; Koyeb Free Instances are smaller and scale to zero after roughly 1 hour without traffic. Do not rely on either platform's local filesystem for uploads, so configure all Cloudinary variables.
+
+For a Render backend, use:
+
+```bash
+corepack enable && pnpm install --frozen-lockfile && pnpm --dir backend build
+pnpm --dir backend start
+```
+
+Keep the root directory at the repository root. Use Node.js 20 or 22 and set the production variables from `backend/.env.example`.
+
+For a more stable fully free deployment, Oracle Cloud Always Free VM is an option. It is a traditional VM rather than a serverless deployment target, so you must maintain Linux, Node.js, pnpm, process management, reverse proxy, TLS, and security updates yourself. Oracle documents Always Free resources as free for the life of the account, but idle Always Free compute instances can be reclaimed, so keep database backups and rebuild steps ready.
+
 ## Custom Panel Maintainer Recovery
 
 The custom panel at `/{locale}/manage` uses the Strapi users-permissions user table, not the built-in Strapi admin user table.

@@ -59,6 +59,30 @@ NODE_ENV=production pnpm verify:deploy
 
 备份、恢复和空库种子数据见 [backup-restore.md](./backup-restore.md)。
 
+## 免费部署落点建议
+
+推荐的免费演示链路：
+
+- 前端：Vercel Hobby。
+- 后端：Render Free Web Service 或 Koyeb Free Instance，二选一即可。
+- 数据库：Neon Free PostgreSQL，不使用 Render Free Postgres 保存正式数据。
+- 媒体：Cloudinary Free。
+- RSSHub：可继续部署在 Vercel。
+- DNS/CDN：Cloudflare。
+
+Render Free 和 Koyeb Free 都适合演示站，不适合严格生产。Render Free Web Service 闲置约 15 分钟会休眠，唤醒需要等待；Koyeb Free Instance 资源更小，约 1 小时无流量会 scale to zero。两者都不应依赖本地文件系统保存上传文件，因此 Cloudinary 三项必须配置完整。
+
+Render 后端可使用：
+
+```bash
+corepack enable && pnpm install --frozen-lockfile && pnpm --dir backend build
+pnpm --dir backend start
+```
+
+Root directory 保持仓库根目录。运行环境使用 Node.js 20 或 22，并设置 `backend/.env.example` 中的生产变量。
+
+如果需要完全免费且更稳定的长期运行，可考虑 Oracle Cloud Always Free VM。它更像传统服务器，不会按 serverless 方式自动部署，需要自行维护 Linux、Node.js、pnpm、进程管理、反向代理、TLS 和安全更新。Oracle 文档称 Always Free 资源在账号生命周期内免费，但空闲 Always Free compute instance 可能被回收，因此仍应保留数据库备份和重建步骤。
+
 ## 自研后台维护账号恢复
 
 `/{locale}/manage` 自研后台使用 Strapi users-permissions 用户表，不使用 Strapi 内置 admin 用户表。

@@ -59,6 +59,30 @@ NODE_ENV=production pnpm verify:deploy
 
 バックアップ、復元、空 DB のシードについては [backup-restore.md](./backup-restore.md) を参照してください。
 
+## 無料デプロイ先の候補
+
+推奨する無料デモ構成:
+
+- フロントエンド: Vercel Hobby。
+- バックエンド: Render Free Web Service または Koyeb Free Instance のどちらか。
+- データベース: Neon Free PostgreSQL。永続的な本番データには Render Free Postgres を使用しないでください。
+- メディア: Cloudinary Free。
+- RSSHub: 現在の RSSHub デプロイでは Vercel を使用できます。
+- DNS/CDN: Cloudflare。
+
+Render Free と Koyeb Free はデモ環境向けであり、厳密な本番環境向けではありません。Render Free Web Service は約 15 分の無通信で sleep し、復帰に時間がかかります。Koyeb Free Instance はより小さく、約 1 時間無通信で scale to zero します。どちらもアップロード保存にローカルファイルシステムを依存しないでください。そのため Cloudinary 変数はすべて設定します。
+
+Render バックエンドでは以下を使用できます。
+
+```bash
+corepack enable && pnpm install --frozen-lockfile && pnpm --dir backend build
+pnpm --dir backend start
+```
+
+Root directory はリポジトリのルートにします。Node.js 20 または 22 を使い、`backend/.env.example` の本番変数を設定します。
+
+より安定した完全無料構成が必要な場合は、Oracle Cloud Always Free VM も候補です。ただし serverless ではなく従来型 VM なので、Linux、Node.js、pnpm、プロセス管理、リバースプロキシ、TLS、セキュリティ更新を自分で管理する必要があります。Oracle のドキュメントでは Always Free リソースはアカウント存続中無料とされていますが、idle 状態の Always Free compute instance は回収される可能性があるため、DB バックアップと再構築手順を必ず残してください。
+
 ## 独自管理パネルのメンテナー復旧
 
 `/{locale}/manage` の独自管理パネルは Strapi users-permissions のユーザーテーブルを使用し、Strapi 組み込み admin ユーザーテーブルは使用しません。
