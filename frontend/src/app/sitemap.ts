@@ -12,7 +12,7 @@ import {
 import { locales } from '@/lib/i18n'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/+$/, '')
-const staticRoutes = ['', '/works', '/online-events', '/offline-events', '/announcements', '/resources', '/about', '/contact', '/privacy']
+const staticRoutes = ['', '/works', '/research-archives', '/events', '/online-events', '/offline-events', '/announcements', '/resources', '/about', '/contact', '/privacy']
 const SITEMAP_PAGE_SIZE = 100
 
 function sitemapEntry(path: string, lastModified?: string): MetadataRoute.Sitemap[number] {

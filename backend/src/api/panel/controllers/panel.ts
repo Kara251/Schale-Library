@@ -6,6 +6,7 @@ const { ApplicationError, NotFoundError } = errors
 type PanelCollectionKey =
   | 'announcements'
   | 'works'
+  | 'friend-links'
   | 'online-events'
   | 'offline-events'
   | 'students'
@@ -18,7 +19,7 @@ interface CollectionConfig {
   localized: boolean
   populate?: any
   searchFields: string[]
-  defaultSort: string
+  defaultSort: string | string[]
   supportsDraft: boolean
   fields: string[]
   readOnly?: boolean
@@ -30,9 +31,18 @@ const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
     localized: true,
     populate: ['coverImage'],
     searchFields: ['title'],
-    defaultSort: 'updatedAt:desc',
+    defaultSort: ['isPinned:desc', 'priority:desc', 'updatedAt:desc'],
     supportsDraft: true,
-    fields: ['title', 'content', 'link', 'priority', 'isActive', 'coverImage', 'publishedAt'],
+    fields: ['title', 'content', 'link', 'priority', 'isPinned', 'isActive', 'coverImage', 'publishedAt'],
+  },
+  'friend-links': {
+    uid: 'api::friend-link.friend-link',
+    localized: true,
+    populate: ['icon'],
+    searchFields: ['title', 'description', 'url'],
+    defaultSort: ['priority:desc', 'updatedAt:desc'],
+    supportsDraft: true,
+    fields: ['title', 'description', 'url', 'icon', 'priority', 'isActive', 'publishedAt'],
   },
   works: {
     uid: 'api::work.work',
@@ -455,10 +465,12 @@ function pickAllowedFields(collection: PanelCollectionKey, input: Record<string,
       case 'isActive':
       case 'isAutoImported':
       case 'isFeatured':
+      case 'isPinned':
         data[field] = normalizeBoolean(value)
         break
       case 'coverImage':
       case 'avatar':
+      case 'icon':
         data[field] = normalizeMediaValue(value)
         break
       case 'students':
@@ -810,12 +822,13 @@ async function findAllForQuality(uid: any, options: Record<string, unknown> = {}
 
 async function scanContentQuality() {
   const issues: any[] = []
-  const [works, students, onlineEvents, offlineEvents, announcements] = await Promise.all([
+  const [works, students, onlineEvents, offlineEvents, announcements, friendLinks] = await Promise.all([
     findAllForQuality('api::work.work', { populate: { coverImage: true, students: true } }),
     findAllForQuality('api::student.student', { populate: { avatar: true } }),
     findAllForQuality('api::online-event.online-event', { populate: { coverImage: true } }),
     findAllForQuality('api::offline-event.offline-event', { populate: { coverImage: true } }),
     findAllForQuality('api::announcement.announcement', { populate: { coverImage: true } }),
+    findAllForQuality('api::friend-link.friend-link', { populate: { icon: true } }),
   ])
 
   addMissingTranslations(issues, 'works', works)
@@ -823,6 +836,7 @@ async function scanContentQuality() {
   addMissingTranslations(issues, 'online-events', onlineEvents)
   addMissingTranslations(issues, 'offline-events', offlineEvents)
   addMissingTranslations(issues, 'announcements', announcements)
+  addMissingTranslations(issues, 'friend-links', friendLinks)
 
   const sourceGroups = new Map<string, any[]>()
   const now = Date.now()
@@ -900,6 +914,18 @@ async function scanContentQuality() {
       if (!event.publishedAt) {
         issues.push(toIssue({ issueType: 'draft', severity: 'info', collection, entry: event, message: '活动仍处于草稿状态' }))
       }
+    }
+  }
+
+  for (const link of friendLinks) {
+    if (!link.icon) {
+      issues.push(toIssue({ issueType: 'missing-image', collection: 'friend-links', entry: link, message: '友情链接缺少图标', severity: 'info' }))
+    }
+    if (!link.url) {
+      issues.push(toIssue({ issueType: 'missing-link', collection: 'friend-links', entry: link, message: '友情链接缺少跳转链接', severity: 'error' }))
+    }
+    if (!link.publishedAt) {
+      issues.push(toIssue({ issueType: 'draft', severity: 'info', collection: 'friend-links', entry: link, message: '友情链接仍处于草稿状态' }))
     }
   }
 

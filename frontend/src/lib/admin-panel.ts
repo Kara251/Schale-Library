@@ -3,6 +3,7 @@ import type { Locale } from '@/lib/i18n'
 export type AdminCollectionKey =
   | 'announcements'
   | 'works'
+  | 'friend-links'
   | 'online-events'
   | 'offline-events'
   | 'students'
@@ -121,8 +122,43 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       { name: 'content', type: 'textarea', label: { 'zh-Hans': '正文', en: 'Content', ja: '本文' } },
       { name: 'link', type: 'url', label: { 'zh-Hans': '跳转链接', en: 'Link', ja: 'リンク' } },
       { name: 'priority', type: 'number', label: { 'zh-Hans': '优先级', en: 'Priority', ja: '優先度' } },
+      { name: 'isPinned', type: 'boolean', label: { 'zh-Hans': '置顶', en: 'Pinned', ja: '固定表示' } },
       { name: 'isActive', type: 'boolean', label: { 'zh-Hans': '启用', en: 'Active', ja: '有効' } },
       { name: 'coverImage', type: 'media', label: { 'zh-Hans': '封面图', en: 'Cover image', ja: 'カバー画像' } },
+      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+    ],
+  },
+  'friend-links': {
+    endpoint: 'friend-links',
+    localized: true,
+    supportsDraft: true,
+    title: {
+      'zh-Hans': '友情链接',
+      en: 'Friend Links',
+      ja: '相互リンク',
+    },
+    description: {
+      'zh-Hans': '维护首页底部展示的友情链接。',
+      en: 'Manage friend links shown at the bottom of the home page.',
+      ja: 'ホーム下部に表示する相互リンクを管理します。',
+    },
+    createLabel: {
+      'zh-Hans': '新建友链',
+      en: 'New friend link',
+      ja: '相互リンクを新規作成',
+    },
+    editLabel: {
+      'zh-Hans': '编辑友链',
+      en: 'Edit friend link',
+      ja: '相互リンクを編集',
+    },
+    fields: [
+      { name: 'title', type: 'text', label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
+      { name: 'description', type: 'textarea', label: { 'zh-Hans': '简介', en: 'Description', ja: '説明' } },
+      { name: 'url', type: 'url', label: { 'zh-Hans': '跳转链接', en: 'URL', ja: 'URL' } },
+      { name: 'priority', type: 'number', label: { 'zh-Hans': '优先级', en: 'Priority', ja: '優先度' } },
+      { name: 'isActive', type: 'boolean', label: { 'zh-Hans': '启用', en: 'Active', ja: '有効' } },
+      { name: 'icon', type: 'media', label: { 'zh-Hans': '图标', en: 'Icon', ja: 'アイコン' } },
       { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
     ],
   },

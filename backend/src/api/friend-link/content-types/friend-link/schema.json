@@ -1,11 +1,11 @@
 {
   "kind": "collectionType",
-  "collectionName": "announcements",
+  "collectionName": "friend_links",
   "info": {
-    "singularName": "announcement",
-    "pluralName": "announcements",
-    "displayName": "公告",
-    "description": "首页公告管理"
+    "singularName": "friend-link",
+    "pluralName": "friend-links",
+    "displayName": "友情链接",
+    "description": "首页友情链接管理"
   },
   "options": {
     "draftAndPublish": true,
@@ -26,28 +26,30 @@
         }
       }
     },
-    "content": {
-      "type": "richtext",
-      "required": true,
+    "description": {
+      "type": "text",
       "pluginOptions": {
         "i18n": {
           "localized": true
         }
       }
     },
-    "coverImage": {
-      "type": "media",
-      "multiple": false,
-      "required": false,
-      "allowedTypes": ["images"],
+    "url": {
+      "type": "string",
+      "required": true,
       "pluginOptions": {
         "i18n": {
           "localized": false
         }
       }
     },
-    "link": {
-      "type": "string",
+    "icon": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images"
+      ],
       "pluginOptions": {
         "i18n": {
           "localized": false
@@ -57,16 +59,6 @@
     "priority": {
       "type": "integer",
       "default": 0,
-      "required": true,
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      }
-    },
-    "isPinned": {
-      "type": "boolean",
-      "default": false,
       "required": true,
       "pluginOptions": {
         "i18n": {

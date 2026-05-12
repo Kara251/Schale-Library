@@ -1,25 +1,25 @@
 import Link from 'next/link'
 
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { AdminRowActions } from '@/components/admin/admin-row-actions'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { AdminPagination } from '@/components/admin/admin-pagination'
+import { AdminRowActions } from '@/components/admin/admin-row-actions'
 import { AdminSearchForm } from '@/components/admin/admin-search-form'
 import { AdminTable } from '@/components/admin/admin-table'
-import type { Locale } from '@/lib/i18n'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { getAdminActionLabels } from '@/lib/admin-panel-labels'
+import type { Locale } from '@/lib/i18n'
 import { type AdminStrapiEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
 
-interface AnnouncementAdminEntry extends AdminStrapiEntry {
+interface FriendLinkAdminEntry extends AdminStrapiEntry {
   title: string
+  url: string
   priority: number
-  isPinned?: boolean
   isActive: boolean
 }
 
-interface AnnouncementsManagePageProps {
+interface FriendLinksManagePageProps {
   params: Promise<{ locale: string }>
   searchParams: Promise<{ search?: string; page?: string; status?: string }>
 }
@@ -34,83 +34,80 @@ const labels: Record<Locale, {
   statusPublished: string
   statusDraft: string
   empty: string
+  active: string
+  inactive: string
+  priority: string
+  url: string
+  updatedAt: string
+  publishStatus: string
   previous: string
   next: string
   pagination: string
-  active: string
-  inactive: string
-  pinned: string
-  priority: string
-  updatedAt: string
-  publishStatus: string
 }> = {
   'zh-Hans': {
-    title: '公告管理',
-    description: '查看公告标题、优先级与发布状态。',
+    title: '友情链接管理',
+    description: '维护首页底部展示的友链卡片。',
     search: '筛选',
-    searchPlaceholder: '搜索公告标题',
+    searchPlaceholder: '搜索友链标题、简介或 URL',
     reset: '重置',
     statusAll: '全部状态',
     statusPublished: '已发布',
     statusDraft: '草稿',
-    empty: '暂无符合条件的公告。',
+    empty: '暂无符合条件的友情链接。',
+    active: '启用',
+    inactive: '停用',
+    priority: '优先级',
+    url: '链接',
+    updatedAt: '更新时间',
+    publishStatus: '发布状态',
     previous: '上一页',
     next: '下一页',
     pagination: '第 {page} / {pageCount} 页',
-    active: '启用',
-    inactive: '停用',
-    pinned: '置顶',
-    priority: '优先级',
-    updatedAt: '更新时间',
-    publishStatus: '发布状态',
   },
   en: {
-    title: 'Announcement Management',
-    description: 'Review titles, priority, and publication state.',
+    title: 'Friend Link Management',
+    description: 'Manage friend link cards shown at the bottom of the home page.',
     search: 'Filter',
-    searchPlaceholder: 'Search announcement titles',
+    searchPlaceholder: 'Search title, description, or URL',
     reset: 'Reset',
     statusAll: 'All statuses',
     statusPublished: 'Published',
     statusDraft: 'Draft',
-    empty: 'No announcements matched the current filters.',
+    empty: 'No friend links matched the current filters.',
+    active: 'Active',
+    inactive: 'Inactive',
+    priority: 'Priority',
+    url: 'URL',
+    updatedAt: 'Updated',
+    publishStatus: 'Publication',
     previous: 'Previous',
     next: 'Next',
     pagination: 'Page {page} / {pageCount}',
-    active: 'Active',
-    inactive: 'Inactive',
-    pinned: 'Pinned',
-    priority: 'Priority',
-    updatedAt: 'Updated',
-    publishStatus: 'Publication',
   },
   ja: {
-    title: 'お知らせ管理',
-    description: 'タイトル、優先度、公開状態を確認します。',
+    title: '相互リンク管理',
+    description: 'ホーム下部に表示する相互リンクカードを管理します。',
     search: '絞り込み',
-    searchPlaceholder: 'お知らせタイトルを検索',
+    searchPlaceholder: 'タイトル、説明、URL を検索',
     reset: 'リセット',
     statusAll: 'すべての状態',
     statusPublished: '公開済み',
     statusDraft: '下書き',
-    empty: '条件に一致するお知らせがありません。',
+    empty: '条件に一致する相互リンクがありません。',
+    active: '有効',
+    inactive: '無効',
+    priority: '優先度',
+    url: 'URL',
+    updatedAt: '更新日時',
+    publishStatus: '公開状態',
     previous: '前へ',
     next: '次へ',
     pagination: '{page} / {pageCount} ページ',
-    active: '有効',
-    inactive: '無効',
-    pinned: '固定',
-    priority: '優先度',
-    updatedAt: '更新日時',
-    publishStatus: '公開状態',
   },
 }
 
 function formatDate(value?: string) {
-  if (!value) {
-    return '-'
-  }
-
+  if (!value) return '-'
   return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
     month: '2-digit',
@@ -120,16 +117,16 @@ function formatDate(value?: string) {
   }).format(new Date(value))
 }
 
-export default async function AnnouncementsManagePage({ params, searchParams }: AnnouncementsManagePageProps) {
+export default async function FriendLinksManagePage({ params, searchParams }: FriendLinksManagePageProps) {
   const { locale } = await params
   const query = await searchParams
-  const session = await requireAdminSession(locale, `/${locale}/manage/announcements`)
+  const session = await requireAdminSession(locale, `/${locale}/manage/friend-links`)
   const t = labels[locale as Locale] || labels['zh-Hans']
   const actionLabels = getAdminActionLabels(locale as Locale)
   const page = Number(query.page || '1')
   const status = query.status === 'published' || query.status === 'draft' ? query.status : 'all'
 
-  const response = await listAdminCollection<AnnouncementAdminEntry>(session, 'announcements', {
+  const response = await listAdminCollection<FriendLinkAdminEntry>(session, 'friend-links', {
     locale,
     page,
     search: query.search,
@@ -142,7 +139,7 @@ export default async function AnnouncementsManagePage({ params, searchParams }: 
     if (status !== 'all') params.set('status', status)
     params.set('page', String(nextPage))
     const qs = params.toString()
-    return `/${locale}/manage/announcements${qs ? `?${qs}` : ''}`
+    return `/${locale}/manage/friend-links${qs ? `?${qs}` : ''}`
   }
 
   return (
@@ -152,12 +149,12 @@ export default async function AnnouncementsManagePage({ params, searchParams }: 
         description={t.description}
         actions={
           <Button asChild>
-            <Link href={`/${locale}/manage/announcements/new`}>{actionLabels.create}</Link>
+            <Link href={`/${locale}/manage/friend-links/new`}>{actionLabels.create}</Link>
           </Button>
         }
       />
       <AdminSearchForm
-        action={`/${locale}/manage/announcements`}
+        action={`/${locale}/manage/friend-links`}
         search={query.search}
         status={status}
         placeholder={t.searchPlaceholder}
@@ -179,16 +176,15 @@ export default async function AnnouncementsManagePage({ params, searchParams }: 
             render: (item) => <div className="min-w-[220px] font-medium">{item.title}</div>,
           },
           {
+            key: 'url',
+            header: t.url,
+            render: (item) => <span className="line-clamp-1 max-w-[240px] text-sm text-muted-foreground">{item.url}</span>,
+          },
+          {
             key: 'priority',
             header: t.priority,
             className: 'w-24',
             render: (item) => <span>{item.priority}</span>,
-          },
-          {
-            key: 'isPinned',
-            header: t.pinned,
-            className: 'w-24',
-            render: (item) => item.isPinned ? <Badge variant="default">{t.pinned}</Badge> : '-',
           },
           {
             key: 'isActive',
@@ -223,7 +219,7 @@ export default async function AnnouncementsManagePage({ params, searchParams }: 
             render: (item) => (
               <AdminRowActions
                 locale={locale}
-                collection="announcements"
+                collection="friend-links"
                 id={item.id}
                 labels={{
                   edit: actionLabels.edit,

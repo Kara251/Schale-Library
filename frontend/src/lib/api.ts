@@ -97,7 +97,9 @@ export async function getAnnouncements(locale: string = 'zh-Hans') {
     `/announcements?${createCollectionQuery({
       locale: strapiLocale,
       'filters[isActive][$eq]': true,
-      sort: 'priority:desc',
+      'sort[0]': 'isPinned:desc',
+      'sort[1]': 'priority:desc',
+      'sort[2]': 'publishedAt:desc',
       populate: '*',
     })}`
   );
@@ -109,9 +111,25 @@ export async function getHomeAnnouncements(locale: string = 'zh-Hans', limit: nu
     `/announcements?${createCollectionQuery({
       locale: strapiLocale,
       'filters[isActive][$eq]': true,
-      sort: 'priority:desc',
+      'sort[0]': 'isPinned:desc',
+      'sort[1]': 'priority:desc',
+      'sort[2]': 'publishedAt:desc',
       'pagination[pageSize]': limit,
       ...COVER_IMAGE_POPULATE_PARAMS,
+    })}`
+  );
+}
+
+export async function getFriendLinks(locale: string = 'zh-Hans', limit: number = 12) {
+  const strapiLocale = toStrapiLocale(locale);
+  return fetchAPI<StrapiResponse<FriendLink[]>>(
+    `/friend-links?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[isActive][$eq]': true,
+      'sort[0]': 'priority:desc',
+      'sort[1]': 'publishedAt:desc',
+      'pagination[pageSize]': limit,
+      'populate[icon]': true,
     })}`
   );
 }
@@ -120,7 +138,7 @@ export type EventNatureFilter = 'all' | 'official' | 'fanmade';
 export type EventStatusFilter = 'all' | 'upcoming' | 'ongoing' | 'ended';
 export type EventSortMode = 'relevant' | 'startTime' | 'endTime';
 type EventCollection = 'online-events' | 'offline-events';
-type EventKind = 'online' | 'offline';
+export type EventKind = 'online' | 'offline';
 
 export interface EventListOptions {
   query?: string;
@@ -373,6 +391,63 @@ export async function getHomeOfflineEvents(limit: number = 6, locale: string = '
   return getHomeRelevantEvents<OfflineEvent>('offline-events', 'offline', limit, locale);
 }
 
+export interface EventListItem {
+  event: OnlineEvent | OfflineEvent;
+  type: EventKind;
+}
+
+function compareEventsForDisplay(a: EventListItem, b: EventListItem, sortMode: EventSortMode = 'relevant') {
+  const now = Date.now();
+  const aEnd = new Date(a.event.endTime).getTime();
+  const bEnd = new Date(b.event.endTime).getTime();
+  const aStart = new Date(a.event.startTime).getTime();
+  const bStart = new Date(b.event.startTime).getTime();
+  if (sortMode === 'startTime') return bStart - aStart;
+  if (sortMode === 'endTime') return bEnd - aEnd;
+  const statusRank = (start: number, end: number) => {
+    if (start <= now && end >= now) return 0;
+    if (start > now) return 1;
+    return 2;
+  };
+  const aRank = statusRank(aStart, aEnd);
+  const bRank = statusRank(bStart, bEnd);
+  if (aRank !== bRank) return aRank - bRank;
+  if (aRank === 2) return bEnd - aEnd;
+  return aStart - bStart;
+}
+
+export async function getAllEvents(
+  limit: number = 24,
+  locale: string = 'zh-Hans',
+  options: EventListOptions = {}
+): Promise<StrapiResponse<EventListItem[]>> {
+  const page = Math.max(1, options.page || 1);
+  const pageSize = Math.max(1, options.pageSize || limit);
+  const perCollectionLimit = page * pageSize;
+  const listOptions = {
+    ...options,
+    page: 1,
+    pageSize: perCollectionLimit,
+  };
+
+  const [online, offline] = await Promise.all([
+    getEventsForCollection<OnlineEvent>('online-events', 'online', perCollectionLimit, locale, listOptions),
+    getEventsForCollection<OfflineEvent>('offline-events', 'offline', perCollectionLimit, locale, listOptions),
+  ]);
+
+  const merged = [
+    ...(online.data || []).map((event) => ({ event, type: 'online' as const })),
+    ...(offline.data || []).map((event) => ({ event, type: 'offline' as const })),
+  ].sort((a, b) => compareEventsForDisplay(a, b, options.sort || 'relevant'));
+  const start = (page - 1) * pageSize;
+  const total = (online.meta.pagination?.total || 0) + (offline.meta.pagination?.total || 0);
+
+  return {
+    data: merged.slice(start, start + pageSize),
+    meta: eventPageMeta(page, pageSize, total),
+  };
+}
+
 /**
  * 获取单个线上活动详情（通过 documentId 或数字 ID）
  */
@@ -539,6 +614,22 @@ export interface Announcement {
   content: string;
   coverImage?: StrapiMedia;
   link?: string;
+  priority: number;
+  isPinned?: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string;
+  locale: string;
+}
+
+export interface FriendLink {
+  id: number;
+  documentId: string;
+  title: string;
+  description?: string;
+  url: string;
+  icon?: StrapiMedia;
   priority: number;
   isActive: boolean;
   createdAt: string;

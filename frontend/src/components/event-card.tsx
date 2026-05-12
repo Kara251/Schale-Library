@@ -18,6 +18,8 @@ interface EventCardProps {
 const dateLocales = { 'zh-Hans': zhCN, 'en': enUS, 'ja': ja }
 
 const labels: Record<Locale, {
+  online: string
+  offline: string
   upcoming: string
   ongoing: string
   ended: string
@@ -25,6 +27,8 @@ const labels: Record<Locale, {
   fanmade: string
 }> = {
   'zh-Hans': {
+    online: '线上',
+    offline: '线下',
     upcoming: '未开始',
     ongoing: '进行中',
     ended: '已结束',
@@ -32,6 +36,8 @@ const labels: Record<Locale, {
     fanmade: '同人',
   },
   'en': {
+    online: 'Online',
+    offline: 'Offline',
     upcoming: 'Upcoming',
     ongoing: 'Ongoing',
     ended: 'Ended',
@@ -39,6 +45,8 @@ const labels: Record<Locale, {
     fanmade: 'Fan-made',
   },
   'ja': {
+    online: 'オンライン',
+    offline: 'オフライン',
     upcoming: '未開始',
     ongoing: '開催中',
     ended: '終了',
@@ -103,6 +111,9 @@ export const EventCard = memo(function EventCard({ event, type }: EventCardProps
             </div>
           )}
           <span className="absolute top-2 left-2 rounded bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
+            {isOffline ? t.offline : t.online}
+          </span>
+          <span className="absolute top-2 right-2 rounded bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
             {status}
           </span>
         </div>

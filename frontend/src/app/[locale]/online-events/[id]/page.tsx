@@ -75,7 +75,7 @@ const content: Record<Locale, {
     related: string
 }> = {
     'zh-Hans': {
-        back: '返回线上活动列表',
+        back: '返回活动列表',
         upcoming: '未开始',
         ongoing: '进行中',
         ended: '已结束',
@@ -93,7 +93,7 @@ const content: Record<Locale, {
         related: '相关线上活动',
     },
     'en': {
-        back: 'Back to online events',
+        back: 'Back to events',
         upcoming: 'Upcoming',
         ongoing: 'Ongoing',
         ended: 'Ended',
@@ -111,7 +111,7 @@ const content: Record<Locale, {
         related: 'Related Online Events',
     },
     'ja': {
-        back: 'オンラインイベント一覧に戻る',
+        back: 'イベント一覧に戻る',
         upcoming: '未開始',
         ongoing: '開催中',
         ended: '終了',
@@ -191,7 +191,7 @@ export default async function OnlineEventDetailPage({ params }: PageProps) {
 
             <main className="relative flex-1 container mx-auto px-4 pt-6 pb-12">
                 <div className="content-panel">
-                    <LocaleLink href="/online-events" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
+                    <LocaleLink href="/events" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
                         <ArrowLeft className="h-4 w-4" />
                         {t.back}
                     </LocaleLink>

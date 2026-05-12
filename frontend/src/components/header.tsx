@@ -21,9 +21,9 @@ const getNavItems = (locale: Locale) => {
     'zh-Hans': {
       announcements: '公告',
       works: '推荐作品',
+      researchArchives: '考据档案',
       resources: '资源整理',
-      online: '线上活动',
-      offline: '线下活动',
+      events: '活动',
       search: '搜索图书馆',
       login: '登录',
       menu: '导航菜单',
@@ -31,9 +31,9 @@ const getNavItems = (locale: Locale) => {
     'en': {
       announcements: 'Announcements',
       works: 'Works',
+      researchArchives: 'Research Archives',
       resources: 'Resources',
-      online: 'Online Events',
-      offline: 'Offline Events',
+      events: 'Events',
       search: 'Search library',
       login: 'Login',
       menu: 'Navigation menu',
@@ -41,9 +41,9 @@ const getNavItems = (locale: Locale) => {
     'ja': {
       announcements: 'お知らせ',
       works: '作品',
+      researchArchives: '考察アーカイブ',
       resources: 'リソース',
-      online: 'オンライン',
-      offline: 'オフライン',
+      events: 'イベント',
       search: '図書館を検索',
       login: 'ログイン',
       menu: 'ナビゲーションメニュー',
@@ -51,11 +51,11 @@ const getNavItems = (locale: Locale) => {
   }
   const t = labels[locale] || labels['zh-Hans']
   return [
-    { label: t.announcements, href: '/announcements' },
     { label: t.works, href: '/works' },
+    { label: t.researchArchives, href: '/research-archives' },
     { label: t.resources, href: '/resources' },
-    { label: t.online, href: '/online-events' },
-    { label: t.offline, href: '/offline-events' },
+    { label: t.events, href: '/events' },
+    { label: t.announcements, href: '/announcements' },
   ]
 }
 

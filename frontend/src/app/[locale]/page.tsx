@@ -2,8 +2,9 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Carousel } from "@/components/carousel"
 import { EventList } from "@/components/event-list"
+import { FriendLinksSection } from "@/components/friend-links-section"
 import { WorkCard } from "@/components/work-card"
-import { getFeaturedWorks, getHomeAnnouncements, getHomeOfflineEvents, getHomeOnlineEvents } from "@/lib/api"
+import { getFeaturedWorks, getFriendLinks, getHomeAnnouncements, getHomeOfflineEvents, getHomeOnlineEvents } from "@/lib/api"
 import { translations, type Locale } from "@/lib/i18n"
 
 interface HomePageProps {
@@ -17,17 +18,19 @@ export default async function HomePage({ params }: HomePageProps) {
     const t = translations[locale as Locale] || translations['zh-Hans']
 
     // 并行获取数据，传递语言参数
-    const [announcementsRes, onlineEventsRes, offlineEventsRes, worksRes] = await Promise.all([
+    const [announcementsRes, onlineEventsRes, offlineEventsRes, worksRes, friendLinksRes] = await Promise.all([
         getHomeAnnouncements(locale).catch(() => ({ data: [] })),
         getHomeOnlineEvents(6, locale).catch(() => ({ data: [] })),
         getHomeOfflineEvents(6, locale).catch(() => ({ data: [] })),
         getFeaturedWorks(6, locale).catch(() => ({ data: [] })),
+        getFriendLinks(locale, 6).catch(() => ({ data: [] })),
     ]);
 
     const announcements = announcementsRes.data || [];
     const onlineEvents = onlineEventsRes.data || [];
     const offlineEvents = offlineEventsRes.data || [];
     const works = worksRes.data || [];
+    const friendLinks = friendLinksRes.data || [];
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -77,6 +80,8 @@ export default async function HomePage({ params }: HomePageProps) {
                             </div>
                         )}
                     </section>
+
+                    <FriendLinksSection links={friendLinks} locale={locale} />
                 </div>
             </main>
 

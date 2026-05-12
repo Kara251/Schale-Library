@@ -7,13 +7,13 @@ import { SearchBar } from '@/components/search-bar'
 import { EventFilters, type EventNature, type EventStatus } from '@/components/event-filters'
 import { Pagination } from '@/components/pagination'
 import { useLocale } from '@/contexts/locale-context'
-import type { OnlineEvent, OfflineEvent } from '@/lib/api'
+import type { EventListItem, OnlineEvent, OfflineEvent } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 
 export type EventSortMode = 'relevant' | 'startTime' | 'endTime'
 
 interface EventsWithFiltersProps {
-  events: (OnlineEvent | OfflineEvent)[]
+  events: (OnlineEvent | OfflineEvent | EventListItem)[]
   type: 'online' | 'offline' | 'all'
   title?: string
   initialSearchQuery?: string
@@ -74,6 +74,10 @@ const labels: Record<Locale, {
     shareHint: '現在のフィルターは URL に同期され、そのまま共有できます。',
     error: 'イベントデータを一時的に取得できません。安全な空状態を表示しています。',
   },
+}
+
+function isEventListItem(value: OnlineEvent | OfflineEvent | EventListItem): value is EventListItem {
+  return typeof value === 'object' && value !== null && 'event' in value && 'type' in value
 }
 
 /**
@@ -174,13 +178,18 @@ export function EventsWithFilters({
       {events.length > 0 ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {events.map((event) => (
-              <EventCard
-                key={event.id}
-                event={event}
-                type={type === 'all' ? ('online' in event ? 'online' : 'offline') : type}
-              />
-            ))}
+            {events.map((item) => {
+              const event = isEventListItem(item) ? item.event : item
+              const eventType = isEventListItem(item) ? item.type : type === 'all' ? 'online' : type
+
+              return (
+                <EventCard
+                  key={`${eventType}-${event.id}`}
+                  event={event}
+                  type={eventType}
+                />
+              )
+            })}
           </div>
 
           <Pagination

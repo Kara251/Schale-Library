@@ -14,10 +14,10 @@ interface AnnouncementCardProps {
 }
 
 const dateLocales = { 'zh-Hans': zhCN, 'en': enUS, 'ja': ja }
-const labels: Record<Locale, { announcement: string; important: string }> = {
-  'zh-Hans': { announcement: '公告', important: '重要' },
-  'en': { announcement: 'Announcement', important: 'Important' },
-  'ja': { announcement: 'お知らせ', important: '重要' },
+const labels: Record<Locale, { announcement: string; important: string; pinned: string }> = {
+  'zh-Hans': { announcement: '公告', important: '重要', pinned: '置顶' },
+  en: { announcement: 'Announcement', important: 'Important', pinned: 'Pinned' },
+  ja: { announcement: 'お知らせ', important: '重要', pinned: '固定' },
 }
 
 /**
@@ -58,12 +58,16 @@ export function AnnouncementCard({ announcement }: AnnouncementCardProps) {
             </div>
           )}
 
-          {/* 优先级标签 */}
-          {announcement.priority > 5 && (
+          {/* 状态标签 */}
+          {announcement.isPinned ? (
+            <span className="absolute top-2 left-2 px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded">
+              {t.pinned}
+            </span>
+          ) : announcement.priority > 5 ? (
             <span className="absolute top-2 left-2 px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded">
               {t.important}
             </span>
-          )}
+          ) : null}
         </div>
 
         {/* 内容区 */}
@@ -84,4 +88,3 @@ export function AnnouncementCard({ announcement }: AnnouncementCardProps) {
     </LocaleLink>
   )
 }
-

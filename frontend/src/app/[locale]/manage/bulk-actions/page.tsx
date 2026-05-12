@@ -105,6 +105,7 @@ export default async function BulkActionsPage({ params, searchParams }: BulkActi
             <span className="font-medium">{t.collection}</span>
             <select name="collection" className="w-full rounded-md border bg-background px-3 py-2">
               <option value="works">works</option>
+              <option value="friend-links">friend-links</option>
               <option value="students">students</option>
               <option value="announcements">announcements</option>
               <option value="online-events">online-events</option>

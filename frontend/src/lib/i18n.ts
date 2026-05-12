@@ -42,9 +42,11 @@ export function setLocale(locale: Locale): void {
 export const translations = {
   'zh-Hans': {
     // 导航
+    'nav.works': '推荐作品',
+    'nav.researchArchives': '考据档案',
     'nav.resources': '资源整理',
-    'nav.onlineEvents': '线上活动',
-    'nav.offlineEvents': '线下活动',
+    'nav.events': '活动',
+    'nav.announcements': '公告',
     'nav.login': '登录',
     'nav.search': '搜索',
     'nav.searchPlaceholder': '搜索活动、资源...',
@@ -56,6 +58,7 @@ export const translations = {
     'home.featuredWorks': '精选推荐作品',
     'home.noEvents': '暂无活动',
     'home.noWorks': '暂无推荐作品',
+    'home.friendLinks': '友情链接',
     'home.loadMore': '加载更多',
 
     // 活动
@@ -102,9 +105,11 @@ export const translations = {
 
   'en': {
     // Navigation
+    'nav.works': 'Works',
+    'nav.researchArchives': 'Research Archives',
     'nav.resources': 'Resources',
-    'nav.onlineEvents': 'Online Events',
-    'nav.offlineEvents': 'Offline Events',
+    'nav.events': 'Events',
+    'nav.announcements': 'Announcements',
     'nav.login': 'Login',
     'nav.search': 'Search',
     'nav.searchPlaceholder': 'Search events, resources...',
@@ -116,6 +121,7 @@ export const translations = {
     'home.featuredWorks': 'Featured Works',
     'home.noEvents': 'No events',
     'home.noWorks': 'No recommended works yet',
+    'home.friendLinks': 'Friend Links',
     'home.loadMore': 'Load More',
 
     // Events
@@ -162,9 +168,11 @@ export const translations = {
 
   'ja': {
     // ナビゲーション
+    'nav.works': '作品',
+    'nav.researchArchives': '考察アーカイブ',
     'nav.resources': 'リソース',
-    'nav.onlineEvents': 'オンラインイベント',
-    'nav.offlineEvents': 'オフラインイベント',
+    'nav.events': 'イベント',
+    'nav.announcements': 'お知らせ',
     'nav.login': 'ログイン',
     'nav.search': '検索',
     'nav.searchPlaceholder': 'イベントやリソースを検索...',
@@ -176,6 +184,7 @@ export const translations = {
     'home.featuredWorks': 'おすすめ作品',
     'home.noEvents': 'イベントはありません',
     'home.noWorks': 'おすすめ作品がありません',
+    'home.friendLinks': '相互リンク',
     'home.loadMore': 'もっと見る',
 
     // イベント
