@@ -42,41 +42,39 @@ export function FriendLinksSection({ links, locale }: FriendLinksSectionProps) {
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group ba-card block p-4"
+              className="group block rounded p-3 transition-colors hover:bg-muted/50"
             >
-              <div className="ba-card-content">
-                <div className="flex items-start gap-4">
-                  <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded bg-secondary">
-                    {link.icon ? (
-                      <Image
-                        src={getMediaUrl(link.icon.url)}
-                        alt={link.icon.alternativeText || link.title}
-                        fill
-                        sizes="56px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <LinkIcon className="h-6 w-6 text-muted-foreground/50" />
-                    )}
+              <div className="flex items-start gap-4">
+                <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded bg-secondary">
+                  {link.icon ? (
+                    <Image
+                      src={getMediaUrl(link.icon.url)}
+                      alt={link.icon.alternativeText || link.title}
+                      fill
+                      sizes="56px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <LinkIcon className="h-6 w-6 text-muted-foreground/50" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="ba-title line-clamp-1 group-hover:text-primary">{link.title}</h3>
+                    <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="ba-title line-clamp-1 group-hover:text-primary">{link.title}</h3>
-                      <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    </div>
-                    {link.description ? (
-                      <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
-                        {link.description}
-                      </p>
-                    ) : null}
-                  </div>
+                  {link.description ? (
+                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
+                      {link.description}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </a>
           ))}
         </div>
       ) : (
-        <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">{t.empty}</div>
+        <p className="text-sm text-muted-foreground">{t.empty}</p>
       )}
     </section>
   )
