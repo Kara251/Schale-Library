@@ -38,6 +38,7 @@ function getSecurityHeaders() {
     "frame-ancestors 'none'",
     "object-src 'none'",
     "form-action 'self'",
+    "frame-src 'self' https://drive.bakivo.com",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vitals.vercel-insights.com https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms",
     "style-src 'self' 'unsafe-inline' https://fonts.loli.net",
     `img-src 'self' data: blob: ${apiOrigin} http://localhost:8083 https://res.cloudinary.com https://i0.hdslb.com https://i1.hdslb.com https://i2.hdslb.com`,
