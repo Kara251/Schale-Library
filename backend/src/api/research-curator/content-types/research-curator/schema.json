@@ -1,0 +1,40 @@
+{
+  "kind": "singleType",
+  "collectionName": "research_curators",
+  "info": {
+    "singularName": "research-curator",
+    "pluralName": "research-curators",
+    "displayName": "考据主编策展",
+    "description": "列表页右栏：主编精选入口与推荐游走路径"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "featured_entry": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::research-entry.research-entry",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "pick_note": {
+      "type": "text",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "path_description": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "path_steps": {
+      "type": "component",
+      "repeatable": true,
+      "component": "research.path-step",
+      "pluginOptions": { "i18n": { "localized": false } }
+    }
+  }
+}

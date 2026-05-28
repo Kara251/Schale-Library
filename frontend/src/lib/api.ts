@@ -1177,6 +1177,214 @@ export const schoolNames: Record<SchoolType, string> = {
   other: '其他',
 };
 
+// ─── Research Archives ───────────────────────────────────────────────────────
+
+export type ResearchStance = 'official' | 'personal' | 'speculative';
+export type ResearchMediaType = 'character' | 'story' | 'concept' | 'setting' | 'organization';
+export type ResearchAffiliation =
+  | 'millennium' | 'trinity' | 'gehenna' | 'hyakkiyako' | 'shanhaijing'
+  | 'redwinter' | 'abydos' | 'schale' | 'extra' | 'mainline' | 'other';
+export type CitationSourceType = 'game_line' | 'interview' | 'visual' | 'external';
+export type CitationConfidence = 'official' | 'derived' | 'conjecture';
+
+export interface ResearchTheme {
+  id: number;
+  documentId: string;
+  name: string;
+  slug: string;
+  curated_intro?: string;
+  locale: string;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string;
+}
+
+export interface ResearchCitation {
+  id: number;
+  documentId: string;
+  claim_short: string;
+  source_type: CitationSourceType;
+  source_ref?: string;
+  source_image?: StrapiMedia;
+  source_quote?: string;
+  confidence: CitationConfidence;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string;
+}
+
+export interface ResearchRelatedLink {
+  id: number;
+  target_entry?: Pick<ResearchEntry, 'id' | 'documentId' | 'title' | 'slug'>;
+  curate_note?: string;
+  order: number;
+}
+
+export interface ResearchEntry {
+  id: number;
+  documentId: string;
+  title: string;
+  slug: string;
+  stance: ResearchStance;
+  summary?: string;
+  body?: string;
+  media_type: ResearchMediaType;
+  affiliations?: ResearchAffiliation[];
+  themes?: ResearchTheme[];
+  citations?: ResearchCitation[];
+  related_links?: ResearchRelatedLink[];
+  locale: string;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string;
+}
+
+export interface ResearchPathStep {
+  id: number;
+  entry?: Pick<ResearchEntry, 'id' | 'documentId' | 'title' | 'slug'>;
+  step_note?: string;
+}
+
+export interface ResearchCuratorData {
+  featured_entry?: ResearchEntry;
+  pick_note?: string;
+  path_description?: string;
+  path_steps?: ResearchPathStep[];
+}
+
+export const RESEARCH_MEDIA_TYPES: ResearchMediaType[] = [
+  'character', 'story', 'concept', 'setting', 'organization',
+];
+
+export const RESEARCH_AFFILIATIONS: ResearchAffiliation[] = [
+  'millennium', 'trinity', 'gehenna', 'hyakkiyako', 'shanhaijing',
+  'redwinter', 'abydos', 'schale', 'extra', 'mainline', 'other',
+];
+
+export const researchMediaTypeLabels: Record<string, Record<ResearchMediaType, string>> = {
+  'zh-Hans': {
+    character: '角色', story: '剧情', concept: '概念', setting: '设定', organization: '组织',
+  },
+  'en': {
+    character: 'Character', story: 'Story', concept: 'Concept', setting: 'Setting', organization: 'Organization',
+  },
+  'ja': {
+    character: 'キャラクター', story: 'ストーリー', concept: '概念', setting: '設定', organization: '組織',
+  },
+};
+
+export const researchAffiliationLabels: Record<string, Record<ResearchAffiliation, string>> = {
+  'zh-Hans': {
+    millennium: '千年', trinity: '三一', gehenna: '格黑娜', hyakkiyako: '百鬼夜行',
+    shanhaijing: '山海经', redwinter: '红冬', abydos: '阿拜多斯', schale: '夏莱',
+    extra: 'Ex篇', mainline: '主线', other: '其他',
+  },
+  'en': {
+    millennium: 'Millennium', trinity: 'Trinity', gehenna: 'Gehenna', hyakkiyako: 'Hyakkiyako',
+    shanhaijing: 'Shanhaijing', redwinter: 'Red Winter', abydos: 'Abydos', schale: 'Schale',
+    extra: 'Extra Chapter', mainline: 'Main Story', other: 'Other',
+  },
+  'ja': {
+    millennium: 'ミレニアム', trinity: 'トリニティ', gehenna: 'ゲヘナ', hyakkiyako: '百鬼夜行',
+    shanhaijing: '山海経', redwinter: 'レッドウィンター', abydos: 'アビドス', schale: 'シャーレ',
+    extra: 'Ex章', mainline: 'メインストーリー', other: 'その他',
+  },
+};
+
+export const researchStanceLabels: Record<string, Record<ResearchStance, string>> = {
+  'zh-Hans': { official: '官方依据', personal: '个人推论', speculative: '推测性' },
+  'en': { official: 'Official basis', personal: 'Personal analysis', speculative: 'Speculative' },
+  'ja': { official: '公式根拠', personal: '個人考察', speculative: '推測的' },
+};
+
+export const researchConfidenceLabels: Record<string, Record<CitationConfidence, string>> = {
+  'zh-Hans': { official: '官方', derived: '推导', conjecture: '推测' },
+  'en': { official: 'Official', derived: 'Derived', conjecture: 'Conjecture' },
+  'ja': { official: '公式', derived: '推導', conjecture: '推測' },
+};
+
+export const researchSourceTypeLabels: Record<string, Record<CitationSourceType, string>> = {
+  'zh-Hans': { game_line: '游戏台词', interview: '官方访谈', visual: '视觉证据', external: '外部来源' },
+  'en': { game_line: 'Game line', interview: 'Interview', visual: 'Visual evidence', external: 'External source' },
+  'ja': { game_line: 'ゲーム台詞', interview: '公式インタビュー', visual: 'ビジュアル証拠', external: '外部ソース' },
+};
+
+const RESEARCH_ENTRY_LIST_POPULATE = {
+  'populate[themes]': true,
+} as const;
+
+const RESEARCH_ENTRY_DETAIL_POPULATE = {
+  'populate[themes]': true,
+  'populate[citations][populate][source_image]': true,
+  'populate[related_links][populate][target_entry]': true,
+} as const;
+
+export async function getResearchEntries(locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
+  return fetchAPI<StrapiResponse<ResearchEntry[]>>(
+    `/research-entries?${createCollectionQuery({
+      locale: strapiLocale,
+      sort: 'updatedAt:desc',
+      'pagination[pageSize]': 100,
+      ...RESEARCH_ENTRY_LIST_POPULATE,
+    })}`
+  );
+}
+
+export async function getResearchEntryBySlug(slug: string, locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
+  const response = await fetchAPI<StrapiResponse<ResearchEntry[]>>(
+    `/research-entries?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[slug][$eq]': slug,
+      ...RESEARCH_ENTRY_DETAIL_POPULATE,
+    })}`
+  );
+  return {
+    data: response.data?.[0] || null,
+    meta: {},
+  } as StrapiSingleResponse<ResearchEntry | null>;
+}
+
+export async function getResearchThemes(locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
+  return fetchAPI<StrapiResponse<ResearchTheme[]>>(
+    `/research-themes?${createCollectionQuery({
+      locale: strapiLocale,
+      sort: 'name:asc',
+      'pagination[pageSize]': 100,
+    })}`
+  );
+}
+
+export async function getResearchCurator(locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
+  try {
+    return fetchAPI<{ data: ResearchCuratorData }>(
+      `/research-curator?${createCollectionQuery({
+        locale: strapiLocale,
+        'populate[featured_entry][populate][themes]': true,
+        'populate[path_steps][populate][entry]': true,
+      })}`
+    );
+  } catch {
+    return { data: null };
+  }
+}
+
+export async function getRecentResearchEntries(locale: string = 'zh-Hans', limit = 3) {
+  const strapiLocale = toStrapiLocale(locale);
+  return fetchAPI<StrapiResponse<ResearchEntry[]>>(
+    `/research-entries?${createCollectionQuery({
+      locale: strapiLocale,
+      sort: 'updatedAt:desc',
+      'pagination[pageSize]': limit,
+    })}`
+  );
+}
+
+// ─── End Research Archives ────────────────────────────────────────────────────
+
 /**
  * 多语言学校名称映射
  */

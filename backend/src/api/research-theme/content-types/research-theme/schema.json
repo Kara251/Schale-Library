@@ -1,0 +1,41 @@
+{
+  "kind": "collectionType",
+  "collectionName": "research_themes",
+  "info": {
+    "singularName": "research-theme",
+    "pluralName": "research-themes",
+    "displayName": "考据主题",
+    "description": "横向贯穿多个条目的主题标签"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true,
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "curated_intro": {
+      "type": "richtext",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "entries": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::research-entry.research-entry",
+      "mappedBy": "themes"
+    }
+  }
+}

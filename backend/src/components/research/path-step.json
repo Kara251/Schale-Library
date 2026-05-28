@@ -1,0 +1,17 @@
+{
+  "collectionName": "components_research_path_steps",
+  "info": {
+    "displayName": "路径步骤",
+    "icon": "arrow-right"
+  },
+  "attributes": {
+    "entry": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::research-entry.research-entry"
+    },
+    "step_note": {
+      "type": "string"
+    }
+  }
+}

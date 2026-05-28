@@ -1,0 +1,48 @@
+{
+  "kind": "collectionType",
+  "collectionName": "research_citations",
+  "info": {
+    "singularName": "research-citation",
+    "pluralName": "research-citations",
+    "displayName": "考据引证",
+    "description": "条目内可引用的原始来源"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "claim_short": {
+      "type": "string",
+      "required": true
+    },
+    "source_type": {
+      "type": "enumeration",
+      "enum": ["game_line", "interview", "visual", "external"],
+      "required": true
+    },
+    "source_ref": {
+      "type": "string"
+    },
+    "source_image": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "source_quote": {
+      "type": "text"
+    },
+    "confidence": {
+      "type": "enumeration",
+      "enum": ["official", "derived", "conjecture"],
+      "default": "derived",
+      "required": true
+    },
+    "entries": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::research-entry.research-entry",
+      "mappedBy": "citations"
+    }
+  }
+}

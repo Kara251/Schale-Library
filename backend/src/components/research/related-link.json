@@ -1,0 +1,21 @@
+{
+  "collectionName": "components_research_related_links",
+  "info": {
+    "displayName": "延伸阅读链接",
+    "icon": "link"
+  },
+  "attributes": {
+    "target_entry": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::research-entry.research-entry"
+    },
+    "curate_note": {
+      "type": "string"
+    },
+    "order": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}
