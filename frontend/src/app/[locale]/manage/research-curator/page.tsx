@@ -23,10 +23,23 @@ const labels: Record<Locale, { title: string; description: string }> = {
   },
 }
 
+function getResearchCuratorAdminUrl() {
+  const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083').replace(/\/+$/, '')
+  const configured = process.env.STRAPI_ADMIN_URL || process.env.NEXT_PUBLIC_STRAPI_ADMIN_URL
+
+  if (configured) {
+    return `${configured.replace(/\/+$/, '')}/content-manager/single-types/api::research-curator.research-curator`
+  }
+
+  const adminPath = (process.env.ADMIN_PATH || process.env.NEXT_PUBLIC_STRAPI_ADMIN_PATH || '/admin').replace(/^\/?/, '/').replace(/\/+$/, '')
+  return `${apiUrl}${adminPath}/content-manager/single-types/api::research-curator.research-curator`
+}
+
 export default async function ResearchCuratorManagePage({ params }: ResearchCuratorManagePageProps) {
   const { locale } = await params
   const session = await requireAdminSession(locale, `/${locale}/manage/research-curator`)
   const t = labels[locale as Locale] || labels['zh-Hans']
+  const strapiAdminUrl = getResearchCuratorAdminUrl()
 
   const [curatorRes, entriesRes] = await Promise.all([
     getCuratorAdmin(session, locale).catch(() => ({ data: null })),
@@ -46,6 +59,7 @@ export default async function ResearchCuratorManagePage({ params }: ResearchCura
         initialData={curatorRes.data}
         entries={entries}
         locale={locale as Locale}
+        strapiAdminUrl={strapiAdminUrl}
       />
     </div>
   )

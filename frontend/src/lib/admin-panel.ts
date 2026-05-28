@@ -24,6 +24,7 @@ export type AdminFieldType =
   | 'select'
   | 'media'
   | 'multiselect'
+  | 'relation-multiselect'
   | 'json-csv'
 
 export interface AdminFieldOption {
@@ -450,6 +451,8 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
         { value: 'organization', label: '组织' },
       ] },
       { name: 'affiliations', type: 'json-csv', label: { 'zh-Hans': '相关势力', en: 'Affiliations', ja: '所属勢力' } },
+      { name: 'themes', type: 'relation-multiselect', label: { 'zh-Hans': '关联主题', en: 'Related themes', ja: '関連テーマ' }, relationKey: 'research-themes' },
+      { name: 'citations', type: 'relation-multiselect', label: { 'zh-Hans': '关联引证', en: 'Related citations', ja: '関連引証' }, relationKey: 'research-citations' },
       { name: 'summary', type: 'textarea', label: { 'zh-Hans': '摘要', en: 'Summary', ja: '要約' } },
       { name: 'body', type: 'textarea', label: { 'zh-Hans': '正文', en: 'Body', ja: '本文' } },
       { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },

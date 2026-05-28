@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
+import { ArrowUpRight } from 'lucide-react'
+import { LocaleLink } from '@/components/locale-link'
 import { ResearchEntryCard } from '@/components/research-entry-card'
 import {
   type ResearchEntry,
@@ -195,18 +197,30 @@ export function ResearchFilter({ entries, themes, locale }: ResearchFilterProps)
             </h3>
             <div className="flex flex-wrap gap-1.5">
               {themes.map((theme) => (
-                <button
-                  key={theme.id}
-                  type="button"
-                  onClick={() => toggleTheme(theme.id)}
-                  className={`rounded px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
-                    filter.themeIds.has(theme.id)
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary'
-                  }`}
-                >
-                  {theme.name}
-                </button>
+                <span key={theme.id} className="inline-flex overflow-hidden rounded">
+                  <button
+                    type="button"
+                    onClick={() => toggleTheme(theme.id)}
+                    className={`px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                      filter.themeIds.has(theme.id)
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary'
+                    }`}
+                  >
+                    {theme.name}
+                  </button>
+                  <LocaleLink
+                    href={`/research-archives/themes/${theme.slug}`}
+                    className={`inline-flex items-center px-1.5 transition-colors ${
+                      filter.themeIds.has(theme.id)
+                        ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                        : 'bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary'
+                    }`}
+                    aria-label={`${theme.name} ${t['research.theme.open'] as string || ''}`.trim()}
+                  >
+                    <ArrowUpRight className="h-3 w-3" />
+                  </LocaleLink>
+                </span>
               ))}
             </div>
           </section>

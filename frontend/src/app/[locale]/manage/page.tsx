@@ -1,4 +1,5 @@
-import { ShieldCheck } from 'lucide-react'
+import Link from 'next/link'
+import { BookMarked, ShieldCheck } from 'lucide-react'
 
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { AdminStatCard } from '@/components/admin/admin-stat-card'
@@ -10,11 +11,23 @@ interface ManageDashboardPageProps {
   params: Promise<{ locale: string }>
 }
 
-const labels: Record<Locale, { title: string; description: string; view: string; securityTitle: string; securityBody: string }> = {
+const labels: Record<Locale, {
+  title: string
+  description: string
+  view: string
+  configTitle: string
+  curatorTitle: string
+  curatorBody: string
+  securityTitle: string
+  securityBody: string
+}> = {
   'zh-Hans': {
     title: '仪表盘',
     description: '查看内容总量、快速进入各个维护模块。',
     view: '进入列表',
+    configTitle: '配置项',
+    curatorTitle: '策展配置',
+    curatorBody: '编辑考据档案的主编精选与推荐游走路径。',
     securityTitle: '安全说明',
     securityBody: '当前自研后台通过同源接口与 HttpOnly Cookie 会话访问 Strapi，避免在浏览器中暴露维护者令牌。写操作、上传和同步动作会记录到审计日志。',
   },
@@ -22,6 +35,9 @@ const labels: Record<Locale, { title: string; description: string; view: string;
     title: 'Dashboard',
     description: 'Overview of content totals and quick entry points.',
     view: 'Open list',
+    configTitle: 'Settings',
+    curatorTitle: 'Curation settings',
+    curatorBody: 'Edit the research archive editor pick and recommended path.',
     securityTitle: 'Security notes',
     securityBody: 'The panel uses same-origin APIs and HttpOnly cookies to access Strapi, keeping maintainer tokens out of browser storage. Write actions, uploads, and sync actions are recorded in audit logs.',
   },
@@ -29,6 +45,9 @@ const labels: Record<Locale, { title: string; description: string; view: string;
     title: 'ダッシュボード',
     description: 'コンテンツ総数と管理モジュールへの入口を確認します。',
     view: '一覧を開く',
+    configTitle: '設定',
+    curatorTitle: 'キュレーション設定',
+    curatorBody: '考察アーカイブのおすすめと読み順を編集します。',
     securityTitle: 'セキュリティ',
     securityBody: 'この管理パネルは同一オリジン API と HttpOnly Cookie セッション経由で Strapi に接続し、ブラウザ保存領域へトークンを置きません。書き込み、アップロード、同期操作は監査ログに記録されます。',
   },
@@ -54,6 +73,20 @@ export default async function ManageDashboardPage({ params }: ManageDashboardPag
             viewLabel={t.view}
           />
         ))}
+      </div>
+
+      <div className="mt-6">
+        <h2 className="mb-3 text-lg font-semibold">{t.configTitle}</h2>
+        <Link
+          href={`/${locale}/manage/research-curator`}
+          className="flex items-start gap-3 rounded-lg border bg-card p-5 transition-colors hover:bg-muted/40"
+        >
+          <BookMarked className="mt-0.5 h-5 w-5 text-primary" />
+          <span>
+            <span className="block font-medium">{t.curatorTitle}</span>
+            <span className="mt-1 block text-sm leading-6 text-muted-foreground">{t.curatorBody}</span>
+          </span>
+        </Link>
       </div>
 
       <div className="mt-6 rounded-lg border bg-card p-5">

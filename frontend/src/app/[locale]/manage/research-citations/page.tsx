@@ -118,7 +118,6 @@ export default async function ResearchCitationsManagePage({ params, searchParams
   const status = query.status === 'published' || query.status === 'draft' ? query.status : 'all'
 
   const response = await listAdminCollection<ResearchCitationAdminEntry>(session, 'research-citations', {
-    locale,
     page,
     search: query.search,
     status,

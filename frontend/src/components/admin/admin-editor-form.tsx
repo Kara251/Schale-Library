@@ -47,6 +47,7 @@ const labels: Record<Locale, {
   saveFailed: string
   requiredError: string
   emptySelection: string
+  relationSearch: string
 }> = {
   'zh-Hans': {
     save: '保存',
@@ -60,6 +61,7 @@ const labels: Record<Locale, {
     saveFailed: '保存失败',
     requiredError: '请至少填写标题或名称',
     emptySelection: '暂无可选项',
+    relationSearch: '搜索可选项',
   },
   en: {
     save: 'Save',
@@ -73,6 +75,7 @@ const labels: Record<Locale, {
     saveFailed: 'Save failed',
     requiredError: 'Please provide at least a title or name',
     emptySelection: 'No available options',
+    relationSearch: 'Search options',
   },
   ja: {
     save: '保存',
@@ -86,6 +89,7 @@ const labels: Record<Locale, {
     saveFailed: '保存に失敗しました',
     requiredError: 'タイトルまたは名前を入力してください',
     emptySelection: '選択肢がありません',
+    relationSearch: '選択肢を検索',
   },
 }
 
@@ -127,6 +131,7 @@ function getInitialFieldValue(field: AdminEditorField, value: unknown): unknown 
     case 'media':
       return getInitialMedia(value)
     case 'multiselect':
+    case 'relation-multiselect':
       return Array.isArray(value)
         ? value
             .map((item) => (item && typeof item === 'object' && 'id' in item ? Number((item as { id: number }).id) : Number(item)))
@@ -161,6 +166,7 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [uploadingField, setUploadingField] = useState<string | null>(null)
+  const [relationSearch, setRelationSearch] = useState<Record<string, string>>({})
   const t = labels[locale] || labels['zh-Hans']
   const schema = ADMIN_COLLECTION_META[collection]
 
@@ -222,6 +228,7 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
         return media?.id ?? null
       }
       case 'multiselect':
+      case 'relation-multiselect':
         return Array.isArray(value) ? value : []
       case 'json-csv':
         return typeof value === 'string' && value.trim()
@@ -293,7 +300,7 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
           {schema.fields.map((field) => {
             const value = formValues[field.name]
             const label = getDisplayLabel(field, locale)
-            const isFullWidth = field.type === 'textarea' || field.type === 'multiselect' || field.type === 'media' || field.type === 'json-csv'
+            const isFullWidth = field.type === 'textarea' || field.type === 'multiselect' || field.type === 'relation-multiselect' || field.type === 'media' || field.type === 'json-csv'
 
             return (
               <div key={field.name} className={cn('space-y-2', isFullWidth && 'md:col-span-2')}>
@@ -358,38 +365,61 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
                   </select>
                 ) : null}
 
-                {field.type === 'multiselect' ? (
+                {field.type === 'multiselect' || field.type === 'relation-multiselect' ? (
                   <div className="rounded-md border p-3">
-                    {(relationOptions?.[field.relationKey || ''] || []).length === 0 ? (
-                      <p className="text-sm text-muted-foreground">{t.emptySelection}</p>
-                    ) : (
-                      <div className="grid gap-2 md:grid-cols-2">
-                        {(relationOptions?.[field.relationKey || ''] || []).map((option) => {
-                          const selected = Array.isArray(value) && value.includes(option.id)
-                          return (
-                            <label key={option.id} className="flex items-start gap-3 rounded-md border px-3 py-2 text-sm">
-                              <input
-                                type="checkbox"
-                                checked={selected}
-                                onChange={(event) => {
-                                  const current = Array.isArray(value) ? value.map(Number) : []
-                                  updateField(
-                                    field.name,
-                                    event.target.checked
-                                      ? [...current, option.id]
-                                      : current.filter((item) => item !== option.id)
-                                  )
-                                }}
-                              />
-                              <div>
-                                <p className="font-medium">{option.label}</p>
-                                {option.description ? <p className="text-xs text-muted-foreground">{option.description}</p> : null}
-                              </div>
-                            </label>
-                          )
-                        })}
-                      </div>
-                    )}
+                    {(() => {
+                      const options = relationOptions?.[field.relationKey || ''] || []
+                      const search = relationSearch[field.name]?.trim().toLowerCase() || ''
+                      const visibleOptions = search
+                        ? options.filter((option) => {
+                            const haystack = `${option.label} ${option.description || ''}`.toLowerCase()
+                            return haystack.includes(search)
+                          })
+                        : options
+
+                      return (
+                        <div className="space-y-3">
+                          {field.type === 'relation-multiselect' && options.length > 6 ? (
+                            <Input
+                              type="search"
+                              value={relationSearch[field.name] || ''}
+                              onChange={(event) => setRelationSearch((current) => ({ ...current, [field.name]: event.target.value }))}
+                              placeholder={t.relationSearch}
+                            />
+                          ) : null}
+                          {options.length === 0 || visibleOptions.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">{t.emptySelection}</p>
+                          ) : (
+                            <div className="grid gap-2 md:grid-cols-2">
+                              {visibleOptions.map((option) => {
+                                const selected = Array.isArray(value) && value.includes(option.id)
+                                return (
+                                  <label key={option.id} className="flex items-start gap-3 rounded-md border px-3 py-2 text-sm">
+                                    <input
+                                      type="checkbox"
+                                      checked={selected}
+                                      onChange={(event) => {
+                                        const current = Array.isArray(value) ? value.map(Number) : []
+                                        updateField(
+                                          field.name,
+                                          event.target.checked
+                                            ? [...current, option.id]
+                                            : current.filter((item) => item !== option.id)
+                                        )
+                                      }}
+                                    />
+                                    <div>
+                                      <p className="font-medium">{option.label}</p>
+                                      {option.description ? <p className="text-xs text-muted-foreground">{option.description}</p> : null}
+                                    </div>
+                                  </label>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </div>
                 ) : null}
 

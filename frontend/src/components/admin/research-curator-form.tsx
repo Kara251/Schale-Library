@@ -17,6 +17,7 @@ interface ResearchCuratorFormProps {
   initialData: CuratorAdminData | null
   entries: EntryOption[]
   locale: Locale
+  strapiAdminUrl: string
 }
 
 const labels: Record<Locale, {
@@ -28,6 +29,7 @@ const labels: Record<Locale, {
   pickNote: string
   pathDescription: string
   pathStepsNote: string
+  openNativeAdmin: string
   save: string
   saving: string
   cancel: string
@@ -43,6 +45,7 @@ const labels: Record<Locale, {
     pickNote: '推荐语',
     pathDescription: '推荐路径说明',
     pathStepsNote: '路径步骤（含关联条目）需在 Strapi 原生后台中管理，本面板仅支持编辑路径说明文字。',
+    openNativeAdmin: '打开 Strapi 原生后台',
     save: '保存',
     saving: '保存中...',
     cancel: '返回',
@@ -58,6 +61,7 @@ const labels: Record<Locale, {
     pickNote: 'Pick note',
     pathDescription: 'Path description',
     pathStepsNote: 'Path steps (with entry relations) must be managed in the Strapi native admin. This panel only supports editing the description text.',
+    openNativeAdmin: 'Open Strapi admin',
     save: 'Save',
     saving: 'Saving...',
     cancel: 'Back',
@@ -73,6 +77,7 @@ const labels: Record<Locale, {
     pickNote: 'おすすめコメント',
     pathDescription: 'パス説明',
     pathStepsNote: 'パスのステップ（記事の関連付け）は Strapi ネイティブ管理画面で管理してください。',
+    openNativeAdmin: 'Strapi 管理画面を開く',
     save: '保存',
     saving: '保存中...',
     cancel: '戻る',
@@ -81,7 +86,7 @@ const labels: Record<Locale, {
   },
 }
 
-export function ResearchCuratorForm({ initialData, entries, locale }: ResearchCuratorFormProps) {
+export function ResearchCuratorForm({ initialData, entries, locale, strapiAdminUrl }: ResearchCuratorFormProps) {
   const router = useRouter()
   const { showToast } = useToast()
   const t = labels[locale] || labels['zh-Hans']
@@ -184,7 +189,15 @@ export function ResearchCuratorForm({ initialData, entries, locale }: ResearchCu
 
           {/* path_steps 说明 */}
           <div className="md:col-span-2 rounded-md border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
-            {t.pathStepsNote}
+            <p>{t.pathStepsNote}</p>
+            <a
+              href={strapiAdminUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-block text-primary hover:underline"
+            >
+              {t.openNativeAdmin}
+            </a>
           </div>
         </CardContent>
       </Card>

@@ -142,11 +142,11 @@ const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
   'research-entries': {
     uid: 'api::research-entry.research-entry',
     localized: true,
-    populate: ['themes'],
+    populate: ['themes', 'citations'],
     searchFields: ['title', 'summary'],
     defaultSort: 'updatedAt:desc',
     supportsDraft: true,
-    fields: ['title', 'stance', 'media_type', 'affiliations', 'summary', 'body', 'publishedAt'],
+    fields: ['title', 'stance', 'media_type', 'affiliations', 'themes', 'citations', 'summary', 'body', 'publishedAt'],
   },
   'research-themes': {
     uid: 'api::research-theme.research-theme',
@@ -171,6 +171,7 @@ const SUPPORTED_LOCALES = new Set(['zh-Hans', 'en', 'ja'])
 const RATE_LIMIT_UID = 'api::rate-limit-record.rate-limit-record' as any
 const AUDIT_LOG_UID = 'api::admin-audit-log.admin-audit-log' as any
 const CONTENT_QUALITY_UID = 'api::content-quality-issue.content-quality-issue' as any
+const RESEARCH_CURATOR_UID = 'api::research-curator.research-curator' as any
 const RATE_LIMIT_TABLE = 'rate_limit_records'
 const DEFAULT_RATE_LIMIT = 60
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60 * 1000
@@ -514,6 +515,8 @@ function pickAllowedFields(collection: PanelCollectionKey, input: Record<string,
         data[field] = normalizeMediaValue(value)
         break
       case 'students':
+      case 'themes':
+      case 'citations':
         data[field] = normalizeRelationList(value)
         break
       case 'affiliations':
@@ -1502,10 +1505,7 @@ export default {
       }
       if (locale) params.locale = locale
 
-      const entry = await strapi.entityService.findMany(
-        'api::research-curator.research-curator' as any,
-        params as any
-      )
+      const entry = await strapi.documents(RESEARCH_CURATOR_UID).findFirst(params as any)
       ctx.send({ data: entry || null })
     } catch (error) {
       strapi.log.warn(`[panel] getCurator: ${(error as Error).message}`)
@@ -1529,29 +1529,27 @@ export default {
     }
     if ('pick_note' in inputData) normalized.pick_note = normalizeRichValue(inputData.pick_note)
     if ('path_description' in inputData) normalized.path_description = normalizeRichValue(inputData.path_description)
-    if (localeParam) normalized.locale = localeParam
 
     try {
       const findParams: Record<string, unknown> = {}
       if (localeParam) findParams.locale = localeParam
 
-      const existing = await strapi.entityService.findMany(
-        'api::research-curator.research-curator' as any,
-        findParams as any
-      ) as any
+      const existing = await strapi.documents(RESEARCH_CURATOR_UID).findFirst(findParams as any) as any
 
       let updated: unknown
-      if (existing?.id) {
-        updated = await strapi.entityService.update(
-          'api::research-curator.research-curator' as any,
-          existing.id,
-          { data: normalized } as any
-        )
+      if (existing?.documentId) {
+        updated = await strapi.documents(RESEARCH_CURATOR_UID).update({
+          documentId: existing.documentId,
+          data: normalized,
+          locale: localeParam,
+          populate: { featured_entry: { fields: ['id', 'documentId', 'title', 'slug'] } },
+        } as any)
       } else {
-        updated = await strapi.entityService.create(
-          'api::research-curator.research-curator' as any,
-          { data: normalized } as any
-        )
+        updated = await strapi.documents(RESEARCH_CURATOR_UID).create({
+          data: normalized,
+          locale: localeParam,
+          populate: { featured_entry: { fields: ['id', 'documentId', 'title', 'slug'] } },
+        } as any)
       }
 
       await recordAdminAuditLog(ctx, {

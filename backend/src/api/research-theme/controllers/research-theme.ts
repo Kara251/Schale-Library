@@ -1,2 +1,2 @@
 import { factories } from '@strapi/strapi';
-export default factories.createCoreController('api::research-theme.research-theme');
+export default factories.createCoreController('api::research-theme.research-theme' as any);

@@ -34,13 +34,85 @@ const confidenceBadge: Record<string, string> = {
   conjecture: 'bg-destructive/10 text-destructive',
 }
 
+const tocLabels: Record<Locale, string> = {
+  'zh-Hans': '目录',
+  en: 'Contents',
+  ja: '目次',
+}
+
+interface TocHeading {
+  id: string
+  text: string
+  level: 2 | 3
+}
+
+function stripTags(value: string) {
+  return value
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .trim()
+}
+
+function toHeadingId(text: string, index: number) {
+  const slug = text
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^\p{Letter}\p{Number}-]/gu, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+
+  return slug || `section-${index + 1}`
+}
+
+function escapeAttribute(value: string) {
+  return value.replace(/"/g, '&quot;')
+}
+
+function addTableOfContents(html: string) {
+  const headings: TocHeading[] = []
+  const seen = new Map<string, number>()
+
+  const processedHtml = html.replace(/<h([23])([^>]*)>([\s\S]*?)<\/h\1>/gi, (match, level, attrs, inner) => {
+    const text = stripTags(inner)
+    if (!text) {
+      return match
+    }
+
+    const existingId = attrs.match(/\sid=(["'])(.*?)\1/i)?.[2]
+    const baseId = existingId || toHeadingId(text, headings.length)
+    const count = seen.get(baseId) || 0
+    seen.set(baseId, count + 1)
+    const id = count > 0 ? `${baseId}-${count + 1}` : baseId
+
+    headings.push({ id, text, level: Number(level) as 2 | 3 })
+
+    if (existingId) {
+      const nextAttrs = id === existingId
+        ? attrs
+        : attrs.replace(/\sid=(["'])(.*?)\1/i, ` id="${escapeAttribute(id)}"`)
+      return `<h${level}${nextAttrs}>${inner}</h${level}>`
+    }
+
+    return `<h${level}${attrs} id="${escapeAttribute(id)}">${inner}</h${level}>`
+  })
+
+  return { html: processedHtml, headings }
+}
+
 export async function generateMetadata({ params }: ResearchEntryPageProps) {
   const { slug, locale } = await params
+  const t = translations[locale as Locale] || translations['zh-Hans']
   const res = await getResearchEntryBySlug(slug, locale).catch(() => null)
-  if (!res?.data) return { title: 'Research Archives – Schale Library' }
+  const researchTitle = t['research.title'] as string || 'Research Archives'
+  if (!res?.data) return { title: `${researchTitle} – Schale Library` }
   const entry = res.data
   return {
-    title: `${entry.title} – 考据档案 – Schale Library`,
+    title: `${entry.title} – ${researchTitle} – Schale Library`,
     description: entry.summary || '',
   }
 }
@@ -67,6 +139,17 @@ export default async function ResearchEntryPage({ params }: ResearchEntryPagePro
   }
 
   const relatedLinks = (entry.related_links || []).sort((a, b) => a.order - b.order)
+  const body = entry.body ? addTableOfContents(sanitizeHtml(entry.body)) : { html: '', headings: [] }
+  const hasToc = body.headings.length > 0
+  const citations = entry.citations || []
+  const hasCitations = citations.length > 0
+  const contentGridClass = hasToc && hasCitations
+    ? 'grid grid-cols-1 xl:grid-cols-[220px_minmax(0,1fr)_300px] gap-8'
+    : hasToc
+      ? 'grid grid-cols-1 xl:grid-cols-[220px_minmax(0,1fr)] gap-8'
+      : hasCitations
+        ? 'grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-8'
+        : 'grid grid-cols-1 gap-8'
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -82,7 +165,26 @@ export default async function ResearchEntryPage({ params }: ResearchEntryPagePro
             {t['research.entry.back'] as string}
           </LocaleLink>
 
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-8">
+          <div className={contentGridClass}>
+            {hasToc ? (
+              <aside className="hidden xl:block">
+                <nav className="sticky top-4 space-y-2 text-sm">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {tocLabels[locale as Locale] || tocLabels['zh-Hans']}
+                  </h2>
+                  <ol className="space-y-1">
+                    {body.headings.map((heading) => (
+                      <li key={heading.id} className={heading.level === 3 ? 'pl-3' : ''}>
+                        <a href={`#${heading.id}`} className="text-muted-foreground hover:text-primary">
+                          {heading.text}
+                        </a>
+                      </li>
+                    ))}
+                  </ol>
+                </nav>
+              </aside>
+            ) : null}
+
             {/* Main content */}
             <article>
               {/* Meta row */}
@@ -115,7 +217,7 @@ export default async function ResearchEntryPage({ params }: ResearchEntryPagePro
               {entry.body ? (
                 <div
                   className="prose prose-slate dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(entry.body) }}
+                  dangerouslySetInnerHTML={{ __html: body.html }}
                 />
               ) : (
                 <p className="text-muted-foreground">{t['research.entry.noContent'] as string}</p>
@@ -147,12 +249,12 @@ export default async function ResearchEntryPage({ params }: ResearchEntryPagePro
             </article>
 
             {/* Right: citations sidebar */}
-            {entry.citations && entry.citations.length > 0 && (
+            {hasCitations && (
               <aside className="space-y-3">
                 <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground sticky top-4">
                   {t['research.entry.citations'] as string}
                 </h2>
-                {entry.citations.map((citation) => (
+                {citations.map((citation) => (
                   <div key={citation.id} className="rounded-lg border bg-card p-3 text-xs space-y-1.5">
                     <p className="font-medium text-foreground">{citation.claim_short}</p>
                     <div className="flex flex-wrap gap-1">

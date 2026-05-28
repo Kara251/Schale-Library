@@ -1403,6 +1403,7 @@ export async function getRecentResearchEntries(locale: string = 'zh-Hans', limit
       locale: strapiLocale,
       sort: 'updatedAt:desc',
       'pagination[pageSize]': limit,
+      ...RESEARCH_ENTRY_LIST_POPULATE,
     })}`
   );
 }

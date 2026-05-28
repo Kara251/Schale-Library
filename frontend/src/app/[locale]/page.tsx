@@ -84,7 +84,9 @@ export default async function HomePage({ params }: HomePageProps) {
                         )}
                     </section>
 
-                    <HomeResearchSection entries={researchEntries} locale={locale as Locale} />
+                    {researchEntries.length > 0 ? (
+                        <HomeResearchSection entries={researchEntries} locale={locale as Locale} />
+                    ) : null}
 
                     <FriendLinksSection links={friendLinks} locale={locale} />
                 </div>

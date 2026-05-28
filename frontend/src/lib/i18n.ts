@@ -64,6 +64,7 @@ export const translations = {
     'home.noResearch': '暂无考据内容',
     'home.viewAll': '查看全部',
     'research.theme.noEntries': '该主题下暂无条目',
+    'research.theme.open': '打开主题页',
 
     // 活动
     'event.status.upcoming': '未开始',
@@ -164,6 +165,7 @@ export const translations = {
     'home.noResearch': 'No research entries yet',
     'home.viewAll': 'View all',
     'research.theme.noEntries': 'No entries in this theme',
+    'research.theme.open': 'Open theme page',
 
     // Events
     'event.status.upcoming': 'Upcoming',
@@ -264,6 +266,7 @@ export const translations = {
     'home.noResearch': '考察記事はまだありません',
     'home.viewAll': 'すべて見る',
     'research.theme.noEntries': 'このテーマの記事はありません',
+    'research.theme.open': 'テーマページを開く',
 
     // イベント
     'event.status.upcoming': '未開始',

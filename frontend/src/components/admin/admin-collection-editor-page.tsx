@@ -28,6 +28,17 @@ interface StudentOptionEntry extends AdminStrapiEntry {
   organization?: string
 }
 
+interface ResearchThemeOptionEntry extends AdminStrapiEntry {
+  name: string
+  slug?: string
+}
+
+interface ResearchCitationOptionEntry extends AdminStrapiEntry {
+  claim_short: string
+  source_type?: string
+  source_ref?: string
+}
+
 const labels: Record<Locale, { back: string }> = {
   'zh-Hans': { back: '返回列表' },
   en: { back: 'Back to list' },
@@ -42,8 +53,62 @@ export async function AdminCollectionEditorPage({ collection, locale, id }: Admi
 
   const initialData = id ? await getAdminCollectionItem(session, collection, Number(id), locale) : null
 
-  let relationOptions: Record<string, AdminRelationOption[]> | undefined
-  if (collection === 'works') {
+  const relationKeys = Array.from(new Set(
+    meta.fields
+      .filter((field) => (field.type === 'multiselect' || field.type === 'relation-multiselect') && field.relationKey)
+      .map((field) => field.relationKey as string)
+  ))
+
+  const relationOptions: Record<string, AdminRelationOption[]> = {}
+  await Promise.all(relationKeys.map(async (relationKey) => {
+    if (relationKey === 'students') {
+      const students = await listAdminCollection<StudentOptionEntry>(session, 'students', {
+        locale,
+        page: 1,
+        pageSize: 100,
+        status: 'all',
+      })
+
+      relationOptions.students = students.data.map((student) => ({
+        id: student.id,
+        label: student.name,
+        description: [student.school, student.organization].filter(Boolean).join(' / '),
+      }))
+      return
+    }
+
+    if (relationKey === 'research-themes') {
+      const themes = await listAdminCollection<ResearchThemeOptionEntry>(session, 'research-themes', {
+        locale,
+        page: 1,
+        pageSize: 100,
+        status: 'all',
+      })
+
+      relationOptions['research-themes'] = themes.data.map((theme) => ({
+        id: theme.id,
+        label: theme.name,
+        description: theme.slug,
+      }))
+      return
+    }
+
+    if (relationKey === 'research-citations') {
+      const citations = await listAdminCollection<ResearchCitationOptionEntry>(session, 'research-citations', {
+        page: 1,
+        pageSize: 100,
+        status: 'all',
+      })
+
+      relationOptions['research-citations'] = citations.data.map((citation) => ({
+        id: citation.id,
+        label: citation.claim_short,
+        description: [citation.source_type, citation.source_ref].filter(Boolean).join(' / '),
+      }))
+    }
+  }))
+
+  if (collection === 'works' && !relationOptions.students) {
     const students = await listAdminCollection<StudentOptionEntry>(session, 'students', {
       locale,
       page: 1,
@@ -51,13 +116,11 @@ export async function AdminCollectionEditorPage({ collection, locale, id }: Admi
       status: 'all',
     })
 
-    relationOptions = {
-      students: students.data.map((student) => ({
-        id: student.id,
-        label: student.name,
-        description: [student.school, student.organization].filter(Boolean).join(' / '),
-      })),
-    }
+    relationOptions.students = students.data.map((student) => ({
+      id: student.id,
+      label: student.name,
+      description: [student.school, student.organization].filter(Boolean).join(' / '),
+    }))
   }
 
   return (
@@ -75,7 +138,7 @@ export async function AdminCollectionEditorPage({ collection, locale, id }: Admi
         collection={collection}
         locale={locale}
         initialData={initialData}
-        relationOptions={relationOptions}
+        relationOptions={Object.keys(relationOptions).length ? relationOptions : undefined}
         returnPath={returnPath}
       />
     </div>
