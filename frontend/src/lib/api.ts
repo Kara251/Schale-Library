@@ -1372,6 +1372,30 @@ export async function getResearchCurator(locale: string = 'zh-Hans') {
   }
 }
 
+export async function getResearchThemeBySlug(slug: string, locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
+  const response = await fetchAPI<StrapiResponse<ResearchTheme[]>>(
+    `/research-themes?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[slug][$eq]': slug,
+    })}`
+  );
+  return { data: response.data?.[0] || null };
+}
+
+export async function getResearchEntriesByThemeSlug(themeSlug: string, locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
+  return fetchAPI<StrapiResponse<ResearchEntry[]>>(
+    `/research-entries?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[themes][slug][$eq]': themeSlug,
+      sort: 'updatedAt:desc',
+      'pagination[pageSize]': 100,
+      ...RESEARCH_ENTRY_LIST_POPULATE,
+    })}`
+  );
+}
+
 export async function getRecentResearchEntries(locale: string = 'zh-Hans', limit = 3) {
   const strapiLocale = toStrapiLocale(locale);
   return fetchAPI<StrapiResponse<ResearchEntry[]>>(

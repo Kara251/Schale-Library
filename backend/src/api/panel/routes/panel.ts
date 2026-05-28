@@ -64,6 +64,24 @@ export default {
     },
     {
       method: 'GET',
+      path: '/panel/research-curator',
+      handler: 'panel.getCurator',
+      config: {
+        auth: false,
+        policies: ['global::is-panel-maintainer'],
+      },
+    },
+    {
+      method: 'PUT',
+      path: '/panel/research-curator',
+      handler: 'panel.updateCurator',
+      config: {
+        auth: false,
+        policies: ['global::is-panel-maintainer'],
+      },
+    },
+    {
+      method: 'GET',
       path: '/panel/:collection',
       handler: 'panel.list',
       config: {

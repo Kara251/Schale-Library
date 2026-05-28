@@ -1494,6 +1494,87 @@ export default {
     }
   },
 
+  async getCurator(ctx: any) {
+    try {
+      const locale = mapLocale(typeof ctx.query.locale === 'string' ? ctx.query.locale : undefined)
+      const params: Record<string, unknown> = {
+        populate: { featured_entry: { fields: ['id', 'documentId', 'title', 'slug'] } },
+      }
+      if (locale) params.locale = locale
+
+      const entry = await strapi.entityService.findMany(
+        'api::research-curator.research-curator' as any,
+        params as any
+      )
+      ctx.send({ data: entry || null })
+    } catch (error) {
+      strapi.log.warn(`[panel] getCurator: ${(error as Error).message}`)
+      ctx.send({ data: null })
+    }
+  },
+
+  async updateCurator(ctx: any) {
+    const body = ctx.request.body as { data?: Record<string, unknown>; locale?: string } | undefined
+    if (!body?.data || typeof body.data !== 'object') {
+      return ctx.badRequest('缺少 data 字段')
+    }
+
+    const inputData = body.data
+    const localeParam = mapLocale(typeof body.locale === 'string' ? body.locale : undefined)
+    const normalized: Record<string, unknown> = {}
+
+    if ('featured_entry' in inputData) {
+      const val = inputData.featured_entry
+      normalized.featured_entry = typeof val === 'number' && val > 0 ? val : null
+    }
+    if ('pick_note' in inputData) normalized.pick_note = normalizeRichValue(inputData.pick_note)
+    if ('path_description' in inputData) normalized.path_description = normalizeRichValue(inputData.path_description)
+    if (localeParam) normalized.locale = localeParam
+
+    try {
+      const findParams: Record<string, unknown> = {}
+      if (localeParam) findParams.locale = localeParam
+
+      const existing = await strapi.entityService.findMany(
+        'api::research-curator.research-curator' as any,
+        findParams as any
+      ) as any
+
+      let updated: unknown
+      if (existing?.id) {
+        updated = await strapi.entityService.update(
+          'api::research-curator.research-curator' as any,
+          existing.id,
+          { data: normalized } as any
+        )
+      } else {
+        updated = await strapi.entityService.create(
+          'api::research-curator.research-curator' as any,
+          { data: normalized } as any
+        )
+      }
+
+      await recordAdminAuditLog(ctx, {
+        action: 'update',
+        status: 'success',
+        targetCollection: 'research-curator',
+        targetName: '考据策展配置',
+        locale: localeParam,
+      })
+
+      ctx.send({ data: updated })
+    } catch (error) {
+      await recordAdminAuditLog(ctx, {
+        action: 'update',
+        status: 'failed',
+        targetCollection: 'research-curator',
+        locale: localeParam,
+        message: (error as Error).message,
+      })
+      ctx.badRequest((error as Error).message)
+    }
+  },
+
   async list(ctx: any) {
     try {
       const collection = ensureCollection(ctx.params.collection)

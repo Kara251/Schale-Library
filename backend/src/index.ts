@@ -105,6 +105,47 @@ async function ensureUsersPermissionsRole(strapi: Core.Strapi, roleType: string)
   });
 }
 
+async function ensurePublicResearchPermissions(strapi: Core.Strapi) {
+  const publicRole = await strapi.db.query('plugin::users-permissions.role').findOne({
+    where: { type: 'public' },
+  }) as { id: number } | null;
+
+  if (!publicRole) return;
+
+  const actions = [
+    'api::research-entry.research-entry.find',
+    'api::research-entry.research-entry.findOne',
+    'api::research-theme.research-theme.find',
+    'api::research-theme.research-theme.findOne',
+    'api::research-citation.research-citation.find',
+    'api::research-citation.research-citation.findOne',
+    'api::research-curator.research-curator.find',
+  ];
+
+  for (const action of actions) {
+    try {
+      const existing = await strapi.db.query('plugin::users-permissions.permission').findOne({
+        where: { action, role: publicRole.id },
+      }) as { id: number; enabled: boolean } | null;
+
+      if (existing && !existing.enabled) {
+        await strapi.db.query('plugin::users-permissions.permission').update({
+          where: { id: existing.id },
+          data: { enabled: true },
+        });
+        strapi.log.info(`[bootstrap] Enabled public permission: ${action}`);
+      } else if (!existing) {
+        await strapi.db.query('plugin::users-permissions.permission').create({
+          data: { action, role: publicRole.id, enabled: true },
+        });
+        strapi.log.info(`[bootstrap] Created public permission: ${action}`);
+      }
+    } catch (err) {
+      strapi.log.warn(`[bootstrap] Could not set permission for ${action}: ${(err as Error).message}`);
+    }
+  }
+}
+
 async function ensurePanelRoles(strapi: Core.Strapi) {
   const roles = splitList(process.env.ADMIN_PANEL_ALLOWED_ROLES || (process.env.NODE_ENV === 'production' ? '' : 'authenticated'));
   const uniqueRoles = Array.from(new Set(roles.map((role) => role.toLowerCase())));
@@ -186,5 +227,6 @@ export default {
   async bootstrap({ strapi }: { strapi: Core.Strapi }) {
     await ensurePanelRoles(strapi);
     await ensureBootstrapPanelUser(strapi);
+    await ensurePublicResearchPermissions(strapi);
   },
 };

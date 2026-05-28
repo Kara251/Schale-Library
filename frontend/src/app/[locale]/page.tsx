@@ -3,8 +3,9 @@ import { Footer } from "@/components/footer"
 import { Carousel } from "@/components/carousel"
 import { EventList } from "@/components/event-list"
 import { FriendLinksSection } from "@/components/friend-links-section"
+import { HomeResearchSection } from "@/components/home-research-section"
 import { WorkCard } from "@/components/work-card"
-import { getFeaturedWorks, getFriendLinks, getHomeAnnouncements, getHomeOfflineEvents, getHomeOnlineEvents } from "@/lib/api"
+import { getFeaturedWorks, getFriendLinks, getHomeAnnouncements, getHomeOfflineEvents, getHomeOnlineEvents, getRecentResearchEntries } from "@/lib/api"
 import { translations, type Locale } from "@/lib/i18n"
 
 interface HomePageProps {
@@ -18,12 +19,13 @@ export default async function HomePage({ params }: HomePageProps) {
     const t = translations[locale as Locale] || translations['zh-Hans']
 
     // 并行获取数据，传递语言参数
-    const [announcementsRes, onlineEventsRes, offlineEventsRes, worksRes, friendLinksRes] = await Promise.all([
+    const [announcementsRes, onlineEventsRes, offlineEventsRes, worksRes, friendLinksRes, researchRes] = await Promise.all([
         getHomeAnnouncements(locale).catch(() => ({ data: [] })),
         getHomeOnlineEvents(6, locale).catch(() => ({ data: [] })),
         getHomeOfflineEvents(6, locale).catch(() => ({ data: [] })),
         getFeaturedWorks(6, locale).catch(() => ({ data: [] })),
         getFriendLinks(locale, 6).catch(() => ({ data: [] })),
+        getRecentResearchEntries(locale, 3).catch(() => ({ data: [] })),
     ]);
 
     const announcements = announcementsRes.data || [];
@@ -31,6 +33,7 @@ export default async function HomePage({ params }: HomePageProps) {
     const offlineEvents = offlineEventsRes.data || [];
     const works = worksRes.data || [];
     const friendLinks = friendLinksRes.data || [];
+    const researchEntries = researchRes.data || [];
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -80,6 +83,8 @@ export default async function HomePage({ params }: HomePageProps) {
                             </div>
                         )}
                     </section>
+
+                    <HomeResearchSection entries={researchEntries} locale={locale as Locale} />
 
                     <FriendLinksSection links={friendLinks} locale={locale} />
                 </div>

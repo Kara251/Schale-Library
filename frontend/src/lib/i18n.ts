@@ -60,6 +60,10 @@ export const translations = {
     'home.noWorks': '暂无推荐作品',
     'home.friendLinks': '友情链接',
     'home.loadMore': '加载更多',
+    'home.researchArchives': '最新考据档案',
+    'home.noResearch': '暂无考据内容',
+    'home.viewAll': '查看全部',
+    'research.theme.noEntries': '该主题下暂无条目',
 
     // 活动
     'event.status.upcoming': '未开始',
@@ -156,6 +160,10 @@ export const translations = {
     'home.noWorks': 'No recommended works yet',
     'home.friendLinks': 'Friend Links',
     'home.loadMore': 'Load More',
+    'home.researchArchives': 'Latest Research',
+    'home.noResearch': 'No research entries yet',
+    'home.viewAll': 'View all',
+    'research.theme.noEntries': 'No entries in this theme',
 
     // Events
     'event.status.upcoming': 'Upcoming',
@@ -252,6 +260,10 @@ export const translations = {
     'home.noWorks': 'おすすめ作品がありません',
     'home.friendLinks': '相互リンク',
     'home.loadMore': 'もっと見る',
+    'home.researchArchives': '最新考察記事',
+    'home.noResearch': '考察記事はまだありません',
+    'home.viewAll': 'すべて見る',
+    'research.theme.noEntries': 'このテーマの記事はありません',
 
     // イベント
     'event.status.upcoming': '未開始',

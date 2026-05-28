@@ -44,9 +44,13 @@ export function ResearchEntryCard({ entry, locale }: ResearchEntryCardProps) {
           {stanceLabels[entry.stance]}
         </span>
         {entry.themes?.slice(0, 2).map((theme) => (
-          <span key={theme.id} className="inline-block rounded px-2 py-0.5 text-xs bg-ba-blue/10 text-primary">
+          <LocaleLink
+            key={theme.id}
+            href={`/research-archives/themes/${theme.slug}`}
+            className="inline-block rounded px-2 py-0.5 text-xs bg-ba-blue/10 text-primary hover:bg-ba-blue/20 transition-colors"
+          >
             {theme.name}
-          </span>
+          </LocaleLink>
         ))}
       </div>
 

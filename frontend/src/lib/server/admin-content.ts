@@ -342,6 +342,38 @@ async function getCollectionTotal(session: AdminSession, key: AdminCollectionKey
   return result.meta.pagination.total
 }
 
+export interface CuratorAdminData {
+  id?: number
+  featured_entry?: { id: number; title: string; slug: string } | null
+  pick_note?: string | null
+  path_description?: string | null
+}
+
+export async function getCuratorAdmin(session: AdminSession, locale?: string): Promise<{ data: CuratorAdminData | null }> {
+  const params = new URLSearchParams()
+  if (locale) params.set('locale', locale)
+  const qs = params.toString()
+  try {
+    return adminFetchJson<{ data: CuratorAdminData | null }>(
+      session,
+      `/api/panel/research-curator${qs ? `?${qs}` : ''}`
+    )
+  } catch {
+    return { data: null }
+  }
+}
+
+export async function updateCuratorAdmin(
+  session: AdminSession,
+  data: Record<string, unknown>,
+  locale?: string
+): Promise<{ data: CuratorAdminData }> {
+  return adminFetchJson<{ data: CuratorAdminData }>(session, '/api/panel/research-curator', {
+    method: 'PUT',
+    body: { data, locale },
+  })
+}
+
 export async function getAdminDashboardItems(session: AdminSession, locale: string): Promise<AdminDashboardItem[]> {
   const keys = Object.keys(ADMIN_COLLECTION_CONFIG) as AdminCollectionKey[]
   const totals = await Promise.all(keys.map((key) => getCollectionTotal(session, key, locale)))
