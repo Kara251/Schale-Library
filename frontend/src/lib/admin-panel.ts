@@ -10,6 +10,9 @@ export type AdminCollectionKey =
   | 'bilibili-subscriptions'
   | 'sync-logs'
   | 'admin-audit-logs'
+  | 'research-entries'
+  | 'research-themes'
+  | 'research-citations'
 
 export type AdminFieldType =
   | 'text'
@@ -21,6 +24,7 @@ export type AdminFieldType =
   | 'select'
   | 'media'
   | 'multiselect'
+  | 'json-csv'
 
 export interface AdminFieldOption {
   value: string
@@ -406,5 +410,122 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       ja: '監査ログを表示',
     },
     fields: [],
+  },
+  'research-entries': {
+    endpoint: 'research-entries',
+    localized: true,
+    supportsDraft: true,
+    title: {
+      'zh-Hans': '考据条目',
+      en: 'Research Entries',
+      ja: '考察記事',
+    },
+    description: {
+      'zh-Hans': '维护考据档案主体内容与元数据。',
+      en: 'Manage research archive entries and metadata.',
+      ja: '考察アーカイブの記事とメタデータを管理します。',
+    },
+    createLabel: {
+      'zh-Hans': '新建条目',
+      en: 'New entry',
+      ja: '記事を新規作成',
+    },
+    editLabel: {
+      'zh-Hans': '编辑条目',
+      en: 'Edit entry',
+      ja: '記事を編集',
+    },
+    fields: [
+      { name: 'title', type: 'text', label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
+      { name: 'stance', type: 'select', label: { 'zh-Hans': '立场', en: 'Stance', ja: 'スタンス' }, options: [
+        { value: 'official', label: '官方确认' },
+        { value: 'personal', label: '个人考察' },
+        { value: 'speculative', label: '推测性' },
+      ] },
+      { name: 'media_type', type: 'select', label: { 'zh-Hans': '媒介类型', en: 'Media type', ja: 'メディアタイプ' }, options: [
+        { value: 'character', label: '角色' },
+        { value: 'story', label: '剧情' },
+        { value: 'concept', label: '概念' },
+        { value: 'setting', label: '世界观' },
+        { value: 'organization', label: '组织' },
+      ] },
+      { name: 'affiliations', type: 'json-csv', label: { 'zh-Hans': '相关势力', en: 'Affiliations', ja: '所属勢力' } },
+      { name: 'summary', type: 'textarea', label: { 'zh-Hans': '摘要', en: 'Summary', ja: '要約' } },
+      { name: 'body', type: 'textarea', label: { 'zh-Hans': '正文', en: 'Body', ja: '本文' } },
+      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+    ],
+  },
+  'research-themes': {
+    endpoint: 'research-themes',
+    localized: true,
+    supportsDraft: true,
+    title: {
+      'zh-Hans': '考据主题',
+      en: 'Research Themes',
+      ja: '考察テーマ',
+    },
+    description: {
+      'zh-Hans': '维护横向贯穿多条目的主题标签。',
+      en: 'Manage theme tags that span multiple entries.',
+      ja: '複数記事を横断するテーマタグを管理します。',
+    },
+    createLabel: {
+      'zh-Hans': '新建主题',
+      en: 'New theme',
+      ja: 'テーマを新規作成',
+    },
+    editLabel: {
+      'zh-Hans': '编辑主题',
+      en: 'Edit theme',
+      ja: 'テーマを編集',
+    },
+    fields: [
+      { name: 'name', type: 'text', label: { 'zh-Hans': '名称', en: 'Name', ja: '名前' } },
+      { name: 'curated_intro', type: 'textarea', label: { 'zh-Hans': '策划简介', en: 'Curated intro', ja: '紹介文' } },
+      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+    ],
+  },
+  'research-citations': {
+    endpoint: 'research-citations',
+    localized: false,
+    supportsDraft: true,
+    title: {
+      'zh-Hans': '考据引证',
+      en: 'Research Citations',
+      ja: '考察引証',
+    },
+    description: {
+      'zh-Hans': '维护可复用的原始出处与置信度。',
+      en: 'Manage reusable primary sources and confidence levels.',
+      ja: '再利用可能な一次ソースと信頼度を管理します。',
+    },
+    createLabel: {
+      'zh-Hans': '新建引证',
+      en: 'New citation',
+      ja: '引証を新規作成',
+    },
+    editLabel: {
+      'zh-Hans': '编辑引证',
+      en: 'Edit citation',
+      ja: '引証を編集',
+    },
+    fields: [
+      { name: 'claim_short', type: 'text', label: { 'zh-Hans': '论点摘要', en: 'Claim summary', ja: '論点要約' } },
+      { name: 'source_type', type: 'select', label: { 'zh-Hans': '来源类型', en: 'Source type', ja: 'ソースタイプ' }, options: [
+        { value: 'game_line', label: '游戏台词' },
+        { value: 'interview', label: '采访/发帖' },
+        { value: 'visual', label: '画面截图' },
+        { value: 'external', label: '外部资料' },
+      ] },
+      { name: 'source_ref', type: 'text', label: { 'zh-Hans': '出处标注', en: 'Source reference', ja: '出典注記' } },
+      { name: 'source_image', type: 'media', label: { 'zh-Hans': '截图', en: 'Source image', ja: 'スクリーンショット' } },
+      { name: 'source_quote', type: 'textarea', label: { 'zh-Hans': '引文', en: 'Source quote', ja: '引用文' } },
+      { name: 'confidence', type: 'select', label: { 'zh-Hans': '置信度', en: 'Confidence', ja: '信頼度' }, options: [
+        { value: 'official', label: '官方确认' },
+        { value: 'derived', label: '推导' },
+        { value: 'conjecture', label: '推测' },
+      ] },
+      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+    ],
   },
 }

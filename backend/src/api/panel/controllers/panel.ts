@@ -13,6 +13,9 @@ type PanelCollectionKey =
   | 'bilibili-subscriptions'
   | 'sync-logs'
   | 'admin-audit-logs'
+  | 'research-entries'
+  | 'research-themes'
+  | 'research-citations'
 
 interface CollectionConfig {
   uid: any
@@ -135,6 +138,32 @@ const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
     supportsDraft: false,
     fields: [],
     readOnly: true,
+  },
+  'research-entries': {
+    uid: 'api::research-entry.research-entry',
+    localized: true,
+    populate: ['themes'],
+    searchFields: ['title', 'summary'],
+    defaultSort: 'updatedAt:desc',
+    supportsDraft: true,
+    fields: ['title', 'stance', 'media_type', 'affiliations', 'summary', 'body', 'publishedAt'],
+  },
+  'research-themes': {
+    uid: 'api::research-theme.research-theme',
+    localized: true,
+    searchFields: ['name'],
+    defaultSort: 'updatedAt:desc',
+    supportsDraft: true,
+    fields: ['name', 'curated_intro', 'publishedAt'],
+  },
+  'research-citations': {
+    uid: 'api::research-citation.research-citation',
+    localized: false,
+    populate: ['source_image'],
+    searchFields: ['claim_short', 'source_ref'],
+    defaultSort: 'updatedAt:desc',
+    supportsDraft: true,
+    fields: ['claim_short', 'source_type', 'source_ref', 'source_image', 'source_quote', 'confidence', 'publishedAt'],
   },
 }
 
@@ -334,6 +363,12 @@ function normalizeRelationList(value: unknown) {
     .filter((item) => Number.isFinite(item))
 }
 
+function normalizeJsonArray(value: unknown): string[] {
+  if (!value) return []
+  if (Array.isArray(value)) return value.map(String).filter(Boolean)
+  return []
+}
+
 function getClientIp(ctx: any) {
   const forwardedFor = ctx.request.headers['x-forwarded-for']
   if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
@@ -455,6 +490,10 @@ function pickAllowedFields(collection: PanelCollectionKey, input: Record<string,
       case 'guests':
       case 'notes':
       case 'autoPublishKeywords':
+      case 'summary':
+      case 'body':
+      case 'source_quote':
+      case 'curated_intro':
         data[field] = normalizeRichValue(value)
         break
       case 'priority':
@@ -471,10 +510,14 @@ function pickAllowedFields(collection: PanelCollectionKey, input: Record<string,
       case 'coverImage':
       case 'avatar':
       case 'icon':
+      case 'source_image':
         data[field] = normalizeMediaValue(value)
         break
       case 'students':
         data[field] = normalizeRelationList(value)
+        break
+      case 'affiliations':
+        data[field] = normalizeJsonArray(value)
         break
       case 'startTime':
       case 'endTime':

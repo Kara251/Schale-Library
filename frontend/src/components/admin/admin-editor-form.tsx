@@ -132,6 +132,8 @@ function getInitialFieldValue(field: AdminEditorField, value: unknown): unknown 
             .map((item) => (item && typeof item === 'object' && 'id' in item ? Number((item as { id: number }).id) : Number(item)))
             .filter((item) => Number.isFinite(item))
         : []
+    case 'json-csv':
+      return Array.isArray(value) ? value.join(', ') : typeof value === 'string' ? value : ''
     default:
       return typeof value === 'string' ? value : ''
   }
@@ -221,6 +223,10 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
       }
       case 'multiselect':
         return Array.isArray(value) ? value : []
+      case 'json-csv':
+        return typeof value === 'string' && value.trim()
+          ? value.split(',').map((v) => v.trim()).filter(Boolean)
+          : []
       case 'number':
         return typeof value === 'string' ? value.trim() : value
       case 'datetime-local':
@@ -287,7 +293,7 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
           {schema.fields.map((field) => {
             const value = formValues[field.name]
             const label = getDisplayLabel(field, locale)
-            const isFullWidth = field.type === 'textarea' || field.type === 'multiselect' || field.type === 'media'
+            const isFullWidth = field.type === 'textarea' || field.type === 'multiselect' || field.type === 'media' || field.type === 'json-csv'
 
             return (
               <div key={field.name} className={cn('space-y-2', isFullWidth && 'md:col-span-2')}>
@@ -299,6 +305,21 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
                     onChange={(event) => updateField(field.name, event.target.value)}
                     className="min-h-32 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
                   />
+                ) : null}
+
+                {field.type === 'json-csv' ? (
+                  <div className="space-y-1.5">
+                    <Input
+                      id={field.name}
+                      type="text"
+                      value={typeof value === 'string' ? value : ''}
+                      onChange={(event) => updateField(field.name, event.target.value)}
+                      placeholder="value1, value2, ..."
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {locale === 'zh-Hans' ? '多个值用英文逗号分隔' : locale === 'ja' ? '複数値はコンマで区切る' : 'Separate multiple values with commas'}
+                    </p>
+                  </div>
                 ) : null}
 
                 {field.type === 'text' || field.type === 'url' || field.type === 'number' || field.type === 'datetime-local' ? (
