@@ -40,11 +40,11 @@ export function ResearchEditorSidebar({ curator, recentEntries, locale }: Resear
               {curator.featured_entry.title}
             </LocaleLink>
             {curator.pick_note && (
-              <p className="text-xs text-muted-foreground leading-relaxed">{curator.pick_note}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">{curator.pick_note}</p>
             )}
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">{t['research.sidebar.empty'] as string}</p>
+          <p className="text-sm text-muted-foreground">{t['research.sidebar.empty'] as string}</p>
         )}
       </section>
 
@@ -55,12 +55,12 @@ export function ResearchEditorSidebar({ curator, recentEntries, locale }: Resear
             {t['research.sidebar.recommendedPath'] as string}
           </h2>
           {curator.path_description && (
-            <p className="text-xs text-muted-foreground mb-3">{curator.path_description}</p>
+            <p className="text-sm text-muted-foreground mb-3">{curator.path_description}</p>
           )}
-          <ol className="space-y-2">
+          <ol className="space-y-2.5">
             {curator.path_steps.map((step, index) => (
-              <li key={step.id} className="flex items-start gap-2 text-xs">
-                <span className="shrink-0 mt-0.5 w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-[10px]">
+              <li key={step.id} className="flex items-start gap-2 text-sm">
+                <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs">
                   {index + 1}
                 </span>
                 {step.entry ? (
@@ -70,7 +70,7 @@ export function ResearchEditorSidebar({ curator, recentEntries, locale }: Resear
                   >
                     {step.entry.title}
                     {step.step_note && (
-                      <span className="block text-muted-foreground">{step.step_note}</span>
+                      <span className="block text-muted-foreground text-sm">{step.step_note}</span>
                     )}
                   </LocaleLink>
                 ) : (
@@ -88,9 +88,9 @@ export function ResearchEditorSidebar({ curator, recentEntries, locale }: Resear
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
             {t['research.sidebar.recent'] as string}
           </h2>
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {recentEntries.map((entry) => (
-              <li key={entry.id} className="flex items-start justify-between gap-2 text-xs">
+              <li key={entry.id} className="flex items-start justify-between gap-2 text-sm">
                 <LocaleLink
                   href={`/research-archives/${entry.slug}`}
                   className="text-foreground hover:text-primary transition-colors line-clamp-2 leading-snug"

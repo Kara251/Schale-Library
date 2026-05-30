@@ -146,7 +146,7 @@ const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
     searchFields: ['title', 'summary'],
     defaultSort: 'updatedAt:desc',
     supportsDraft: true,
-    fields: ['title', 'stance', 'media_type', 'affiliations', 'themes', 'citations', 'summary', 'body', 'publishedAt'],
+    fields: ['title', 'slug', 'stance', 'media_type', 'affiliations', 'themes', 'citations', 'summary', 'body', 'publishedAt'],
   },
   'research-themes': {
     uid: 'api::research-theme.research-theme',
@@ -154,7 +154,7 @@ const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
     searchFields: ['name'],
     defaultSort: 'updatedAt:desc',
     supportsDraft: true,
-    fields: ['name', 'curated_intro', 'publishedAt'],
+    fields: ['name', 'slug', 'curated_intro', 'publishedAt'],
   },
   'research-citations': {
     uid: 'api::research-citation.research-citation',

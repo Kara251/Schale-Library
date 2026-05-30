@@ -66,6 +66,16 @@ export function ResearchFilter({ entries, themes, locale }: ResearchFilterProps)
     themeIds: new Set(),
   })
 
+  // Derive available filter options from actual data so empty/offline state shows nothing
+  const availableMediaTypes = useMemo(
+    () => RESEARCH_MEDIA_TYPES.filter((mt) => entries.some((e) => e.media_type === mt)),
+    [entries]
+  )
+  const availableAffiliations = useMemo(
+    () => RESEARCH_AFFILIATIONS.filter((aff) => entries.some((e) => (e.affiliations || []).includes(aff))),
+    [entries]
+  )
+
   const filtered = useMemo(() => applyFilter(entries, filter), [entries, filter])
 
   const toggleMode = useCallback(() => {
@@ -106,6 +116,8 @@ export function ResearchFilter({ entries, themes, locale }: ResearchFilterProps)
   const hasActiveFilters =
     filter.mediaTypes.size > 0 || filter.affiliations.size > 0 || filter.themeIds.size > 0
 
+  const hasAnyFilterOptions = availableMediaTypes.length > 0 || availableAffiliations.length > 0 || themes.length > 0
+
   const countLabel = (t['research.filter.count'] as string || '{count} found').replace(
     '{count}',
     String(filtered.length)
@@ -116,78 +128,84 @@ export function ResearchFilter({ entries, themes, locale }: ResearchFilterProps)
     <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
       {/* Left: Filter panel */}
       <aside className="space-y-5">
-        {/* Mode toggle */}
-        <div className="rounded-lg border bg-card p-3">
-          <button
-            type="button"
-            onClick={toggleMode}
-            title={filter.mode === 'and'
-              ? (t['research.filter.mode.hint.and'] as string)
-              : (t['research.filter.mode.hint.or'] as string)}
-            className="w-full flex items-center justify-between gap-2 text-sm"
-          >
-            <span className="text-muted-foreground text-xs">
-              {filter.mode === 'and'
+        {/* Mode toggle — only show when there's something to filter */}
+        {hasAnyFilterOptions && (
+          <div className="rounded-lg border bg-card p-3">
+            <button
+              type="button"
+              onClick={toggleMode}
+              title={filter.mode === 'and'
                 ? (t['research.filter.mode.hint.and'] as string)
                 : (t['research.filter.mode.hint.or'] as string)}
-            </span>
-            <span className={`shrink-0 rounded px-2 py-0.5 text-xs font-semibold transition-colors ${
-              filter.mode === 'and'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground'
-            }`}>
-              {filter.mode === 'and'
-                ? (t['research.filter.mode.and'] as string)
-                : (t['research.filter.mode.or'] as string)}
-            </span>
-          </button>
-        </div>
-
-        {/* Media types */}
-        <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-            {t['research.filter.mediaType'] as string}
-          </h3>
-          <div className="flex flex-wrap gap-1.5">
-            {RESEARCH_MEDIA_TYPES.map((mt) => (
-              <button
-                key={mt}
-                type="button"
-                onClick={() => toggleMediaType(mt)}
-                className={`rounded px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
-                  filter.mediaTypes.has(mt)
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary'
-                }`}
-              >
-                {mediaLabels[mt]}
-              </button>
-            ))}
+              className="w-full flex items-center justify-between gap-2 text-sm"
+            >
+              <span className="text-muted-foreground text-sm">
+                {filter.mode === 'and'
+                  ? (t['research.filter.mode.hint.and'] as string)
+                  : (t['research.filter.mode.hint.or'] as string)}
+              </span>
+              <span className={`shrink-0 rounded px-2 py-0.5 text-xs font-semibold transition-colors ${
+                filter.mode === 'and'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
+              }`}>
+                {filter.mode === 'and'
+                  ? (t['research.filter.mode.and'] as string)
+                  : (t['research.filter.mode.or'] as string)}
+              </span>
+            </button>
           </div>
-        </section>
+        )}
 
-        {/* Affiliations */}
-        <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-            {t['research.filter.affiliation'] as string}
-          </h3>
-          <div className="flex flex-wrap gap-1.5">
-            {RESEARCH_AFFILIATIONS.map((aff) => (
-              <button
-                key={aff}
-                type="button"
-                onClick={() => toggleAffiliation(aff)}
-                className={`rounded px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
-                  filter.affiliations.has(aff)
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary'
-                }`}
-              >
-                {affLabels[aff]}
-              </button>
-            ))}
-          </div>
-        </section>
+        {/* Media types — only show options present in data */}
+        {availableMediaTypes.length > 0 && (
+          <section>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+              {t['research.filter.mediaType'] as string}
+            </h3>
+            <div className="flex flex-wrap gap-1.5">
+              {availableMediaTypes.map((mt) => (
+                <button
+                  key={mt}
+                  type="button"
+                  onClick={() => toggleMediaType(mt)}
+                  className={`rounded px-2.5 py-1 text-sm font-medium transition-colors cursor-pointer ${
+                    filter.mediaTypes.has(mt)
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary'
+                  }`}
+                >
+                  {mediaLabels[mt]}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Affiliations — only show options present in data */}
+        {availableAffiliations.length > 0 && (
+          <section>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+              {t['research.filter.affiliation'] as string}
+            </h3>
+            <div className="flex flex-wrap gap-1.5">
+              {availableAffiliations.map((aff) => (
+                <button
+                  key={aff}
+                  type="button"
+                  onClick={() => toggleAffiliation(aff)}
+                  className={`rounded px-2.5 py-1 text-sm font-medium transition-colors cursor-pointer ${
+                    filter.affiliations.has(aff)
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary'
+                  }`}
+                >
+                  {affLabels[aff]}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Themes (from Strapi) */}
         {themes.length > 0 && (
@@ -201,7 +219,7 @@ export function ResearchFilter({ entries, themes, locale }: ResearchFilterProps)
                   <button
                     type="button"
                     onClick={() => toggleTheme(theme.id)}
-                    className={`px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1 text-sm font-medium transition-colors cursor-pointer ${
                       filter.themeIds.has(theme.id)
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary'
@@ -230,7 +248,7 @@ export function ResearchFilter({ entries, themes, locale }: ResearchFilterProps)
           <button
             type="button"
             onClick={clearAll}
-            className="text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+            className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer"
           >
             {t['research.filter.clear'] as string}
           </button>
@@ -241,13 +259,13 @@ export function ResearchFilter({ entries, themes, locale }: ResearchFilterProps)
       <div>
         <p className="text-sm text-muted-foreground mb-4">{countLabel}</p>
         {filtered.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
             {filtered.map((entry) => (
               <ResearchEntryCard key={entry.id} entry={entry} locale={locale} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
+          <div className="text-center py-16">
             <p className="text-muted-foreground">{emptyLabel}</p>
             {hasActiveFilters && (
               <button

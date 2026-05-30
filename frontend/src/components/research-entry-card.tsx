@@ -35,19 +35,19 @@ export function ResearchEntryCard({ entry, locale }: ResearchEntryCardProps) {
   })()
 
   return (
-    <article className="group ba-card p-4 flex flex-col gap-3">
-      <div className="flex flex-wrap gap-1.5">
-        <span className="inline-block rounded px-2 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground">
+    <article className="group ba-card p-5 flex flex-col gap-3">
+      <div className="flex flex-wrap gap-2">
+        <span className="inline-block rounded px-2.5 py-1 text-sm font-medium bg-secondary text-secondary-foreground">
           {mediaLabels[entry.media_type]}
         </span>
-        <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${stanceColors[entry.stance] || stanceColors.speculative}`}>
+        <span className={`inline-block rounded px-2.5 py-1 text-sm font-medium ${stanceColors[entry.stance] || stanceColors.speculative}`}>
           {stanceLabels[entry.stance]}
         </span>
         {entry.themes?.slice(0, 2).map((theme) => (
           <LocaleLink
             key={theme.id}
             href={`/research-archives/themes/${theme.slug}`}
-            className="inline-block rounded px-2 py-0.5 text-xs bg-ba-blue/10 text-primary hover:bg-ba-blue/20 transition-colors"
+            className="inline-block rounded px-2.5 py-1 text-sm bg-ba-blue/10 text-primary hover:bg-ba-blue/20 transition-colors"
           >
             {theme.name}
           </LocaleLink>
@@ -55,7 +55,7 @@ export function ResearchEntryCard({ entry, locale }: ResearchEntryCardProps) {
       </div>
 
       <LocaleLink href={`/research-archives/${entry.slug}`}>
-        <h3 className="ba-title text-base leading-snug group-hover:text-primary transition-colors line-clamp-2">
+        <h3 className="ba-title text-[1.0625rem] leading-snug group-hover:text-primary transition-colors line-clamp-2">
           {entry.title}
         </h3>
       </LocaleLink>
@@ -66,7 +66,7 @@ export function ResearchEntryCard({ entry, locale }: ResearchEntryCardProps) {
         </p>
       )}
 
-      <div className="mt-auto flex items-center justify-between text-xs text-muted-foreground">
+      <div className="mt-auto flex items-center justify-between text-sm text-muted-foreground pt-1">
         {updatedAt && <span>{updatedAt}</span>}
         <LocaleLink
           href={`/research-archives/${entry.slug}`}

@@ -188,20 +188,20 @@ export default async function ResearchEntryPage({ params }: ResearchEntryPagePro
             {/* Main content */}
             <article>
               {/* Meta row */}
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <span className={`inline-block rounded border px-2 py-0.5 text-xs font-medium ${stanceColors[entry.stance] || stanceColors.speculative}`}>
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <span className={`inline-block rounded border px-2.5 py-1 text-sm font-medium ${stanceColors[entry.stance] || stanceColors.speculative}`}>
                   {stanceL[entry.stance]}
                 </span>
                 {entry.themes?.map((theme) => (
                   <LocaleLink
                     key={theme.id}
                     href={`/research-archives/themes/${theme.slug}`}
-                    className="inline-block rounded px-2 py-0.5 text-xs bg-ba-blue/10 text-primary hover:bg-ba-blue/20 transition-colors"
+                    className="inline-block rounded px-2.5 py-1 text-sm bg-ba-blue/10 text-primary hover:bg-ba-blue/20 transition-colors"
                   >
                     {theme.name}
                   </LocaleLink>
                 ))}
-                <span className="text-xs text-muted-foreground ml-auto">
+                <span className="text-sm text-muted-foreground ml-auto">
                   {formatDate(entry.updatedAt)}
                 </span>
               </div>
@@ -238,7 +238,7 @@ export default async function ResearchEntryPage({ params }: ResearchEntryPagePro
                             {link.target_entry.title}
                           </LocaleLink>
                           {link.curate_note && (
-                            <p className="text-xs text-muted-foreground mt-1">{link.curate_note}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{link.curate_note}</p>
                           )}
                         </li>
                       )
@@ -255,21 +255,21 @@ export default async function ResearchEntryPage({ params }: ResearchEntryPagePro
                   {t['research.entry.citations'] as string}
                 </h2>
                 {citations.map((citation) => (
-                  <div key={citation.id} className="rounded-lg border bg-card p-3 text-xs space-y-1.5">
-                    <p className="font-medium text-foreground">{citation.claim_short}</p>
-                    <div className="flex flex-wrap gap-1">
-                      <span className="rounded px-1.5 py-0.5 bg-muted text-muted-foreground">
+                  <div key={citation.id} className="rounded-lg border bg-card p-4 space-y-2">
+                    <p className="text-sm font-medium text-foreground leading-snug">{citation.claim_short}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="rounded px-2 py-0.5 text-xs bg-muted text-muted-foreground">
                         {srcL[citation.source_type]}
                       </span>
-                      <span className={`rounded px-1.5 py-0.5 ${confidenceBadge[citation.confidence] || confidenceBadge.derived}`}>
+                      <span className={`rounded px-2 py-0.5 text-xs ${confidenceBadge[citation.confidence] || confidenceBadge.derived}`}>
                         {confL[citation.confidence]}
                       </span>
                     </div>
                     {citation.source_ref && (
-                      <p className="text-muted-foreground">{citation.source_ref}</p>
+                      <p className="text-sm text-muted-foreground">{citation.source_ref}</p>
                     )}
                     {citation.source_quote && (
-                      <blockquote className="border-l-2 border-border pl-2 text-muted-foreground italic">
+                      <blockquote className="border-l-2 border-border pl-2 text-sm text-muted-foreground italic leading-relaxed">
                         {citation.source_quote}
                       </blockquote>
                     )}
