@@ -16,6 +16,7 @@ import {
   type AdminEditorField,
   type AdminMediaAsset,
   type AdminRelationOption,
+  type AdminRowColumn,
 } from '@/lib/admin-panel'
 import type { AdminStrapiEntry } from '@/lib/server/admin-content'
 import type { Locale } from '@/lib/i18n'
@@ -49,6 +50,11 @@ const labels: Record<Locale, {
   requiredError: string
   emptySelection: string
   relationSearch: string
+  addRow: string
+  removeRow: string
+  moveUp: string
+  moveDown: string
+  emptyRows: string
 }> = {
   'zh-Hans': {
     save: '保存',
@@ -63,6 +69,11 @@ const labels: Record<Locale, {
     requiredError: '请至少填写标题或名称',
     emptySelection: '暂无可选项',
     relationSearch: '搜索可选项',
+    addRow: '添加一行',
+    removeRow: '删除',
+    moveUp: '上移',
+    moveDown: '下移',
+    emptyRows: '尚未添加内容',
   },
   en: {
     save: 'Save',
@@ -77,6 +88,11 @@ const labels: Record<Locale, {
     requiredError: 'Please provide at least a title or name',
     emptySelection: 'No available options',
     relationSearch: 'Search options',
+    addRow: 'Add row',
+    removeRow: 'Remove',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    emptyRows: 'Nothing added yet',
   },
   ja: {
     save: '保存',
@@ -91,6 +107,11 @@ const labels: Record<Locale, {
     requiredError: 'タイトルまたは名前を入力してください',
     emptySelection: '選択肢がありません',
     relationSearch: '選択肢を検索',
+    addRow: '行を追加',
+    removeRow: '削除',
+    moveUp: '上へ',
+    moveDown: '下へ',
+    emptyRows: 'まだ何も追加されていません',
   },
 }
 
@@ -121,6 +142,55 @@ function getInitialMedia(value: unknown): MediaState {
   }
 }
 
+function getRelationIdValue(value: unknown): number | '' {
+  if (value && typeof value === 'object' && 'id' in (value as Record<string, unknown>)) {
+    const id = Number((value as { id: unknown }).id)
+    return Number.isFinite(id) ? id : ''
+  }
+  const id = Number(value)
+  return Number.isFinite(id) && id > 0 ? id : ''
+}
+
+type ComponentRow = Record<string, unknown>
+
+function getInitialRows(field: AdminEditorField, value: unknown): ComponentRow[] {
+  if (!Array.isArray(value) || !field.columns) {
+    return []
+  }
+
+  return value.map((item) => {
+    const record = item && typeof item === 'object' ? item as Record<string, unknown> : {}
+    const row: ComponentRow = {}
+    for (const column of field.columns || []) {
+      const raw = record[column.name]
+      if (column.kind === 'relation') {
+        row[column.name] = getRelationIdValue(raw)
+      } else if (column.kind === 'date') {
+        row[column.name] = typeof raw === 'string' ? raw.slice(0, 10) : ''
+      } else {
+        row[column.name] = typeof raw === 'string' ? raw : ''
+      }
+    }
+    return row
+  })
+}
+
+function buildEmptyRow(field: AdminEditorField): ComponentRow {
+  const row: ComponentRow = {}
+  for (const column of field.columns || []) {
+    if (column.kind === 'relation') {
+      row[column.name] = ''
+    } else if (column.kind === 'select') {
+      row[column.name] = column.options?.[0]?.value || ''
+    } else if (column.kind === 'date') {
+      row[column.name] = new Date().toISOString().slice(0, 10)
+    } else {
+      row[column.name] = ''
+    }
+  }
+  return row
+}
+
 function getInitialFieldValue(field: AdminEditorField, value: unknown): unknown {
   switch (field.type) {
     case 'boolean':
@@ -138,6 +208,10 @@ function getInitialFieldValue(field: AdminEditorField, value: unknown): unknown 
             .map((item) => (item && typeof item === 'object' && 'id' in item ? Number((item as { id: number }).id) : Number(item)))
             .filter((item) => Number.isFinite(item))
         : []
+    case 'relation-select':
+      return getRelationIdValue(value)
+    case 'component-rows':
+      return getInitialRows(field, value)
     case 'json-csv':
       return Array.isArray(value) ? value.join(', ') : typeof value === 'string' ? value : ''
     default:
@@ -231,6 +305,10 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
       case 'multiselect':
       case 'relation-multiselect':
         return Array.isArray(value) ? value : []
+      case 'relation-select':
+        return typeof value === 'number' && value > 0 ? value : null
+      case 'component-rows':
+        return Array.isArray(value) ? value : []
       case 'json-csv':
         return typeof value === 'string' && value.trim()
           ? value.split(',').map((v) => v.trim()).filter(Boolean)
@@ -301,11 +379,14 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
           {schema.fields.map((field) => {
             const value = formValues[field.name]
             const label = getDisplayLabel(field, locale)
-            const isFullWidth = field.type === 'textarea' || field.type === 'multiselect' || field.type === 'relation-multiselect' || field.type === 'media' || field.type === 'json-csv'
+            const isFullWidth = field.type === 'textarea' || field.type === 'multiselect' || field.type === 'relation-multiselect' || field.type === 'media' || field.type === 'json-csv' || field.type === 'component-rows'
 
             return (
               <div key={field.name} className={cn('space-y-2', isFullWidth && 'md:col-span-2')}>
                 <label className="text-sm font-medium" htmlFor={field.name}>{label}</label>
+                {field.description ? (
+                  <p className="text-xs text-muted-foreground">{field.description[locale] || field.description['zh-Hans']}</p>
+                ) : null}
                 {field.type === 'textarea' ? (
                   <textarea
                     id={field.name}
@@ -424,6 +505,33 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
                   </div>
                 ) : null}
 
+                {field.type === 'relation-select' ? (
+                  <select
+                    id={field.name}
+                    value={typeof value === 'number' ? String(value) : ''}
+                    onChange={(event) => updateField(field.name, event.target.value ? Number(event.target.value) : '')}
+                    className="h-9 w-full rounded-md border bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                  >
+                    <option value="">-</option>
+                    {(relationOptions?.[field.relationKey || ''] || []).map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}{option.description ? ` — ${option.description}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
+
+                {field.type === 'component-rows' ? (
+                  <ComponentRowsEditor
+                    field={field}
+                    rows={Array.isArray(value) ? value as ComponentRow[] : []}
+                    locale={locale}
+                    relationOptions={relationOptions}
+                    labels={{ add: t.addRow, remove: t.removeRow, moveUp: t.moveUp, moveDown: t.moveDown, empty: t.emptyRows }}
+                    onChange={(rows) => updateField(field.name, rows)}
+                  />
+                ) : null}
+
                 {field.type === 'media' ? (
                   <div className="rounded-md border p-3">
                     {(() => {
@@ -483,5 +591,116 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
         </Button>
       </div>
     </form>
+  )
+}
+
+interface ComponentRowsEditorProps {
+  field: AdminEditorField
+  rows: ComponentRow[]
+  locale: Locale
+  relationOptions?: Record<string, AdminRelationOption[]>
+  labels: { add: string; remove: string; moveUp: string; moveDown: string; empty: string }
+  onChange: (rows: ComponentRow[]) => void
+}
+
+function ComponentRowsEditor({ field, rows, locale, relationOptions, labels, onChange }: ComponentRowsEditorProps) {
+  const columns = field.columns || []
+
+  const updateRow = (index: number, name: string, value: unknown) => {
+    const next = rows.map((row, rowIndex) => (rowIndex === index ? { ...row, [name]: value } : row))
+    onChange(next)
+  }
+
+  const moveRow = (index: number, delta: number) => {
+    const target = index + delta
+    if (target < 0 || target >= rows.length) {
+      return
+    }
+    const next = [...rows]
+    const [moved] = next.splice(index, 1)
+    next.splice(target, 0, moved)
+    onChange(next)
+  }
+
+  const renderColumn = (column: AdminRowColumn, row: ComponentRow, index: number) => {
+    const value = row[column.name]
+    const columnLabel = column.label[locale] || column.label['zh-Hans']
+
+    if (column.kind === 'relation') {
+      const options = relationOptions?.[column.relationKey || ''] || []
+      return (
+        <select
+          aria-label={columnLabel}
+          value={typeof value === 'number' ? String(value) : ''}
+          onChange={(event) => updateRow(index, column.name, event.target.value ? Number(event.target.value) : '')}
+          className="h-9 w-full rounded-md border bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+        >
+          <option value="">-</option>
+          {options.map((option) => (
+            <option key={option.id} value={option.id}>{option.label}</option>
+          ))}
+        </select>
+      )
+    }
+
+    if (column.kind === 'select') {
+      return (
+        <select
+          aria-label={columnLabel}
+          value={typeof value === 'string' ? value : ''}
+          onChange={(event) => updateRow(index, column.name, event.target.value)}
+          className="h-9 w-full rounded-md border bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+        >
+          {(column.options || []).map((option) => (
+            <option key={option.value} value={option.value}>{resolveOptionLabel(option, locale)}</option>
+          ))}
+        </select>
+      )
+    }
+
+    return (
+      <Input
+        aria-label={columnLabel}
+        type={column.kind === 'date' ? 'date' : 'text'}
+        value={typeof value === 'string' ? value : ''}
+        placeholder={columnLabel}
+        onChange={(event) => updateRow(index, column.name, event.target.value)}
+      />
+    )
+  }
+
+  return (
+    <div className="space-y-3 rounded-md border p-3">
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{labels.empty}</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.map((row, index) => (
+            <div key={index} className="flex flex-col gap-2 rounded-md border bg-secondary/10 p-2 md:flex-row md:items-center">
+              <span className="hidden w-6 shrink-0 text-center text-xs text-muted-foreground md:block">{index + 1}</span>
+              <div className="grid flex-1 gap-2 md:grid-cols-3">
+                {columns.map((column) => (
+                  <div key={column.name}>{renderColumn(column, row, index)}</div>
+                ))}
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button type="button" variant="ghost" size="sm" disabled={index === 0} onClick={() => moveRow(index, -1)} aria-label={labels.moveUp}>
+                  ↑
+                </Button>
+                <Button type="button" variant="ghost" size="sm" disabled={index === rows.length - 1} onClick={() => moveRow(index, 1)} aria-label={labels.moveDown}>
+                  ↓
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => onChange(rows.filter((_, rowIndex) => rowIndex !== index))}>
+                  {labels.remove}
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <Button type="button" variant="outline" size="sm" onClick={() => onChange([...rows, buildEmptyRow(field)])}>
+        {labels.add}
+      </Button>
+    </div>
   )
 }

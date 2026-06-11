@@ -7,12 +7,15 @@ export type AdminCollectionKey =
   | 'online-events'
   | 'offline-events'
   | 'students'
+  | 'schools'
   | 'bilibili-subscriptions'
   | 'sync-logs'
   | 'admin-audit-logs'
   | 'research-entries'
   | 'research-themes'
   | 'research-citations'
+  | 'research-subjects'
+  | 'research-paths'
 
 export type AdminFieldType =
   | 'text'
@@ -25,6 +28,8 @@ export type AdminFieldType =
   | 'media'
   | 'multiselect'
   | 'relation-multiselect'
+  | 'relation-select'
+  | 'component-rows'
   | 'json-csv'
 
 export interface AdminFieldOption {
@@ -39,6 +44,14 @@ export function resolveOptionLabel(option: AdminFieldOption, locale: Locale): st
   return option.label[locale] || option.label['zh-Hans'] || option.value
 }
 
+export interface AdminRowColumn {
+  name: string
+  kind: 'relation' | 'select' | 'text' | 'date'
+  label: Record<Locale, string>
+  options?: AdminFieldOption[]
+  relationKey?: string
+}
+
 export interface AdminEditorField {
   name: string
   type: AdminFieldType
@@ -47,6 +60,7 @@ export interface AdminEditorField {
   description?: Record<Locale, string>
   options?: AdminFieldOption[]
   relationKey?: string
+  columns?: AdminRowColumn[]
 }
 
 export interface AdminCollectionMeta {
@@ -93,6 +107,44 @@ const schoolOptions: AdminFieldOption[] = [
   { value: 'tokiwadai', label: 'Tokiwadai' },
   { value: 'kronos', label: 'Kronos' },
   { value: 'other', label: 'Other' },
+]
+
+export const spoilerScopeOptions: AdminFieldOption[] = [
+  { value: 'none', label: { 'zh-Hans': '无剧透', en: 'No spoilers', ja: 'ネタバレなし' } },
+  { value: 'vol1', label: { 'zh-Hans': '第一卷（对策委员会篇）', en: 'Vol. 1 (Abydos)', ja: '第1編（対策委員会編）' } },
+  { value: 'vol2', label: { 'zh-Hans': '第二卷（千年篇）', en: 'Vol. 2 (Millennium)', ja: '第2編（ミレニアム編）' } },
+  { value: 'vol3', label: { 'zh-Hans': '第三卷（伊甸条约篇）', en: 'Vol. 3 (Eden Treaty)', ja: '第3編（エデン条約編）' } },
+  { value: 'vol4', label: { 'zh-Hans': '第四卷（兔子小队篇）', en: 'Vol. 4 (RABBIT Squad)', ja: '第4編（カルバノグの兎編）' } },
+  { value: 'vol5', label: { 'zh-Hans': '第五卷（百鬼夜行篇）', en: 'Vol. 5 (Hyakkiyako)', ja: '第5編（百花繚乱編）' } },
+  { value: 'final', label: { 'zh-Hans': '最终篇', en: 'Final volume', ja: '最終編' } },
+  { value: 'event', label: { 'zh-Hans': '活动剧情', en: 'Event story', ja: 'イベントストーリー' } },
+  { value: 'latest', label: { 'zh-Hans': '最新进度', en: 'Latest content', ja: '最新コンテンツ' } },
+]
+
+export const relationTypeOptions: AdminFieldOption[] = [
+  { value: 'related', label: { 'zh-Hans': '相关', en: 'Related', ja: '関連' } },
+  { value: 'prototype', label: { 'zh-Hans': '原型', en: 'Prototype of', ja: '原型・モチーフ' } },
+  { value: 'echoes', label: { 'zh-Hans': '呼应', en: 'Echoes', ja: '呼応' } },
+  { value: 'extends', label: { 'zh-Hans': '补充', en: 'Builds on', ja: '補足' } },
+  { value: 'contradicts', label: { 'zh-Hans': '相左', en: 'Contradicts', ja: '対立' } },
+  { value: 'prerequisite', label: { 'zh-Hans': '前置阅读', en: 'Read first', ja: '前提知識' } },
+]
+
+export const revisionTypeOptions: AdminFieldOption[] = [
+  { value: 'created', label: { 'zh-Hans': '建立', en: 'Created', ja: '作成' } },
+  { value: 'updated', label: { 'zh-Hans': '更新', en: 'Updated', ja: '更新' } },
+  { value: 'confirmed', label: { 'zh-Hans': '获官方证实', en: 'Confirmed by canon', ja: '公式で確定' } },
+  { value: 'refuted', label: { 'zh-Hans': '被官方推翻', en: 'Refuted by canon', ja: '公式で否定' } },
+]
+
+export const subjectTypeOptions: AdminFieldOption[] = [
+  { value: 'school', label: { 'zh-Hans': '学院', en: 'School', ja: '学園' } },
+  { value: 'organization', label: { 'zh-Hans': '组织', en: 'Organization', ja: '組織' } },
+  { value: 'club', label: { 'zh-Hans': '社团', en: 'Club', ja: '部活' } },
+  { value: 'character', label: { 'zh-Hans': '人物', en: 'Character', ja: '人物' } },
+  { value: 'location', label: { 'zh-Hans': '地点', en: 'Location', ja: '場所' } },
+  { value: 'concept', label: { 'zh-Hans': '概念', en: 'Concept', ja: '概念' } },
+  { value: 'item', label: { 'zh-Hans': '物品', en: 'Item', ja: 'アイテム' } },
 ]
 
 const sourcePlatformOptions: AdminFieldOption[] = [
@@ -327,11 +379,52 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
     },
     fields: [
       { name: 'name', type: 'text', label: { 'zh-Hans': '姓名', en: 'Name', ja: '名前' } },
-      { name: 'school', type: 'select', label: { 'zh-Hans': '学校', en: 'School', ja: '学校' }, options: schoolOptions },
+      { name: 'school_ref', type: 'relation-select', label: { 'zh-Hans': '所属学院', en: 'School', ja: '所属学園' }, relationKey: 'schools' },
+      {
+        name: 'school', type: 'select', label: { 'zh-Hans': '旧学校字段（兼容）', en: 'Legacy school enum', ja: '旧学校フィールド（互換）' }, options: schoolOptions,
+        description: {
+          'zh-Hans': '旧版枚举字段，仅作兼容回退；请优先使用上方的「所属学院」。',
+          en: 'Legacy enum kept for fallback; prefer the School relation above.',
+          ja: '互換用の旧フィールドです。上の「所属学園」を優先してください。',
+        },
+      },
       { name: 'organization', type: 'text', label: { 'zh-Hans': '组织', en: 'Organization', ja: '所属' } },
       { name: 'avatar', type: 'media', label: { 'zh-Hans': '头像', en: 'Avatar', ja: 'アイコン' } },
       { name: 'bio', type: 'textarea', label: { 'zh-Hans': '简介', en: 'Bio', ja: '紹介' } },
       { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+    ],
+  },
+  schools: {
+    endpoint: 'schools',
+    localized: true,
+    supportsDraft: false,
+    title: {
+      'zh-Hans': '学院',
+      en: 'Schools',
+      ja: '学園',
+    },
+    description: {
+      'zh-Hans': '维护基沃托斯各学院的名称、颜色与排序，前台筛选与展示均使用这里的数据。',
+      en: 'Manage Kivotos schools (names, color, order). Filters and labels on the site read from here.',
+      ja: 'キヴォトス各学園の名称・カラー・並び順を管理します。サイトの表示はここを参照します。',
+    },
+    createLabel: {
+      'zh-Hans': '新建学院',
+      en: 'New school',
+      ja: '学園を新規作成',
+    },
+    editLabel: {
+      'zh-Hans': '编辑学院',
+      en: 'Edit school',
+      ja: '学園を編集',
+    },
+    fields: [
+      { name: 'name', type: 'text', label: { 'zh-Hans': '名称', en: 'Name', ja: '名称' } },
+      { name: 'slug', type: 'text', label: { 'zh-Hans': 'Slug（URL 标识）', en: 'Slug', ja: 'スラグ' } },
+      { name: 'description', type: 'textarea', label: { 'zh-Hans': '简介', en: 'Description', ja: '説明' } },
+      { name: 'color', type: 'text', label: { 'zh-Hans': '主题色（如 #2d77c9）', en: 'Theme color (e.g. #2d77c9)', ja: 'テーマカラー（例 #2d77c9）' } },
+      { name: 'order', type: 'number', label: { 'zh-Hans': '排序', en: 'Order', ja: '並び順' } },
+      { name: 'logo', type: 'media', label: { 'zh-Hans': '校徽', en: 'Logo', ja: 'ロゴ' } },
     ],
   },
   'bilibili-subscriptions': {
@@ -458,11 +551,119 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
         { value: 'setting', label: { 'zh-Hans': '世界观', en: 'Setting', ja: '設定' } },
         { value: 'organization', label: { 'zh-Hans': '组织', en: 'Organization', ja: '組織' } },
       ] },
+      { name: 'spoiler_scope', type: 'select', label: { 'zh-Hans': '剧透范围', en: 'Spoiler scope', ja: 'ネタバレ範囲' }, options: spoilerScopeOptions,
+        description: {
+          'zh-Hans': '标记本条目涉及的剧情进度，阅读进度不足的访客会先看到剧透提醒。',
+          en: 'Mark the story progress this entry spoils. Readers behind this point see a warning first.',
+          ja: 'この記事が触れるストーリー進行度。未読の訪問者には警告が表示されます。',
+        },
+      },
       { name: 'affiliations', type: 'json-csv', label: { 'zh-Hans': '相关势力', en: 'Affiliations', ja: '所属勢力' } },
+      { name: 'subjects', type: 'relation-multiselect', label: { 'zh-Hans': '考据对象', en: 'Subjects', ja: '考察対象' }, relationKey: 'research-subjects' },
       { name: 'themes', type: 'relation-multiselect', label: { 'zh-Hans': '关联主题', en: 'Related themes', ja: '関連テーマ' }, relationKey: 'research-themes' },
       { name: 'citations', type: 'relation-multiselect', label: { 'zh-Hans': '关联引证', en: 'Related citations', ja: '関連引証' }, relationKey: 'research-citations' },
       { name: 'summary', type: 'textarea', label: { 'zh-Hans': '摘要', en: 'Summary', ja: '要約' } },
-      { name: 'body', type: 'textarea', label: { 'zh-Hans': '正文', en: 'Body', ja: '本文' } },
+      { name: 'body', type: 'textarea', label: { 'zh-Hans': '正文', en: 'Body', ja: '本文' },
+        description: {
+          'zh-Hans': '支持 [[条目slug]] 或 [[条目slug|显示文字]] 站内链接，会自动计入反向链接。',
+          en: 'Supports [[entry-slug]] / [[entry-slug|text]] wiki links, counted as backlinks automatically.',
+          ja: '[[記事slug]] / [[記事slug|表示名]] のwikiリンクに対応し、自動でバックリンクに反映されます。',
+        },
+      },
+      {
+        name: 'related_links', type: 'component-rows', label: { 'zh-Hans': '关联条目', en: 'Related entries', ja: '関連記事' },
+        columns: [
+          { name: 'target_entry', kind: 'relation', label: { 'zh-Hans': '目标条目', en: 'Target entry', ja: '対象記事' }, relationKey: 'research-entries' },
+          { name: 'relation_type', kind: 'select', label: { 'zh-Hans': '关系类型', en: 'Relation', ja: '関係' }, options: relationTypeOptions },
+          { name: 'curate_note', kind: 'text', label: { 'zh-Hans': '策展备注', en: 'Curator note', ja: 'キュレーターメモ' } },
+        ],
+      },
+      {
+        name: 'revisions', type: 'component-rows', label: { 'zh-Hans': '修订记录', en: 'Revision log', ja: '改訂履歴' },
+        columns: [
+          { name: 'date', kind: 'date', label: { 'zh-Hans': '日期', en: 'Date', ja: '日付' } },
+          { name: 'revision_type', kind: 'select', label: { 'zh-Hans': '类型', en: 'Type', ja: '種類' }, options: revisionTypeOptions },
+          { name: 'note', kind: 'text', label: { 'zh-Hans': '说明', en: 'Note', ja: 'メモ' } },
+        ],
+      },
+      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+    ],
+  },
+  'research-subjects': {
+    endpoint: 'research-subjects',
+    localized: true,
+    supportsDraft: true,
+    title: {
+      'zh-Hans': '考据对象',
+      en: 'Research Subjects',
+      ja: '考察対象',
+    },
+    description: {
+      'zh-Hans': '知识网络中的实体枢纽：学院、组织、人物、概念等，把考据条目与学生聚合到一处。',
+      en: 'Hub entities of the knowledge network: schools, organizations, characters, concepts.',
+      ja: '知識ネットワークのハブ：学園・組織・人物・概念など。',
+    },
+    createLabel: {
+      'zh-Hans': '新建考据对象',
+      en: 'New subject',
+      ja: '対象を新規作成',
+    },
+    editLabel: {
+      'zh-Hans': '编辑考据对象',
+      en: 'Edit subject',
+      ja: '対象を編集',
+    },
+    fields: [
+      { name: 'name', type: 'text', label: { 'zh-Hans': '名称', en: 'Name', ja: '名称' } },
+      { name: 'slug', type: 'text', label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' } },
+      { name: 'subject_type', type: 'select', label: { 'zh-Hans': '对象类型', en: 'Subject type', ja: '対象タイプ' }, options: subjectTypeOptions },
+      { name: 'description', type: 'textarea', label: { 'zh-Hans': '简介', en: 'Description', ja: '説明' } },
+      { name: 'cover', type: 'media', label: { 'zh-Hans': '封面图', en: 'Cover image', ja: 'カバー画像' } },
+      { name: 'students', type: 'relation-multiselect', label: { 'zh-Hans': '相关学生', en: 'Related students', ja: '関連生徒' }, relationKey: 'students' },
+      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+    ],
+  },
+  'research-paths': {
+    endpoint: 'research-paths',
+    localized: true,
+    supportsDraft: true,
+    title: {
+      'zh-Hans': '阅读路径',
+      en: 'Reading Paths',
+      ja: '読書パス',
+    },
+    description: {
+      'zh-Hans': '策展主题阅读路径，按顺序编排考据条目，读者可以沿路径逐篇阅读。',
+      en: 'Curated reading paths: ordered sequences of research entries.',
+      ja: 'キュレーションされた読書パス。考察記事を順に並べます。',
+    },
+    createLabel: {
+      'zh-Hans': '新建路径',
+      en: 'New path',
+      ja: 'パスを新規作成',
+    },
+    editLabel: {
+      'zh-Hans': '编辑路径',
+      en: 'Edit path',
+      ja: 'パスを編集',
+    },
+    fields: [
+      { name: 'title', type: 'text', label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
+      { name: 'slug', type: 'text', label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' } },
+      { name: 'description', type: 'textarea', label: { 'zh-Hans': '路径简介', en: 'Description', ja: '説明' } },
+      { name: 'difficulty', type: 'select', label: { 'zh-Hans': '难度', en: 'Difficulty', ja: '難易度' }, options: [
+        { value: 'intro', label: { 'zh-Hans': '入门', en: 'Intro', ja: '入門' } },
+        { value: 'deep', label: { 'zh-Hans': '深入', en: 'Deep dive', ja: '深掘り' } },
+        { value: 'expert', label: { 'zh-Hans': '硬核', en: 'Expert', ja: 'エキスパート' } },
+      ] },
+      { name: 'order', type: 'number', label: { 'zh-Hans': '排序', en: 'Order', ja: '並び順' } },
+      {
+        name: 'steps', type: 'component-rows', label: { 'zh-Hans': '路径步骤', en: 'Path steps', ja: 'パスステップ' },
+        columns: [
+          { name: 'entry', kind: 'relation', label: { 'zh-Hans': '条目', en: 'Entry', ja: '記事' }, relationKey: 'research-entries' },
+          { name: 'step_note', kind: 'text', label: { 'zh-Hans': '步骤说明', en: 'Step note', ja: 'ステップメモ' } },
+        ],
+      },
       { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
     ],
   },

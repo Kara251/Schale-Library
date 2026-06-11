@@ -15,6 +15,7 @@ import {
   listAdminCollection,
 } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
+import type { AdminSession } from '@/lib/server/admin-auth'
 
 interface AdminCollectionEditorPageProps {
   collection: AdminCollectionKey
@@ -22,27 +23,99 @@ interface AdminCollectionEditorPageProps {
   id?: string
 }
 
-interface StudentOptionEntry extends AdminStrapiEntry {
-  name: string
-  school?: string
-  organization?: string
-}
-
-interface ResearchThemeOptionEntry extends AdminStrapiEntry {
-  name: string
-  slug?: string
-}
-
-interface ResearchCitationOptionEntry extends AdminStrapiEntry {
-  claim_short: string
-  source_type?: string
-  source_ref?: string
-}
-
 const labels: Record<Locale, { back: string }> = {
   'zh-Hans': { back: '返回列表' },
   en: { back: 'Back to list' },
   ja: { back: '一覧へ戻る' },
+}
+
+interface RelationSourceConfig {
+  collection: AdminCollectionKey
+  localized: boolean
+  toOption: (entry: AdminStrapiEntry) => AdminRelationOption
+}
+
+/** 关系选项数据源：relationKey → 拉取配置 */
+const RELATION_SOURCES: Record<string, RelationSourceConfig> = {
+  students: {
+    collection: 'students',
+    localized: true,
+    toOption: (entry) => ({
+      id: entry.id,
+      label: String(entry.name || `#${entry.id}`),
+      description: [entry.school, entry.organization].filter(Boolean).join(' / '),
+    }),
+  },
+  schools: {
+    collection: 'schools',
+    localized: true,
+    toOption: (entry) => ({
+      id: entry.id,
+      label: String(entry.name || `#${entry.id}`),
+      description: typeof entry.slug === 'string' ? entry.slug : undefined,
+    }),
+  },
+  'research-themes': {
+    collection: 'research-themes',
+    localized: true,
+    toOption: (entry) => ({
+      id: entry.id,
+      label: String(entry.name || `#${entry.id}`),
+      description: typeof entry.slug === 'string' ? entry.slug : undefined,
+    }),
+  },
+  'research-citations': {
+    collection: 'research-citations',
+    localized: false,
+    toOption: (entry) => ({
+      id: entry.id,
+      label: String(entry.claim_short || `#${entry.id}`),
+      description: [entry.source_type, entry.source_ref].filter(Boolean).join(' / '),
+    }),
+  },
+  'research-entries': {
+    collection: 'research-entries',
+    localized: true,
+    toOption: (entry) => ({
+      id: entry.id,
+      label: String(entry.title || `#${entry.id}`),
+      description: typeof entry.slug === 'string' ? entry.slug : undefined,
+    }),
+  },
+  'research-subjects': {
+    collection: 'research-subjects',
+    localized: true,
+    toOption: (entry) => ({
+      id: entry.id,
+      label: String(entry.name || `#${entry.id}`),
+      description: typeof entry.subject_type === 'string' ? entry.subject_type : undefined,
+    }),
+  },
+}
+
+async function loadRelationOptions(
+  session: AdminSession,
+  locale: Locale,
+  relationKeys: string[]
+): Promise<Record<string, AdminRelationOption[]>> {
+  const relationOptions: Record<string, AdminRelationOption[]> = {}
+
+  await Promise.all(relationKeys.map(async (relationKey) => {
+    const source = RELATION_SOURCES[relationKey]
+    if (!source) {
+      return
+    }
+
+    const response = await listAdminCollection<AdminStrapiEntry>(session, source.collection, {
+      locale: source.localized ? locale : undefined,
+      page: 1,
+      pageSize: 100,
+      status: 'all',
+    })
+    relationOptions[relationKey] = response.data.map(source.toOption)
+  }))
+
+  return relationOptions
 }
 
 export async function AdminCollectionEditorPage({ collection, locale, id }: AdminCollectionEditorPageProps) {
@@ -54,74 +127,13 @@ export async function AdminCollectionEditorPage({ collection, locale, id }: Admi
   const initialData = id ? await getAdminCollectionItem(session, collection, Number(id), locale) : null
 
   const relationKeys = Array.from(new Set(
-    meta.fields
-      .filter((field) => (field.type === 'multiselect' || field.type === 'relation-multiselect') && field.relationKey)
-      .map((field) => field.relationKey as string)
+    meta.fields.flatMap((field) => [
+      field.relationKey,
+      ...(field.columns || []).map((column) => column.relationKey),
+    ]).filter((key): key is string => Boolean(key))
   ))
 
-  const relationOptions: Record<string, AdminRelationOption[]> = {}
-  await Promise.all(relationKeys.map(async (relationKey) => {
-    if (relationKey === 'students') {
-      const students = await listAdminCollection<StudentOptionEntry>(session, 'students', {
-        locale,
-        page: 1,
-        pageSize: 100,
-        status: 'all',
-      })
-
-      relationOptions.students = students.data.map((student) => ({
-        id: student.id,
-        label: student.name,
-        description: [student.school, student.organization].filter(Boolean).join(' / '),
-      }))
-      return
-    }
-
-    if (relationKey === 'research-themes') {
-      const themes = await listAdminCollection<ResearchThemeOptionEntry>(session, 'research-themes', {
-        locale,
-        page: 1,
-        pageSize: 100,
-        status: 'all',
-      })
-
-      relationOptions['research-themes'] = themes.data.map((theme) => ({
-        id: theme.id,
-        label: theme.name,
-        description: theme.slug,
-      }))
-      return
-    }
-
-    if (relationKey === 'research-citations') {
-      const citations = await listAdminCollection<ResearchCitationOptionEntry>(session, 'research-citations', {
-        page: 1,
-        pageSize: 100,
-        status: 'all',
-      })
-
-      relationOptions['research-citations'] = citations.data.map((citation) => ({
-        id: citation.id,
-        label: citation.claim_short,
-        description: [citation.source_type, citation.source_ref].filter(Boolean).join(' / '),
-      }))
-    }
-  }))
-
-  if (collection === 'works' && !relationOptions.students) {
-    const students = await listAdminCollection<StudentOptionEntry>(session, 'students', {
-      locale,
-      page: 1,
-      pageSize: 100,
-      status: 'all',
-    })
-
-    relationOptions.students = students.data.map((student) => ({
-      id: student.id,
-      label: student.name,
-      description: [student.school, student.organization].filter(Boolean).join(' / '),
-    }))
-  }
+  const relationOptions = await loadRelationOptions(session, locale, relationKeys)
 
   return (
     <div>
