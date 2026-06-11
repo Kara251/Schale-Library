@@ -126,7 +126,6 @@ export default async function BulkActionsPage({ params, searchParams }: BulkActi
               <option value="set-featured">set-featured</option>
               <option value="unset-featured">unset-featured</option>
               <option value="set-featured-priority">set-featured-priority</option>
-              <option value="set-student-school">set-student-school</option>
               <option value="set-student-organization">set-student-organization</option>
             </select>
           </label>

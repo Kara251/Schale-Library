@@ -93,22 +93,6 @@ const commonNatureOptions: AdminFieldOption[] = [
   { value: 'fanmade', label: 'fanmade' },
 ]
 
-const schoolOptions: AdminFieldOption[] = [
-  { value: 'abydos', label: 'Abydos' },
-  { value: 'gehenna', label: 'Gehenna' },
-  { value: 'millennium', label: 'Millennium' },
-  { value: 'trinity', label: 'Trinity' },
-  { value: 'hyakkiyako', label: 'Hyakkiyako' },
-  { value: 'shanhaijing', label: 'Shanhaijing' },
-  { value: 'redwinter', label: 'Red Winter' },
-  { value: 'valkyrie', label: 'Valkyrie' },
-  { value: 'arius', label: 'Arius' },
-  { value: 'srt', label: 'SRT' },
-  { value: 'tokiwadai', label: 'Tokiwadai' },
-  { value: 'kronos', label: 'Kronos' },
-  { value: 'other', label: 'Other' },
-]
-
 export const spoilerScopeOptions: AdminFieldOption[] = [
   { value: 'none', label: { 'zh-Hans': '无剧透', en: 'No spoilers', ja: 'ネタバレなし' } },
   { value: 'vol1', label: { 'zh-Hans': '第一卷（对策委员会篇）', en: 'Vol. 1 (Abydos)', ja: '第1編（対策委員会編）' } },
@@ -380,14 +364,6 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
     fields: [
       { name: 'name', type: 'text', label: { 'zh-Hans': '姓名', en: 'Name', ja: '名前' } },
       { name: 'school_ref', type: 'relation-select', label: { 'zh-Hans': '所属学院', en: 'School', ja: '所属学園' }, relationKey: 'schools' },
-      {
-        name: 'school', type: 'select', label: { 'zh-Hans': '旧学校字段（兼容）', en: 'Legacy school enum', ja: '旧学校フィールド（互換）' }, options: schoolOptions,
-        description: {
-          'zh-Hans': '旧版枚举字段，仅作兼容回退；请优先使用上方的「所属学院」。',
-          en: 'Legacy enum kept for fallback; prefer the School relation above.',
-          ja: '互換用の旧フィールドです。上の「所属学園」を優先してください。',
-        },
-      },
       { name: 'organization', type: 'text', label: { 'zh-Hans': '组织', en: 'Organization', ja: '所属' } },
       { name: 'avatar', type: 'media', label: { 'zh-Hans': '头像', en: 'Avatar', ja: 'アイコン' } },
       { name: 'bio', type: 'textarea', label: { 'zh-Hans': '简介', en: 'Bio', ja: '紹介' } },
@@ -558,7 +534,6 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
           ja: 'この記事が触れるストーリー進行度。未読の訪問者には警告が表示されます。',
         },
       },
-      { name: 'affiliations', type: 'json-csv', label: { 'zh-Hans': '相关势力', en: 'Affiliations', ja: '所属勢力' } },
       { name: 'subjects', type: 'relation-multiselect', label: { 'zh-Hans': '考据对象', en: 'Subjects', ja: '考察対象' }, relationKey: 'research-subjects' },
       { name: 'themes', type: 'relation-multiselect', label: { 'zh-Hans': '关联主题', en: 'Related themes', ja: '関連テーマ' }, relationKey: 'research-themes' },
       { name: 'citations', type: 'relation-multiselect', label: { 'zh-Hans': '关联引证', en: 'Related citations', ja: '関連引証' }, relationKey: 'research-citations' },

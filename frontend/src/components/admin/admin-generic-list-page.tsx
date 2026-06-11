@@ -94,6 +94,11 @@ interface AdminGenericListPageProps {
   primaryField?: string
   /** 额外的徽章列字段，如 subject_type / difficulty */
   badgeField?: string
+  extraTextFields?: Array<{
+    field: string
+    label: Record<Locale, string>
+    className?: string
+  }>
 }
 
 /**
@@ -106,6 +111,7 @@ export async function AdminGenericListPage({
   searchParams,
   primaryField = 'name',
   badgeField,
+  extraTextFields = [],
 }: AdminGenericListPageProps) {
   const session = await requireAdminSession(locale, `/${locale}/manage/${collection}`)
   const meta = ADMIN_COLLECTION_META[collection]
@@ -132,6 +138,14 @@ export async function AdminGenericListPage({
 
   const getPrimary = (item: AdminStrapiEntry) =>
     String(item[primaryField] || item.name || item.title || `#${item.id}`)
+
+  const getFieldValue = (item: AdminStrapiEntry, field: string) => {
+    const value = field.split('.').reduce<unknown>((current, key) => {
+      if (!current || typeof current !== 'object') return undefined
+      return (current as Record<string, unknown>)[key]
+    }, item)
+    return typeof value === 'string' || typeof value === 'number' ? String(value) : '-'
+  }
 
   return (
     <div>
@@ -180,6 +194,14 @@ export async function AdminGenericListPage({
               <Badge variant="outline">{String(item[badgeField] || '-')}</Badge>
             ),
           }] : []),
+          ...extraTextFields.map((field) => ({
+            key: field.field,
+            header: field.label[locale as Locale] || field.label['zh-Hans'],
+            className: field.className || 'w-32',
+            render: (item: AdminStrapiEntry) => (
+              <span className="text-xs text-muted-foreground">{getFieldValue(item, field.field)}</span>
+            ),
+          })),
           ...(meta.supportsDraft ? [{
             key: 'publishedAt',
             header: t.publishStatus,
