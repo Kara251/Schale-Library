@@ -8,16 +8,14 @@ test('renders public home content', async ({ page }) => {
 })
 
 test('keeps works filters and pagination shareable in the URL', async ({ page }) => {
-  await page.goto('/zh-Hans/works?q=alice&nature=fanmade&type=video&source=bilibili&featured=1&sort=recommended&page=2')
+  await page.goto('/zh-Hans/works?q=alice&nature=fanmade&type=video&students=1,2&page=2')
 
   await expect(page.getByRole('heading', { name: '推荐作品' })).toBeVisible()
   await expect(page.getByPlaceholder('搜索作品名称、作者...')).toHaveValue('alice')
   await expect(page).toHaveURL(/q=alice/)
   await expect(page).toHaveURL(/nature=fanmade/)
   await expect(page).toHaveURL(/type=video/)
-  await expect(page).toHaveURL(/source=bilibili/)
-  await expect(page).toHaveURL(/featured=1/)
-  await expect(page).toHaveURL(/sort=recommended/)
+  await expect(page).toHaveURL(/students=1%2C2|students=1,2/)
   await expect(page).toHaveURL(/page=2/)
 })
 

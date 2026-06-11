@@ -109,9 +109,28 @@ function decodeHtmlEntities(value: string): string {
         .replace(/&nbsp;/g, ' ');
 }
 
-// RSS 缓存（5分钟有效期）
+// RSS 缓存（5分钟有效期，限制条目数防止无限增长）
 const rssCache = new Map<string, { data: RSSItem[]; expires: number }>();
 const RSS_CACHE_TTL = 5 * 60 * 1000; // 5分钟
+const RSS_CACHE_MAX_ENTRIES = 200;
+
+function setRssCache(uid: string, data: RSSItem[]) {
+    if (rssCache.size >= RSS_CACHE_MAX_ENTRIES) {
+        const now = Date.now();
+        for (const [key, value] of rssCache) {
+            if (value.expires < now) {
+                rssCache.delete(key);
+            }
+        }
+        // 清理过期项后仍然超限时，按插入顺序淘汰最早的条目
+        while (rssCache.size >= RSS_CACHE_MAX_ENTRIES) {
+            const oldest = rssCache.keys().next().value;
+            if (oldest === undefined) break;
+            rssCache.delete(oldest);
+        }
+    }
+    rssCache.set(uid, { data, expires: Date.now() + RSS_CACHE_TTL });
+}
 const RSS_FETCH_TIMEOUT_MS = 15000;
 const RSS_SYNC_CONCURRENCY = Math.max(1, Math.min(10, Number(process.env.RSS_SYNC_CONCURRENCY || '3')));
 const RSS_RETRY_DELAY_MS = Math.max(60 * 1000, Number(process.env.RSS_RETRY_DELAY_MS || '300000'));
@@ -331,16 +350,23 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
      */
     getRssHubInstances(): string[] {
         const customUrl = process.env.RSSHUB_URL?.replace(/\/+$/, '');
-        const instances = [
+        const localInstances = [
             'http://localhost:1200',  // RSSHub 默认本地端口
             'http://localhost:3200',  // 兼容旧本地端口
+        ];
+        const publicInstances = [
             'https://rsshub.app',
             'https://rsshub.rssforever.com',
             'https://hub.slarker.me',
         ];
 
+        // 生产环境通常没有本地 RSSHub，跳过 localhost 探测以免每次同步都等待超时
+        const instances = process.env.NODE_ENV === 'production'
+            ? publicInstances
+            : [...localInstances, ...publicInstances];
+
         if (customUrl) {
-            return [customUrl, ...instances];
+            return [customUrl, ...instances.filter((instance) => instance !== customUrl)];
         }
         return instances;
     },
@@ -387,11 +413,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                 const items = this.parseRSS(xmlText);
 
                 if (items.length > 0) {
-                    // 保存到缓存
-                    rssCache.set(uid, {
-                        data: items,
-                        expires: Date.now() + RSS_CACHE_TTL,
-                    });
+                    setRssCache(uid, items);
                     strapi.log.info(`成功从 ${instance} 获取 ${items.length} 个视频`);
                     return { items, instance };
                 }
@@ -433,18 +455,6 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                 };
             })
             .filter((item) => item.title && item.link);
-    },
-
-    /**
-     * 提取 XML 标签内容
-     */
-    extractTag(content: string, tagName: string): string {
-        const regex = new RegExp(`<${tagName}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tagName}>|<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`, 'i');
-        const match = content.match(regex);
-        if (match) {
-            return (match[1] || match[2] || '').trim();
-        }
-        return '';
     },
 
     /**
@@ -529,7 +539,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
         item: RSSItem,
         subscription: BilibiliSubscription,
         autoPublish: boolean
-    ): Promise<CreatedWorkEntity> {
+    ): Promise<CreatedWorkEntity | null> {
         const bvid = this.extractBVID(item.link);
 
         // 先创建 Work 条目
@@ -552,6 +562,13 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
             featuredPriority: 0,
             publishedAt: autoPublish ? new Date().toISOString() : null,
         };
+
+        // 创建前再次查重，缩小并发触发的查重-创建竞态窗口
+        const exists = await this.checkVideoExists(item.link);
+        if (exists) {
+            strapi.log.info(`视频已存在，跳过创建: ${item.link}`);
+            return null;
+        }
 
         const created = await strapi.entityService.create('api::work.work', {
             data: workData,
@@ -599,9 +616,13 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                         subscription.autoPublishKeywords
                     );
 
-                    // 创建 Work 条目
-                    await this.createWork(item, subscription, autoPublish);
-                    result.created++;
+                    // 创建 Work 条目（创建前会再次查重）
+                    const created = await this.createWork(item, subscription, autoPublish);
+                    if (created) {
+                        result.created++;
+                    } else {
+                        result.skipped++;
+                    }
                 } catch (error) {
                     const errorMsg = `处理视频失败 "${item.title}": ${getErrorMessage(error)}`;
                     strapi.log.error(errorMsg);
@@ -609,14 +630,18 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                 }
             }
 
-            // 更新同步时间和计数
+            // 更新同步时间和计数：基于最新值累加，避免长耗时同步期间的读改写竞态
+            const fresh = await strapi.entityService.findOne(
+                'api::bilibili-subscription.bilibili-subscription',
+                subscription.id
+            ) as BilibiliSubscription | null;
             await strapi.entityService.update(
                 'api::bilibili-subscription.bilibili-subscription',
                 subscription.id,
                 {
                     data: {
                         lastSyncAt: new Date().toISOString(),
-                        syncCount: (subscription.syncCount || 0) + result.created,
+                        syncCount: (fresh?.syncCount || 0) + result.created,
                     },
                 }
             );

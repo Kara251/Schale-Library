@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useCallback } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { WorkCard } from '@/components/work-card'
 import { WorksFilters, type WorkNature, type WorkType } from '@/components/works-filters'
 import { StudentSelectorTrigger } from '@/components/student-selector'
 import { SearchBar } from '@/components/search-bar'
+import { Pagination } from '@/components/pagination'
 import { useLocale } from '@/contexts/locale-context'
 import type { Work, Student } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
@@ -13,6 +15,13 @@ interface WorksWithFiltersProps {
     works: Work[]
     students: Student[]
     title: string
+    initialSearchQuery?: string
+    initialNature?: WorkNature
+    initialWorkType?: WorkType
+    initialStudentIds?: number[]
+    total: number
+    page: number
+    pageCount: number
     hasError?: boolean
 }
 
@@ -23,6 +32,7 @@ const labels: Record<Locale, {
     foundWorks: string
     noResults: string
     clearFilters: string
+    shareHint: string
     error: string
 }> = {
     'zh-Hans': {
@@ -32,6 +42,7 @@ const labels: Record<Locale, {
         foundWorks: '找到 {count} 个作品',
         noResults: '暂无符合条件的作品',
         clearFilters: '清除筛选条件',
+        shareHint: '当前筛选条件已同步到地址栏，可直接分享链接。',
         error: '作品数据暂时不可用，已显示可用的空状态。',
     },
     en: {
@@ -41,6 +52,7 @@ const labels: Record<Locale, {
         foundWorks: 'Found {count} works',
         noResults: 'No matching works',
         clearFilters: 'Clear filters',
+        shareHint: 'Filters are synced to the URL and can be shared directly.',
         error: 'Work data is temporarily unavailable. Showing the safe empty state.',
     },
     ja: {
@@ -50,49 +62,59 @@ const labels: Record<Locale, {
         foundWorks: '{count}件の作品が見つかりました',
         noResults: '条件に合う作品がありません',
         clearFilters: 'フィルターをクリア',
+        shareHint: '現在のフィルターは URL に同期され、そのまま共有できます。',
         error: '作品データを一時的に取得できません。安全な空状態を表示しています。',
     },
 }
 
 /**
- * 带搜索和筛选功能的推荐作品列表组件
+ * 带搜索和筛选功能的推荐作品列表组件（筛选条件同步到 URL，服务端分页）
  */
-export function WorksWithFilters({ works, students, title, hasError = false }: WorksWithFiltersProps) {
+export function WorksWithFilters({
+    works,
+    students,
+    title,
+    initialSearchQuery = '',
+    initialNature = 'all',
+    initialWorkType = 'all',
+    initialStudentIds = [],
+    total,
+    page,
+    pageCount,
+    hasError = false,
+}: WorksWithFiltersProps) {
     const { locale } = useLocale()
+    const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
     const t = labels[locale] || labels['zh-Hans']
 
-    const [searchQuery, setSearchQuery] = useState('')
-    const [nature, setNature] = useState<WorkNature>('all')
-    const [workType, setWorkType] = useState<WorkType>('all')
-    const [selectedStudents, setSelectedStudents] = useState<number[]>([])
-
-    const filteredWorks = useMemo(() => {
-        return works.filter((work) => {
-            if (searchQuery) {
-                const query = searchQuery.toLowerCase()
-                const matchesTitle = work.title.toLowerCase().includes(query)
-                const matchesAuthor = work.author?.toLowerCase().includes(query) || false
-                if (!matchesTitle && !matchesAuthor) return false
+    const writeParams = useCallback((updates: Record<string, string | null>, nextPage?: number) => {
+        const params = new URLSearchParams(searchParams.toString())
+        for (const [key, value] of Object.entries(updates)) {
+            if (value) {
+                params.set(key, value)
+            } else {
+                params.delete(key)
             }
-            if (nature !== 'all' && work.nature !== nature) return false
-            if (workType !== 'all' && work.workType !== workType) return false
-            if (selectedStudents.length > 0) {
-                const workStudentIds = work.students?.map(s => s.id) || []
-                const hasMatchingStudent = selectedStudents.some(id => workStudentIds.includes(id))
-                if (!hasMatchingStudent) return false
-            }
-            return true
-        })
-    }, [works, searchQuery, nature, workType, selectedStudents])
+        }
+        if (nextPage && nextPage > 1) {
+            params.set('page', String(nextPage))
+        } else {
+            params.delete('page')
+        }
+        const nextSearch = params.toString()
+        router.replace(`${pathname}${nextSearch ? `?${nextSearch}` : ''}`, { scroll: nextPage !== undefined })
+    }, [pathname, router, searchParams])
 
     const handleReset = useCallback(() => {
-        setSearchQuery('')
-        setNature('all')
-        setWorkType('all')
-        setSelectedStudents([])
-    }, [])
+        router.replace(pathname, { scroll: true })
+    }, [pathname, router])
 
-    const hasActiveFilters = nature !== 'all' || workType !== 'all' || selectedStudents.length > 0
+    const hasActiveFilters = Boolean(initialSearchQuery)
+        || initialNature !== 'all'
+        || initialWorkType !== 'all'
+        || initialStudentIds.length > 0
 
     return (
         <div>
@@ -102,24 +124,26 @@ export function WorksWithFilters({ works, students, title, hasError = false }: W
             </div>
 
             <SearchBar
-                onSearch={setSearchQuery}
+                key={initialSearchQuery}
+                initialValue={initialSearchQuery}
+                onSearch={(value) => writeParams({ q: value.trim() || null })}
                 placeholder={t.searchPlaceholder}
                 className="max-w-2xl mb-6"
             />
 
             <div className="space-y-3 mb-6">
                 <WorksFilters
-                    nature={nature}
-                    workType={workType}
-                    onNatureChange={setNature}
-                    onWorkTypeChange={setWorkType}
+                    nature={initialNature}
+                    workType={initialWorkType}
+                    onNatureChange={(value) => writeParams({ nature: value === 'all' ? null : value })}
+                    onWorkTypeChange={(value) => writeParams({ type: value === 'all' ? null : value })}
                     onReset={handleReset}
                 />
 
                 <StudentSelectorTrigger
                     students={students}
-                    selectedStudents={selectedStudents}
-                    onSelectionChange={setSelectedStudents}
+                    selectedStudents={initialStudentIds}
+                    onSelectionChange={(ids) => writeParams({ students: ids.length > 0 ? ids.join(',') : null })}
                     allStudents={students}
                 />
 
@@ -131,7 +155,8 @@ export function WorksWithFilters({ works, students, title, hasError = false }: W
             </div>
 
             <div className="mb-4 text-sm text-muted-foreground">
-                {t.foundWorks.replace('{count}', String(filteredWorks.length))}
+                {t.foundWorks.replace('{count}', String(total))}
+                {hasActiveFilters ? <span className="ml-2">{t.shareHint}</span> : null}
             </div>
 
             {hasError ? (
@@ -140,12 +165,21 @@ export function WorksWithFilters({ works, students, title, hasError = false }: W
                 </div>
             ) : null}
 
-            {filteredWorks.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredWorks.map((work) => (
-                        <WorkCard key={work.id} work={work} />
-                    ))}
-                </div>
+            {works.length > 0 ? (
+                <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {works.map((work) => (
+                            <WorkCard key={work.id} work={work} />
+                        ))}
+                    </div>
+
+                    <Pagination
+                        currentPage={page}
+                        totalPages={pageCount}
+                        onPageChange={(nextPage) => writeParams({}, nextPage)}
+                        className="mt-8"
+                    />
+                </>
             ) : (
                 <div className="text-center py-12">
                     <p className="text-muted-foreground">{t.noResults}</p>

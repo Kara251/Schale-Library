@@ -1,5 +1,6 @@
 import { errors } from '@strapi/utils'
 import crypto from 'node:crypto'
+import { acquireJobLock, releaseJobLock } from '../../../utils/job-lock'
 
 const { ApplicationError, NotFoundError } = errors
 
@@ -371,9 +372,13 @@ function normalizeJsonArray(value: unknown): string[] {
 }
 
 function getClientIp(ctx: any) {
+  // 取 x-forwarded-for 的最后一跳：它由最近的可信代理写入，前面的值可被客户端伪造
   const forwardedFor = ctx.request.headers['x-forwarded-for']
   if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
-    return forwardedFor.split(',')[0].trim()
+    const hops = forwardedFor.split(',').map((part: string) => part.trim()).filter(Boolean)
+    if (hops.length > 0) {
+      return hops[hops.length - 1]
+    }
   }
 
   return ctx.request.ip || ctx.ip || undefined
@@ -404,8 +409,8 @@ function getEntryLabel(entry: unknown) {
 }
 
 async function recordAdminAuditLog(ctx: any, input: {
-  action: 'create' | 'update' | 'delete' | 'upload' | 'sync-one' | 'sync-all'
-  status: 'success' | 'failed'
+  action: 'create' | 'update' | 'delete' | 'upload' | 'publish' | 'unpublish' | 'sync-one' | 'sync-all'
+  status: 'success' | 'partial' | 'failed'
   targetCollection: string
   targetId?: number
   targetName?: string
@@ -531,8 +536,13 @@ function pickAllowedFields(collection: PanelCollectionKey, input: Record<string,
         data[field] = normalizeDateTime(value)
         break
       case 'publishedAt': {
-        const publishState = normalizeBoolean(value)
-        data[field] = publishState ? new Date().toISOString() : null
+        // 接受布尔值（true=立即发布）或合法的日期字符串；其余值视为不发布
+        if (typeof value === 'string' && value !== 'true' && value !== 'false') {
+          const parsed = new Date(value)
+          data[field] = Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
+        } else {
+          data[field] = normalizeBoolean(value) ? new Date().toISOString() : null
+        }
         break
       }
       default:
@@ -977,18 +987,22 @@ async function scanContentQuality() {
 
   const scanId = crypto.randomUUID()
   const replacementDetectedAt = new Date().toISOString()
-  for (const issue of issues) {
-    await strapi.entityService.create(CONTENT_QUALITY_UID, {
-      data: {
-        ...issue,
-        detectedAt: replacementDetectedAt,
-        details: {
-          ...(issue.details || {}),
-          scanId,
-        },
-      },
-    })
+  const issueRows = issues.map((issue) => ({
+    ...issue,
+    detectedAt: replacementDetectedAt,
+    details: {
+      ...(issue.details || {}),
+      scanId,
+    },
+  }))
+
+  // 分批插入，避免大数据集下逐行创建拖慢扫描
+  const BATCH_SIZE = 100
+  for (let index = 0; index < issueRows.length; index += BATCH_SIZE) {
+    const batch = issueRows.slice(index, index + BATCH_SIZE)
+    await Promise.all(batch.map((row) => strapi.entityService.create(CONTENT_QUALITY_UID, { data: row })))
   }
+
   await strapi.db.query(CONTENT_QUALITY_UID).deleteMany({
     where: {
       status: 'open',
@@ -1027,7 +1041,7 @@ async function listQualityIssues(ctx: any) {
       start,
       limit: pageSize,
     }),
-    strapi.documents(CONTENT_QUALITY_UID).count({ filters }),
+    strapi.entityService.count(CONTENT_QUALITY_UID, { filters } as any),
   ])
 
   return {
@@ -1164,12 +1178,15 @@ async function listCollection(ctx: any, collection: PanelCollectionKey) {
     queryOptions.locale = locale
   }
 
+  // 行与计数使用同一查询引擎与同一组过滤条件，避免草稿/发布双行模型下分页错乱
+  const countOptions: Record<string, unknown> = { filters }
+  if (config.localized && locale) {
+    countOptions.locale = locale
+  }
+
   const [data, total] = await Promise.all([
     strapi.entityService.findMany(config.uid as any, queryOptions),
-    strapi.documents(config.uid as any).count({
-      filters,
-      locale,
-    }),
+    strapi.entityService.count(config.uid as any, countOptions as any),
   ])
 
   return {
@@ -1287,7 +1304,11 @@ async function uploadMedia(ctx: any) {
 }
 
 function escapeCsv(value: unknown) {
-  const text = value === null || value === undefined ? '' : String(value)
+  let text = value === null || value === undefined ? '' : String(value)
+  // 中和以 = + - @ 或制表符开头的单元格，防止在 Excel 中被当作公式执行
+  if (/^[=+\-@\t\r]/.test(text)) {
+    text = `'${text}`
+  }
   return `"${text.replace(/"/g, '""')}"`
 }
 
@@ -1316,7 +1337,7 @@ async function exportAdminAuditLogs(ctx: any) {
     start += AUDIT_EXPORT_PAGE_SIZE
   }
 
-  const total = await strapi.documents(AUDIT_LOG_UID).count({ filters })
+  const total = await strapi.entityService.count(AUDIT_LOG_UID, { filters } as any)
   truncated = total > rows.length
   const header = ['createdAt', 'action', 'status', 'actorEmail', 'actorUsername', 'targetCollection', 'targetId', 'targetName', 'locale', 'message']
   const csv = [
@@ -1425,9 +1446,10 @@ async function runBulkAction(ctx: any) {
     }
   }
 
+  const auditAction = action === 'publish' ? 'publish' : action === 'unpublish' ? 'unpublish' : 'update'
   await recordAdminAuditLog(ctx, {
-    action: 'update',
-    status: errors.length > 0 ? 'failed' : 'success',
+    action: auditAction,
+    status: errors.length > 0 ? (updated > 0 ? 'partial' : 'failed') : 'success',
     targetCollection: collection,
     locale,
     message: `批量操作 ${action}: 成功 ${updated}/${ids.length}`,
@@ -1460,6 +1482,12 @@ export default {
   },
 
   async scanQuality(ctx: any) {
+    // 扫描会先插入新结果再清理旧结果，并发执行会互相删除数据，必须串行
+    const lock = await acquireJobLock(strapi, 'content-quality-scan', 10 * 60 * 1000)
+    if (!lock) {
+      return ctx.conflict('已有质量扫描正在执行，请稍后再试')
+    }
+
     try {
       const issues = await scanContentQuality()
       await recordAdminAuditLog(ctx, {
@@ -1478,6 +1506,8 @@ export default {
         message: (error as Error).message,
       })
       ctx.badRequest((error as Error).message)
+    } finally {
+      await releaseJobLock(strapi, lock)
     }
   },
 

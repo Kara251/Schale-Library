@@ -3,7 +3,7 @@
  * 后端地址：http://localhost:8083
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083';
+import { STRAPI_API_URL as API_URL } from '@/lib/config';
 const API_TIMEOUT_MS = Math.max(1000, Number(process.env.API_TIMEOUT_MS || '10000'));
 
 type ContentIdentifier = string | number;
@@ -91,7 +91,10 @@ async function fetchAPI<T>(
 /**
  * 获取所有公告（按当前语言过滤）
  */
-export async function getAnnouncements(locale: string = 'zh-Hans') {
+export async function getAnnouncements(
+  locale: string = 'zh-Hans',
+  options: { page?: number; pageSize?: number } = {}
+) {
   const strapiLocale = toStrapiLocale(locale);
   return fetchAPI<StrapiResponse<Announcement[]>>(
     `/announcements?${createCollectionQuery({
@@ -100,7 +103,9 @@ export async function getAnnouncements(locale: string = 'zh-Hans') {
       'sort[0]': 'isPinned:desc',
       'sort[1]': 'priority:desc',
       'sort[2]': 'publishedAt:desc',
-      populate: '*',
+      'pagination[page]': Math.max(1, options.page || 1),
+      'pagination[pageSize]': Math.min(100, Math.max(1, options.pageSize || 24)),
+      ...COVER_IMAGE_POPULATE_PARAMS,
     })}`
   );
 }
@@ -416,6 +421,35 @@ function compareEventsForDisplay(a: EventListItem, b: EventListItem, sortMode: E
   return aStart - bStart;
 }
 
+async function fetchAllEventsForCollection<T>(
+  collection: EventCollection,
+  kind: EventKind,
+  locale: string,
+  options: EventListOptions,
+  nowIso: string
+): Promise<T[]> {
+  const strapiLocale = toStrapiLocale(locale);
+  const items: T[] = [];
+  let page = 1;
+  let pageCount = 1;
+
+  do {
+    const params: Record<string, string | number | boolean | undefined> = {
+      locale: strapiLocale,
+      sort: 'startTime:desc',
+      'pagination[page]': page,
+      'pagination[pageSize]': 100,
+    };
+    appendEventFilters(params, options, kind, nowIso);
+    const response = await fetchEventPage<T>(collection, params);
+    items.push(...(response.data || []));
+    pageCount = response.meta?.pagination?.pageCount || 1;
+    page++;
+  } while (page <= pageCount);
+
+  return items;
+}
+
 export async function getAllEvents(
   limit: number = 24,
   locale: string = 'zh-Hans',
@@ -423,24 +457,20 @@ export async function getAllEvents(
 ): Promise<StrapiResponse<EventListItem[]>> {
   const page = Math.max(1, options.page || 1);
   const pageSize = Math.max(1, options.pageSize || limit);
-  const perCollectionLimit = page * pageSize;
-  const listOptions = {
-    ...options,
-    page: 1,
-    pageSize: perCollectionLimit,
-  };
+  const nowIso = new Date().toISOString();
 
+  // 一次性取全两个集合再统一排序切片，避免跨页丢失/重复（活动量级小，可承受）。
   const [online, offline] = await Promise.all([
-    getEventsForCollection<OnlineEvent>('online-events', 'online', perCollectionLimit, locale, listOptions),
-    getEventsForCollection<OfflineEvent>('offline-events', 'offline', perCollectionLimit, locale, listOptions),
+    fetchAllEventsForCollection<OnlineEvent>('online-events', 'online', locale, options, nowIso),
+    fetchAllEventsForCollection<OfflineEvent>('offline-events', 'offline', locale, options, nowIso),
   ]);
 
   const merged = [
-    ...(online.data || []).map((event) => ({ event, type: 'online' as const })),
-    ...(offline.data || []).map((event) => ({ event, type: 'offline' as const })),
+    ...online.map((event) => ({ event, type: 'online' as const })),
+    ...offline.map((event) => ({ event, type: 'offline' as const })),
   ].sort((a, b) => compareEventsForDisplay(a, b, options.sort || 'relevant'));
   const start = (page - 1) * pageSize;
-  const total = (online.meta.pagination?.total || 0) + (offline.meta.pagination?.total || 0);
+  const total = merged.length;
 
   return {
     data: merged.slice(start, start + pageSize),
@@ -529,9 +559,10 @@ export async function searchAnnouncements(
       locale: strapiLocale,
       'filters[$or][0][title][$containsi]': query,
       'filters[$or][1][content][$containsi]': query,
+      'filters[isActive][$eq]': true,
       sort: 'priority:desc',
       'pagination[limit]': 50,
-      populate: '*',
+      ...COVER_IMAGE_POPULATE_PARAMS,
     })}`
   );
 }
@@ -1059,6 +1090,17 @@ export async function getStudents(locale: string = 'zh-Hans', options: StudentLi
   );
 }
 
+/**
+ * 获取全部学生（自动翻页），用于筛选器等需要完整名单的场景
+ */
+export async function getAllStudents(locale: string = 'zh-Hans') {
+  const items = await getAllCollectionItems<Student>('students', locale, {
+    populate: 'avatar',
+    filters: { sort: 'name:asc' },
+  });
+  return { data: items, meta: {} } as { data: Student[]; meta: Record<string, never> };
+}
+
 export async function getAllCollectionItems<T>(
   endpoint: string,
   locale: string = 'zh-Hans',
@@ -1163,9 +1205,9 @@ export async function getStudentById(
  */
 export const schoolNames: Record<SchoolType, string> = {
   abydos: '阿拜多斯',
-  gehenna: '格赫娜',
+  gehenna: '格黑娜',
   millennium: '千年',
-  trinity: '三一',
+  trinity: '圣三一',
   hyakkiyako: '百鬼夜行',
   shanhaijing: '山海经',
   redwinter: '红冬',
@@ -1360,7 +1402,7 @@ export async function getResearchThemes(locale: string = 'zh-Hans') {
 export async function getResearchCurator(locale: string = 'zh-Hans') {
   const strapiLocale = toStrapiLocale(locale);
   try {
-    return fetchAPI<{ data: ResearchCuratorData }>(
+    return await fetchAPI<{ data: ResearchCuratorData }>(
       `/research-curator?${createCollectionQuery({
         locale: strapiLocale,
         'populate[featured_entry][populate][themes]': true,
@@ -1416,7 +1458,7 @@ export async function getRecentResearchEntries(locale: string = 'zh-Hans', limit
 export const schoolNamesLocalized: Record<string, Record<string, string>> = {
   'zh-Hans': {
     abydos: '阿拜多斯',
-    gehenna: '格赫娜',
+    gehenna: '格黑娜',
     trinity: '圣三一',
     millennium: '千年',
     hyakkiyako: '百鬼夜行',

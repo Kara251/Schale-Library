@@ -104,7 +104,6 @@ export const translations = {
     'footer.about': '关于我们',
     'footer.contact': '联系方式',
     'footer.privacy': '隐私政策',
-    'footer.copyright': '© 2025 Schale Library',
     'footer.disclaimer': '本站与Nexon及Yostar无关',
 
     // 考据档案
@@ -205,7 +204,6 @@ export const translations = {
     'footer.about': 'About',
     'footer.contact': 'Contact',
     'footer.privacy': 'Privacy',
-    'footer.copyright': '© 2025 Schale Library',
     'footer.disclaimer': 'Not affiliated with Nexon or Yostar',
 
     // Research Archives
@@ -306,7 +304,6 @@ export const translations = {
     'footer.about': '私たちについて',
     'footer.contact': 'お問い合わせ',
     'footer.privacy': 'プライバシー',
-    'footer.copyright': '© 2025 シャーレ図書館',
     'footer.disclaimer': 'NexonやYostarとは関係ありません',
 
     // 考察アーカイブ

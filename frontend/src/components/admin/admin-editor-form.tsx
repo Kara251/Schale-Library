@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/contexts/toast-context'
 import {
   ADMIN_COLLECTION_META,
+  resolveOptionLabel,
   type AdminCollectionKey,
   type AdminEditorField,
   type AdminMediaAsset,
@@ -359,7 +360,7 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
                     <option value="">-</option>
                     {field.options?.map((option) => (
                       <option key={option.value} value={option.value}>
-                        {option.label}
+                        {resolveOptionLabel(option, locale)}
                       </option>
                     ))}
                   </select>

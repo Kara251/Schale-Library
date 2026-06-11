@@ -7,7 +7,7 @@ import {
   type AdminMediaAsset,
 } from '@/lib/admin-panel'
 
-const STRAPI_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083'
+import { STRAPI_API_URL as STRAPI_URL } from '@/lib/config'
 const DEFAULT_PAGE_SIZE = 12
 
 export const ADMIN_COLLECTION_CONFIG = ADMIN_COLLECTION_META
@@ -121,9 +121,7 @@ function buildCollectionQuery(key: AdminCollectionKey, query: AdminListQuery): U
     params.set('search', query.search.trim())
   }
 
-  if (config.supportsDraft && query.status && query.status !== 'all') {
-    params.set('status', query.status)
-  } else if (!config.supportsDraft && query.status && query.status !== 'all') {
+  if (query.status && query.status !== 'all') {
     params.set('status', query.status)
   }
 
@@ -354,7 +352,7 @@ export async function getCuratorAdmin(session: AdminSession, locale?: string): P
   if (locale) params.set('locale', locale)
   const qs = params.toString()
   try {
-    return adminFetchJson<{ data: CuratorAdminData | null }>(
+    return await adminFetchJson<{ data: CuratorAdminData | null }>(
       session,
       `/api/panel/research-curator${qs ? `?${qs}` : ''}`
     )

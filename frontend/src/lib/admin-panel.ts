@@ -29,7 +29,14 @@ export type AdminFieldType =
 
 export interface AdminFieldOption {
   value: string
-  label: string
+  label: string | Record<Locale, string>
+}
+
+export function resolveOptionLabel(option: AdminFieldOption, locale: Locale): string {
+  if (typeof option.label === 'string') {
+    return option.label
+  }
+  return option.label[locale] || option.label['zh-Hans'] || option.value
 }
 
 export interface AdminEditorField {
@@ -440,16 +447,16 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       { name: 'title', type: 'text', label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
       { name: 'slug', type: 'text', label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' } },
       { name: 'stance', type: 'select', label: { 'zh-Hans': '立场', en: 'Stance', ja: 'スタンス' }, options: [
-        { value: 'official', label: '官方确认' },
-        { value: 'personal', label: '个人考察' },
-        { value: 'speculative', label: '推测性' },
+        { value: 'official', label: { 'zh-Hans': '官方确认', en: 'Official basis', ja: '公式根拠' } },
+        { value: 'personal', label: { 'zh-Hans': '个人考察', en: 'Personal analysis', ja: '個人考察' } },
+        { value: 'speculative', label: { 'zh-Hans': '推测性', en: 'Speculative', ja: '推測的' } },
       ] },
       { name: 'media_type', type: 'select', label: { 'zh-Hans': '媒介类型', en: 'Media type', ja: 'メディアタイプ' }, options: [
-        { value: 'character', label: '角色' },
-        { value: 'story', label: '剧情' },
-        { value: 'concept', label: '概念' },
-        { value: 'setting', label: '世界观' },
-        { value: 'organization', label: '组织' },
+        { value: 'character', label: { 'zh-Hans': '角色', en: 'Character', ja: 'キャラクター' } },
+        { value: 'story', label: { 'zh-Hans': '剧情', en: 'Story', ja: 'ストーリー' } },
+        { value: 'concept', label: { 'zh-Hans': '概念', en: 'Concept', ja: '概念' } },
+        { value: 'setting', label: { 'zh-Hans': '世界观', en: 'Setting', ja: '設定' } },
+        { value: 'organization', label: { 'zh-Hans': '组织', en: 'Organization', ja: '組織' } },
       ] },
       { name: 'affiliations', type: 'json-csv', label: { 'zh-Hans': '相关势力', en: 'Affiliations', ja: '所属勢力' } },
       { name: 'themes', type: 'relation-multiselect', label: { 'zh-Hans': '关联主题', en: 'Related themes', ja: '関連テーマ' }, relationKey: 'research-themes' },
@@ -517,18 +524,18 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
     fields: [
       { name: 'claim_short', type: 'text', label: { 'zh-Hans': '论点摘要', en: 'Claim summary', ja: '論点要約' } },
       { name: 'source_type', type: 'select', label: { 'zh-Hans': '来源类型', en: 'Source type', ja: 'ソースタイプ' }, options: [
-        { value: 'game_line', label: '游戏台词' },
-        { value: 'interview', label: '采访/发帖' },
-        { value: 'visual', label: '画面截图' },
-        { value: 'external', label: '外部资料' },
+        { value: 'game_line', label: { 'zh-Hans': '游戏台词', en: 'Game line', ja: 'ゲーム台詞' } },
+        { value: 'interview', label: { 'zh-Hans': '采访/发帖', en: 'Interview / post', ja: 'インタビュー/投稿' } },
+        { value: 'visual', label: { 'zh-Hans': '画面截图', en: 'Visual evidence', ja: 'ビジュアル証拠' } },
+        { value: 'external', label: { 'zh-Hans': '外部资料', en: 'External source', ja: '外部ソース' } },
       ] },
       { name: 'source_ref', type: 'text', label: { 'zh-Hans': '出处标注', en: 'Source reference', ja: '出典注記' } },
       { name: 'source_image', type: 'media', label: { 'zh-Hans': '截图', en: 'Source image', ja: 'スクリーンショット' } },
       { name: 'source_quote', type: 'textarea', label: { 'zh-Hans': '引文', en: 'Source quote', ja: '引用文' } },
       { name: 'confidence', type: 'select', label: { 'zh-Hans': '置信度', en: 'Confidence', ja: '信頼度' }, options: [
-        { value: 'official', label: '官方确认' },
-        { value: 'derived', label: '推导' },
-        { value: 'conjecture', label: '推测' },
+        { value: 'official', label: { 'zh-Hans': '官方确认', en: 'Official', ja: '公式' } },
+        { value: 'derived', label: { 'zh-Hans': '推导', en: 'Derived', ja: '推導' } },
+        { value: 'conjecture', label: { 'zh-Hans': '推测', en: 'Conjecture', ja: '推測' } },
       ] },
       { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
     ],
