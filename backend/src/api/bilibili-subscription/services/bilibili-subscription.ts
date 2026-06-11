@@ -189,7 +189,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                     startedAt: input.startedAt.toISOString(),
                     finishedAt: input.finishedAt.toISOString(),
                     durationMs,
-                },
+                } as any,
             });
         } catch (error) {
             strapi.log.warn(`同步日志写入失败: ${getErrorMessage(error)}`);
@@ -229,7 +229,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                     errorCount: 1,
                     details: retryDetails,
                     finishedAt: now.toISOString(),
-                },
+                } as any,
             });
             return;
         }
@@ -313,7 +313,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                             retryState: failed ? 'failed' : 'success',
                             retryFinishedAt: new Date().toISOString(),
                         },
-                    },
+                    } as any,
                 });
 
                 if (failed) {
@@ -336,7 +336,7 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
                             retryState: 'failed',
                             retryFinishedAt: new Date().toISOString(),
                         },
-                    },
+                    } as any,
                 });
             }
         }

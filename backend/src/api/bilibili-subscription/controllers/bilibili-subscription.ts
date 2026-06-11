@@ -57,7 +57,7 @@ async function recordAdminAudit(strapi: Core.Strapi, ctx: any, input: {
                 targetCollection: 'bilibili-subscriptions',
                 ip: getClientIp(ctx),
                 userAgent: typeof ctx.request.headers['user-agent'] === 'string' ? ctx.request.headers['user-agent'] : undefined,
-            },
+            } as any,
         });
     } catch (error) {
         strapi.log.warn(`后台审计日志写入失败: ${(error as Error).message}`);

@@ -202,10 +202,16 @@ async function ensureSchoolSeeds(strapi: Core.Strapi) {
 
       if (created?.documentId) {
         for (const locale of ['en', 'ja'] as const) {
+          // 创建新语言版本时必填字段不会自动继承，需要重新提供
           await documents.update({
             documentId: created.documentId,
             locale,
-            data: { name: seed.names[locale] },
+            data: {
+              name: seed.names[locale],
+              slug: seed.slug,
+              color: seed.color,
+              order: seed.order,
+            },
           } as any);
         }
       }

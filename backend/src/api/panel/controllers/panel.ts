@@ -533,7 +533,7 @@ async function recordAdminAuditLog(ctx: any, input: {
         ...getActor(ctx),
         ip: getClientIp(ctx),
         userAgent: typeof ctx.request.headers['user-agent'] === 'string' ? ctx.request.headers['user-agent'] : undefined,
-      },
+      } as any,
     })
   } catch (error) {
     strapi.log.warn(`后台审计日志写入失败: ${(error as Error).message}`)
@@ -1367,7 +1367,7 @@ async function createCollectionItem(ctx: any, collection: PanelCollectionKey) {
   const data = pickAllowedFields(collection, input, ctx.request.body?.locale || ctx.query.locale)
 
   const entry = await strapi.entityService.create(config.uid as any, {
-    data,
+    data: data as any,
     populate: config.populate,
   })
 
@@ -1387,7 +1387,7 @@ async function updateCollectionItem(ctx: any, collection: PanelCollectionKey) {
   const data = pickAllowedFields(collection, input, ctx.request.body?.locale || ctx.query.locale)
 
   const entry = await strapi.entityService.update(config.uid as any, id, {
-    data,
+    data: data as any,
     populate: config.populate,
   })
 
