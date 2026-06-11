@@ -491,7 +491,7 @@ export async function getOnlineEventById(
     `/online-events?${createCollectionQuery({
       locale: strapiLocale,
       [isNumericIdentifier(identifier) ? 'filters[id][$eq]' : 'filters[documentId][$eq]']: identifier,
-      populate: '*',
+      ...COVER_IMAGE_POPULATE_PARAMS,
     })}`
   );
   return {
@@ -513,7 +513,7 @@ export async function getOfflineEventById(
     `/offline-events?${createCollectionQuery({
       locale: strapiLocale,
       [isNumericIdentifier(identifier) ? 'filters[id][$eq]' : 'filters[documentId][$eq]']: identifier,
-      populate: '*',
+      ...COVER_IMAGE_POPULATE_PARAMS,
     })}`
   );
   return {
@@ -535,7 +535,7 @@ export async function getAnnouncementById(
     `/announcements?${createCollectionQuery({
       locale: strapiLocale,
       [isNumericIdentifier(identifier) ? 'filters[id][$eq]' : 'filters[documentId][$eq]']: identifier,
-      populate: '*',
+      ...COVER_IMAGE_POPULATE_PARAMS,
     })}`
   );
   return {
@@ -585,7 +585,7 @@ export async function searchOnlineEvents(
       'filters[$or][2][description][$containsi]': query,
       sort: 'startTime:desc',
       'pagination[limit]': 50,
-      populate: '*',
+      ...COVER_IMAGE_POPULATE_PARAMS,
     })}`
   );
 }
@@ -610,7 +610,7 @@ export async function searchOfflineEvents(
       'filters[$or][4][description][$containsi]': query,
       sort: 'startTime:desc',
       'pagination[limit]': 50,
-      populate: '*',
+      ...COVER_IMAGE_POPULATE_PARAMS,
     })}`
   );
 }
@@ -941,7 +941,7 @@ export async function getWorksByStudent(
       'filters[$or][1][students][documentId][$eq]': student.documentId,
       sort: 'publishedAt:desc',
       'pagination[limit]': limit,
-      populate: '*',
+      ...WORK_CARD_POPULATE_PARAMS,
     })}`
   );
 }
@@ -961,7 +961,7 @@ export async function getWorksByAuthor(
       'filters[author][$eq]': author,
       sort: 'publishedAt:desc',
       'pagination[limit]': limit,
-      populate: '*',
+      ...WORK_CARD_POPULATE_PARAMS,
     })}`
   );
 }
@@ -979,7 +979,7 @@ export async function getWorksByStudentIds(
     'filters[id][$ne]': currentWorkId,
     sort: 'publishedAt:desc',
     'pagination[limit]': limit,
-    populate: '*',
+    ...WORK_CARD_POPULATE_PARAMS,
   }
 
   studentIds.forEach((studentId, index) => {
@@ -1004,7 +1004,7 @@ export async function getWorkById(
     `/works?${createCollectionQuery({
       locale: strapiLocale,
       [isNumericIdentifier(identifier) ? 'filters[id][$eq]' : 'filters[documentId][$eq]']: identifier,
-      populate: '*',
+      ...WORK_CARD_POPULATE_PARAMS,
     })}`
   );
   return {
@@ -1033,7 +1033,7 @@ export async function searchWorks(
       'filters[isActive][$eq]': true,
       sort: 'publishedAt:desc',
       'pagination[limit]': 50,
-      populate: '*',
+      ...WORK_CARD_POPULATE_PARAMS,
     })}`
   );
 }
@@ -1191,7 +1191,7 @@ export async function getStudentById(
     `/students?${createCollectionQuery({
       locale: strapiLocale,
       [isNumericIdentifier(identifier) ? 'filters[id][$eq]' : 'filters[documentId][$eq]']: identifier,
-      populate: '*',
+      populate: 'avatar',
     })}`
   );
   return {

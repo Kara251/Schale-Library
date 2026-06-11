@@ -1,0 +1,51 @@
+{
+  "kind": "collectionType",
+  "collectionName": "research_paths",
+  "info": {
+    "singularName": "research-path",
+    "pluralName": "research-paths",
+    "displayName": "考据阅读路径",
+    "description": "由策展人编排的主题阅读路径"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true,
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "title",
+      "required": true,
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "description": {
+      "type": "text",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "difficulty": {
+      "type": "enumeration",
+      "enum": ["intro", "deep", "expert"],
+      "default": "intro",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "order": {
+      "type": "integer",
+      "default": 0,
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "steps": {
+      "type": "component",
+      "repeatable": true,
+      "component": "research.path-step"
+    }
+  }
+}

@@ -4,7 +4,7 @@
     {
       "name": "frontend",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "my-v0-project", "dev"],
+      "runtimeArgs": ["--filter", "schale-library-frontend", "dev"],
       "port": 3001
     }
   ]

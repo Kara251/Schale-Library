@@ -10,6 +10,19 @@
       "relation": "oneToOne",
       "target": "api::research-entry.research-entry"
     },
+    "relation_type": {
+      "type": "enumeration",
+      "enum": [
+        "related",
+        "prototype",
+        "echoes",
+        "extends",
+        "contradicts",
+        "prerequisite"
+      ],
+      "default": "related",
+      "required": true
+    },
     "curate_note": {
       "type": "string"
     },

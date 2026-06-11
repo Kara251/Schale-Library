@@ -11,12 +11,15 @@ type PanelCollectionKey =
   | 'online-events'
   | 'offline-events'
   | 'students'
+  | 'schools'
   | 'bilibili-subscriptions'
   | 'sync-logs'
   | 'admin-audit-logs'
   | 'research-entries'
   | 'research-themes'
   | 'research-citations'
+  | 'research-subjects'
+  | 'research-paths'
 
 interface CollectionConfig {
   uid: any
@@ -108,11 +111,20 @@ const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
   students: {
     uid: 'api::student.student',
     localized: true,
-    populate: ['avatar'],
+    populate: ['avatar', 'school_ref'],
     searchFields: ['name', 'organization'],
     defaultSort: 'updatedAt:desc',
     supportsDraft: true,
-    fields: ['name', 'school', 'organization', 'avatar', 'bio', 'publishedAt'],
+    fields: ['name', 'school', 'school_ref', 'organization', 'avatar', 'bio', 'publishedAt'],
+  },
+  schools: {
+    uid: 'api::school.school',
+    localized: true,
+    populate: ['logo'],
+    searchFields: ['name', 'slug'],
+    defaultSort: ['order:asc', 'updatedAt:desc'],
+    supportsDraft: false,
+    fields: ['name', 'slug', 'description', 'color', 'order', 'logo'],
   },
   'bilibili-subscriptions': {
     uid: 'api::bilibili-subscription.bilibili-subscription',
@@ -143,11 +155,39 @@ const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
   'research-entries': {
     uid: 'api::research-entry.research-entry',
     localized: true,
-    populate: ['themes', 'citations'],
+    populate: {
+      themes: true,
+      citations: true,
+      subjects: true,
+      related_links: { populate: { target_entry: { fields: ['id', 'documentId', 'title', 'slug'] } } },
+      revisions: true,
+    },
     searchFields: ['title', 'summary'],
     defaultSort: 'updatedAt:desc',
     supportsDraft: true,
-    fields: ['title', 'slug', 'stance', 'media_type', 'affiliations', 'themes', 'citations', 'summary', 'body', 'publishedAt'],
+    fields: [
+      'title', 'slug', 'stance', 'media_type', 'spoiler_scope', 'affiliations',
+      'themes', 'citations', 'subjects', 'related_links', 'revisions',
+      'summary', 'body', 'publishedAt',
+    ],
+  },
+  'research-subjects': {
+    uid: 'api::research-subject.research-subject',
+    localized: true,
+    populate: ['cover', 'students'],
+    searchFields: ['name'],
+    defaultSort: 'updatedAt:desc',
+    supportsDraft: true,
+    fields: ['name', 'slug', 'subject_type', 'description', 'cover', 'students', 'publishedAt'],
+  },
+  'research-paths': {
+    uid: 'api::research-path.research-path',
+    localized: true,
+    populate: { steps: { populate: { entry: { fields: ['id', 'documentId', 'title', 'slug'] } } } },
+    searchFields: ['title'],
+    defaultSort: ['order:asc', 'updatedAt:desc'],
+    supportsDraft: true,
+    fields: ['title', 'slug', 'description', 'difficulty', 'order', 'steps', 'publishedAt'],
   },
   'research-themes': {
     uid: 'api::research-theme.research-theme',
@@ -371,6 +411,74 @@ function normalizeJsonArray(value: unknown): string[] {
   return []
 }
 
+function normalizeSingleRelation(value: unknown) {
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+  const id = Number(value)
+  return Number.isFinite(id) && id > 0 ? id : null
+}
+
+const RELATED_LINK_TYPES = new Set(['related', 'prototype', 'echoes', 'extends', 'contradicts', 'prerequisite'])
+const REVISION_TYPES = new Set(['created', 'updated', 'confirmed', 'refuted'])
+
+function normalizeRelatedLinks(value: unknown) {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item, index) => {
+      if (!item || typeof item !== 'object') return null
+      const record = item as Record<string, unknown>
+      const target = normalizeSingleRelation(record.target_entry)
+      if (!target) return null
+      const relationType = typeof record.relation_type === 'string' && RELATED_LINK_TYPES.has(record.relation_type)
+        ? record.relation_type
+        : 'related'
+      return {
+        target_entry: target,
+        relation_type: relationType,
+        curate_note: typeof record.curate_note === 'string' ? record.curate_note : '',
+        order: toNumber(record.order, index),
+      }
+    })
+    .filter(Boolean)
+}
+
+function normalizeRevisions(value: unknown) {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const record = item as Record<string, unknown>
+      const date = typeof record.date === 'string' ? record.date.slice(0, 10) : ''
+      if (!date || Number.isNaN(new Date(date).getTime())) return null
+      const revisionType = typeof record.revision_type === 'string' && REVISION_TYPES.has(record.revision_type)
+        ? record.revision_type
+        : 'updated'
+      return {
+        date,
+        revision_type: revisionType,
+        note: typeof record.note === 'string' ? record.note : '',
+      }
+    })
+    .filter(Boolean)
+}
+
+function normalizePathSteps(value: unknown) {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const record = item as Record<string, unknown>
+      const entry = normalizeSingleRelation(record.entry)
+      if (!entry) return null
+      return {
+        entry,
+        step_note: typeof record.step_note === 'string' ? record.step_note : '',
+      }
+    })
+    .filter(Boolean)
+}
+
 function getClientIp(ctx: any) {
   // 取 x-forwarded-for 的最后一跳：它由最近的可信代理写入，前面的值可被客户端伪造
   const forwardedFor = ctx.request.headers['x-forwarded-for']
@@ -505,6 +613,7 @@ function pickAllowedFields(collection: PanelCollectionKey, input: Record<string,
       case 'priority':
       case 'syncCount':
       case 'featuredPriority':
+      case 'order':
         data[field] = toNumber(value, 0)
         break
       case 'isActive':
@@ -517,12 +626,27 @@ function pickAllowedFields(collection: PanelCollectionKey, input: Record<string,
       case 'avatar':
       case 'icon':
       case 'source_image':
+      case 'cover':
+      case 'logo':
         data[field] = normalizeMediaValue(value)
         break
       case 'students':
       case 'themes':
       case 'citations':
+      case 'subjects':
         data[field] = normalizeRelationList(value)
+        break
+      case 'school_ref':
+        data[field] = normalizeSingleRelation(value)
+        break
+      case 'related_links':
+        data[field] = normalizeRelatedLinks(value)
+        break
+      case 'revisions':
+        data[field] = normalizeRevisions(value)
+        break
+      case 'steps':
+        data[field] = normalizePathSteps(value)
         break
       case 'affiliations':
         data[field] = normalizeJsonArray(value)
