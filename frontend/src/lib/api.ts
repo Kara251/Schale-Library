@@ -794,6 +794,7 @@ export interface Student {
   documentId: string;
   name: string;
   school?: SchoolType;
+  school_ref?: { id: number; documentId: string; name: string; slug: string; color?: string } | null;
   organization?: string;
   avatar?: StrapiMedia;
   bio?: string;
@@ -1052,7 +1053,7 @@ export async function searchStudents(
       'filters[$or][3][bio][$containsi]': query,
       sort: 'updatedAt:desc',
       'pagination[limit]': 50,
-      populate: 'avatar',
+      populate: 'avatar,school_ref',
     })}`
   );
 }
@@ -1066,19 +1067,21 @@ export async function getStudents(locale: string = 'zh-Hans', options: StudentLi
   const params: Record<string, string | number | boolean | undefined> = {
     locale: strapiLocale,
     sort: 'name:asc',
-    populate: 'avatar',
+    populate: 'avatar,school_ref',
     'pagination[page]': options.page || 1,
     'pagination[pageSize]': Math.min(100, Math.max(1, options.pageSize || 50)),
   }
 
   const query = options.query?.trim()
   if (query) {
-    params['filters[$or][0][name][$containsi]'] = query
-    params['filters[$or][1][organization][$containsi]'] = query
+    params['filters[$and][0][$or][0][name][$containsi]'] = query
+    params['filters[$and][0][$or][1][organization][$containsi]'] = query
   }
 
   if (options.school && options.school !== 'all') {
-    params['filters[school][$eq]'] = options.school
+    // 同时匹配后台维护的学院关联与旧枚举字段（两者的 slug/值一致）
+    params['filters[$and][1][$or][0][school_ref][slug][$eq]'] = options.school
+    params['filters[$and][1][$or][1][school][$eq]'] = options.school
   }
 
   options.studentIds?.forEach((studentId, index) => {
@@ -1095,7 +1098,7 @@ export async function getStudents(locale: string = 'zh-Hans', options: StudentLi
  */
 export async function getAllStudents(locale: string = 'zh-Hans') {
   const items = await getAllCollectionItems<Student>('students', locale, {
-    populate: 'avatar',
+    populate: 'avatar,school_ref',
     filters: { sort: 'name:asc' },
   });
   return { data: items, meta: {} } as { data: Student[]; meta: Record<string, never> };
@@ -1191,7 +1194,7 @@ export async function getStudentById(
     `/students?${createCollectionQuery({
       locale: strapiLocale,
       [isNumericIdentifier(identifier) ? 'filters[id][$eq]' : 'filters[documentId][$eq]']: identifier,
-      populate: 'avatar',
+      populate: 'avatar,school_ref',
     })}`
   );
   return {
@@ -1228,6 +1231,11 @@ export type ResearchAffiliation =
   | 'redwinter' | 'abydos' | 'schale' | 'extra' | 'mainline' | 'other';
 export type CitationSourceType = 'game_line' | 'interview' | 'visual' | 'external';
 export type CitationConfidence = 'official' | 'derived' | 'conjecture';
+export type ResearchRelationType = 'related' | 'prototype' | 'echoes' | 'extends' | 'contradicts' | 'prerequisite';
+export type ResearchSpoilerScope = 'none' | 'vol1' | 'vol2' | 'vol3' | 'vol4' | 'vol5' | 'final' | 'event' | 'latest';
+export type ResearchSubjectType = 'school' | 'organization' | 'club' | 'character' | 'location' | 'concept' | 'item';
+export type ResearchRevisionType = 'created' | 'updated' | 'confirmed' | 'refuted';
+export type ResearchPathDifficulty = 'intro' | 'deep' | 'expert';
 
 export interface ResearchTheme {
   id: number;
@@ -1258,8 +1266,47 @@ export interface ResearchCitation {
 export interface ResearchRelatedLink {
   id: number;
   target_entry?: Pick<ResearchEntry, 'id' | 'documentId' | 'title' | 'slug'>;
+  relation_type?: ResearchRelationType;
   curate_note?: string;
   order: number;
+}
+
+export interface ResearchRevision {
+  id: number;
+  date: string;
+  revision_type: ResearchRevisionType;
+  note?: string;
+}
+
+export interface ResearchSubject {
+  id: number;
+  documentId: string;
+  name: string;
+  slug: string;
+  subject_type: ResearchSubjectType;
+  description?: string;
+  cover?: StrapiMedia;
+  students?: Student[];
+  entries?: ResearchEntry[];
+  locale: string;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string;
+}
+
+export interface ResearchPath {
+  id: number;
+  documentId: string;
+  title: string;
+  slug: string;
+  description?: string;
+  difficulty?: ResearchPathDifficulty;
+  order: number;
+  steps?: ResearchPathStep[];
+  locale: string;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string;
 }
 
 export interface ResearchEntry {
@@ -1271,10 +1318,13 @@ export interface ResearchEntry {
   summary?: string;
   body?: string;
   media_type: ResearchMediaType;
+  spoiler_scope?: ResearchSpoilerScope;
   affiliations?: ResearchAffiliation[];
   themes?: ResearchTheme[];
   citations?: ResearchCitation[];
+  subjects?: Pick<ResearchSubject, 'id' | 'documentId' | 'name' | 'slug' | 'subject_type'>[];
   related_links?: ResearchRelatedLink[];
+  revisions?: ResearchRevision[];
   locale: string;
   createdAt: string;
   updatedAt: string;
@@ -1351,14 +1401,61 @@ export const researchSourceTypeLabels: Record<string, Record<CitationSourceType,
   'ja': { game_line: 'ゲーム台詞', interview: '公式インタビュー', visual: 'ビジュアル証拠', external: '外部ソース' },
 };
 
+export const researchRelationTypeLabels: Record<string, Record<ResearchRelationType, string>> = {
+  'zh-Hans': { related: '相关', prototype: '原型', echoes: '呼应', extends: '补充', contradicts: '相左', prerequisite: '前置阅读' },
+  'en': { related: 'Related', prototype: 'Prototype', echoes: 'Echoes', extends: 'Builds on', contradicts: 'Contradicts', prerequisite: 'Read first' },
+  'ja': { related: '関連', prototype: '原型・モチーフ', echoes: '呼応', extends: '補足', contradicts: '対立', prerequisite: '前提知識' },
+};
+
+export const researchSpoilerScopeLabels: Record<string, Record<ResearchSpoilerScope, string>> = {
+  'zh-Hans': {
+    none: '无剧透', vol1: '第一卷（对策委员会篇）', vol2: '第二卷（千年篇）', vol3: '第三卷（伊甸条约篇）',
+    vol4: '第四卷（兔子小队篇）', vol5: '第五卷（百鬼夜行篇）', final: '最终篇', event: '活动剧情', latest: '最新进度',
+  },
+  'en': {
+    none: 'No spoilers', vol1: 'Vol. 1 (Abydos)', vol2: 'Vol. 2 (Millennium)', vol3: 'Vol. 3 (Eden Treaty)',
+    vol4: 'Vol. 4 (RABBIT Squad)', vol5: 'Vol. 5 (Hyakkiyako)', final: 'Final volume', event: 'Event story', latest: 'Latest content',
+  },
+  'ja': {
+    none: 'ネタバレなし', vol1: '第1編（対策委員会編）', vol2: '第2編（ミレニアム編）', vol3: '第3編（エデン条約編）',
+    vol4: '第4編（カルバノグの兎編）', vol5: '第5編（百花繚乱編）', final: '最終編', event: 'イベント', latest: '最新コンテンツ',
+  },
+};
+
+/** 剧透范围的先后顺序：用于和读者的阅读进度比较 */
+export const SPOILER_SCOPE_ORDER: Record<ResearchSpoilerScope, number> = {
+  none: 0, vol1: 1, vol2: 2, vol3: 3, vol4: 4, vol5: 5, final: 6, event: 7, latest: 8,
+};
+
+export const researchSubjectTypeLabels: Record<string, Record<ResearchSubjectType, string>> = {
+  'zh-Hans': { school: '学院', organization: '组织', club: '社团', character: '人物', location: '地点', concept: '概念', item: '物品' },
+  'en': { school: 'School', organization: 'Organization', club: 'Club', character: 'Character', location: 'Location', concept: 'Concept', item: 'Item' },
+  'ja': { school: '学園', organization: '組織', club: '部活', character: '人物', location: '場所', concept: '概念', item: 'アイテム' },
+};
+
+export const researchRevisionTypeLabels: Record<string, Record<ResearchRevisionType, string>> = {
+  'zh-Hans': { created: '建立', updated: '更新', confirmed: '获官方证实', refuted: '被官方推翻' },
+  'en': { created: 'Created', updated: 'Updated', confirmed: 'Confirmed by canon', refuted: 'Refuted by canon' },
+  'ja': { created: '作成', updated: '更新', confirmed: '公式で確定', refuted: '公式で否定' },
+};
+
+export const researchPathDifficultyLabels: Record<string, Record<ResearchPathDifficulty, string>> = {
+  'zh-Hans': { intro: '入门', deep: '深入', expert: '硬核' },
+  'en': { intro: 'Intro', deep: 'Deep dive', expert: 'Expert' },
+  'ja': { intro: '入門', deep: '深掘り', expert: 'エキスパート' },
+};
+
 const RESEARCH_ENTRY_LIST_POPULATE = {
   'populate[themes]': true,
+  'populate[subjects]': true,
 } as const;
 
 const RESEARCH_ENTRY_DETAIL_POPULATE = {
   'populate[themes]': true,
+  'populate[subjects]': true,
   'populate[citations][populate][source_image]': true,
   'populate[related_links][populate][target_entry]': true,
+  'populate[revisions]': true,
 } as const;
 
 export async function getResearchEntries(locale: string = 'zh-Hans') {
@@ -1450,7 +1547,212 @@ export async function getRecentResearchEntries(locale: string = 'zh-Hans', limit
   );
 }
 
+// ── 考据对象（实体枢纽）──
+
+export async function getResearchSubjects(locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
+  return fetchAPI<StrapiResponse<ResearchSubject[]>>(
+    `/research-subjects?${createCollectionQuery({
+      locale: strapiLocale,
+      sort: 'name:asc',
+      'pagination[pageSize]': 100,
+      'populate[cover]': true,
+    })}`
+  );
+}
+
+export async function getResearchSubjectBySlug(slug: string, locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
+  const response = await fetchAPI<StrapiResponse<ResearchSubject[]>>(
+    `/research-subjects?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[slug][$eq]': slug,
+      'populate[cover]': true,
+      'populate[students][populate][avatar]': true,
+    })}`
+  );
+  return {
+    data: response.data?.[0] || null,
+    meta: {},
+  } as StrapiSingleResponse<ResearchSubject | null>;
+}
+
+export async function getResearchEntriesBySubjectSlug(subjectSlug: string, locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
+  return fetchAPI<StrapiResponse<ResearchEntry[]>>(
+    `/research-entries?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[subjects][slug][$eq]': subjectSlug,
+      sort: 'updatedAt:desc',
+      'pagination[pageSize]': 100,
+      ...RESEARCH_ENTRY_LIST_POPULATE,
+    })}`
+  );
+}
+
+/** 学生详情页用：找出关联了该学生的考据对象（及其条目数所需的最小字段） */
+export async function getResearchSubjectsByStudent(
+  student: Pick<Student, 'id' | 'documentId'>,
+  locale: string = 'zh-Hans'
+) {
+  const strapiLocale = toStrapiLocale(locale);
+  return fetchAPI<StrapiResponse<ResearchSubject[]>>(
+    `/research-subjects?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[$or][0][students][id][$eq]': student.id,
+      'filters[$or][1][students][documentId][$eq]': student.documentId,
+      sort: 'name:asc',
+      'pagination[pageSize]': 50,
+      'populate[entries][fields][0]': 'title',
+      'populate[entries][fields][1]': 'slug',
+    })}`
+  );
+}
+
+// ── 阅读路径 ──
+
+const RESEARCH_PATH_POPULATE = {
+  'populate[steps][populate][entry][fields][0]': 'title',
+  'populate[steps][populate][entry][fields][1]': 'slug',
+  'populate[steps][populate][entry][fields][2]': 'summary',
+} as const;
+
+export async function getResearchPaths(locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
+  return fetchAPI<StrapiResponse<ResearchPath[]>>(
+    `/research-paths?${createCollectionQuery({
+      locale: strapiLocale,
+      'sort[0]': 'order:asc',
+      'sort[1]': 'updatedAt:desc',
+      'pagination[pageSize]': 50,
+      ...RESEARCH_PATH_POPULATE,
+    })}`
+  );
+}
+
+export async function getResearchPathBySlug(slug: string, locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
+  const response = await fetchAPI<StrapiResponse<ResearchPath[]>>(
+    `/research-paths?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[slug][$eq]': slug,
+      ...RESEARCH_PATH_POPULATE,
+    })}`
+  );
+  return {
+    data: response.data?.[0] || null,
+    meta: {},
+  } as StrapiSingleResponse<ResearchPath | null>;
+}
+
+/** 条目详情页用：找出包含该条目的所有阅读路径（用于上一篇/下一篇导航） */
+export async function getResearchPathsContainingEntry(entrySlug: string, locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
+  return fetchAPI<StrapiResponse<ResearchPath[]>>(
+    `/research-paths?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[steps][entry][slug][$eq]': entrySlug,
+      'sort[0]': 'order:asc',
+      'pagination[pageSize]': 20,
+      ...RESEARCH_PATH_POPULATE,
+    })}`
+  );
+}
+
+// ── 反向链接 ──
+
+/**
+ * 反向链接：链接到指定条目的其他条目。
+ * 同时覆盖结构化的 related_links 与正文中的 [[wiki链接]]。
+ */
+export async function getResearchBacklinks(entrySlug: string, locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
+  return fetchAPI<StrapiResponse<ResearchEntry[]>>(
+    `/research-entries?${createCollectionQuery({
+      locale: strapiLocale,
+      'filters[$or][0][related_links][target_entry][slug][$eq]': entrySlug,
+      'filters[$or][1][body][$contains]': `[[${entrySlug}`,
+      'filters[slug][$ne]': entrySlug,
+      sort: 'updatedAt:desc',
+      'pagination[pageSize]': 50,
+      'populate[related_links][populate][target_entry][fields][0]': 'slug',
+    })}`
+  );
+}
+
+/**
+ * 引用源反查：除当前条目外，还有哪些条目引用了这些引证。
+ * 返回带最小 citations 字段的条目列表，由调用方按 citation 分组。
+ */
+export async function getEntriesSharingCitations(
+  citationIds: number[],
+  excludeEntrySlug: string,
+  locale: string = 'zh-Hans'
+) {
+  if (citationIds.length === 0) {
+    return { data: [] as ResearchEntry[], meta: {} };
+  }
+  const strapiLocale = toStrapiLocale(locale);
+  const params: Record<string, string | number | boolean | undefined> = {
+    locale: strapiLocale,
+    'filters[slug][$ne]': excludeEntrySlug,
+    sort: 'updatedAt:desc',
+    'pagination[pageSize]': 50,
+    'populate[citations][fields][0]': 'id',
+  };
+  citationIds.forEach((id, index) => {
+    params[`filters[citations][id][$in][${index}]`] = id;
+  });
+  return fetchAPI<StrapiResponse<ResearchEntry[]>>(
+    `/research-entries?${createCollectionQuery(params)}`
+  );
+}
+
 // ─── End Research Archives ────────────────────────────────────────────────────
+
+// ── 学院（后台可维护的基础数据）──
+
+export interface School {
+  id: number;
+  documentId: string;
+  name: string;
+  slug: string;
+  description?: string;
+  color?: string;
+  order: number;
+  logo?: StrapiMedia;
+  locale: string;
+}
+
+export async function getSchools(locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
+  return fetchAPI<StrapiResponse<School[]>>(
+    `/schools?${createCollectionQuery({
+      locale: strapiLocale,
+      'sort[0]': 'order:asc',
+      'sort[1]': 'name:asc',
+      'pagination[pageSize]': 100,
+      'populate[logo]': true,
+    })}`
+  );
+}
+
+/**
+ * 解析学生的学院显示名：优先后台维护的 school_ref，回退到旧枚举映射。
+ */
+export function resolveStudentSchoolName(
+  student: Pick<Student, 'school' | 'school_ref'>,
+  locale: string = 'zh-Hans'
+): string | undefined {
+  if (student.school_ref?.name) {
+    return student.school_ref.name;
+  }
+  if (student.school) {
+    const localized = schoolNamesLocalized[locale] || schoolNamesLocalized['zh-Hans'];
+    return localized[student.school] || schoolNames[student.school] || student.school;
+  }
+  return undefined;
+}
 
 /**
  * 多语言学校名称映射

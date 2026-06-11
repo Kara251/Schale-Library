@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useLocale } from '@/contexts/locale-context'
 import type { Student, SchoolType } from '@/lib/api'
-import { schoolNames, schoolNamesLocalized } from '@/lib/api'
+import { resolveStudentSchoolName, schoolNamesLocalized } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 import { getMediaUrl } from '@/lib/media'
 
@@ -102,16 +102,32 @@ export function StudentSelector({
     const localizedSchoolNames = schoolNamesLocalized[locale] || schoolNamesLocalized['zh-Hans']
 
     const [searchQuery, setSearchQuery] = useState('')
-    const [schoolFilter, setSchoolFilter] = useState<SchoolType | 'all'>('all')
+    const [schoolFilter, setSchoolFilter] = useState<string>('all')
     const [orgFilter, setOrgFilter] = useState<string>('all')
     const [page, setPage] = useState(1)
     const [remoteStudents, setRemoteStudents] = useState<Student[]>(students)
     const [pageCount, setPageCount] = useState(1)
     const [loading, setLoading] = useState(false)
 
+    // 学院选项以后台数据（school_ref）为准，旧枚举值仅作回退
     const schools = useMemo(() => {
-        return Object.keys(localizedSchoolNames).sort() as SchoolType[]
-    }, [localizedSchoolNames])
+        const bySlug = new Map<string, string>()
+        for (const student of students) {
+            if (student.school_ref?.slug) {
+                bySlug.set(student.school_ref.slug, student.school_ref.name)
+            } else if (student.school && !bySlug.has(student.school)) {
+                bySlug.set(student.school, localizedSchoolNames[student.school] || student.school)
+            }
+        }
+        if (bySlug.size === 0) {
+            for (const key of Object.keys(localizedSchoolNames) as SchoolType[]) {
+                bySlug.set(key, localizedSchoolNames[key])
+            }
+        }
+        return Array.from(bySlug.entries())
+            .map(([value, label]) => ({ value, label }))
+            .sort((a, b) => a.label.localeCompare(b.label))
+    }, [students, localizedSchoolNames])
 
     useEffect(() => {
         if (!isOpen) return
@@ -227,15 +243,15 @@ export function StudentSelector({
                             <select
                                 value={schoolFilter}
                                 onChange={(e) => {
-                                    setSchoolFilter(e.target.value as SchoolType | 'all')
+                                    setSchoolFilter(e.target.value)
                                     setPage(1)
                                 }}
                                 className="text-sm border rounded-lg px-2 py-1 bg-background cursor-pointer"
                             >
                                 <option value="all">{t.all}</option>
                                 {schools.map(school => (
-                                    <option key={school} value={school}>
-                                        {localizedSchoolNames[school] || schoolNames[school] || school}
+                                    <option key={school.value} value={school.value}>
+                                        {school.label}
                                     </option>
                                 ))}
                             </select>
@@ -298,9 +314,9 @@ export function StudentSelector({
                                         <span className={cn('text-sm font-medium text-center line-clamp-1', isSelected && 'text-primary')}>
                                             {student.name}
                                         </span>
-                                        {student.school && (
+                                        {resolveStudentSchoolName(student, locale) && (
                                             <span className="text-xs text-muted-foreground mt-0.5">
-                                                {localizedSchoolNames[student.school] || schoolNames[student.school] || student.school}
+                                                {resolveStudentSchoolName(student, locale)}
                                             </span>
                                         )}
                                     </button>
