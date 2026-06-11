@@ -18,6 +18,8 @@
         "update",
         "delete",
         "upload",
+        "publish",
+        "unpublish",
         "sync-one",
         "sync-all"
       ],
@@ -27,6 +29,7 @@
       "type": "enumeration",
       "enum": [
         "success",
+        "partial",
         "failed"
       ],
       "required": true

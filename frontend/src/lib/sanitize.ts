@@ -6,7 +6,7 @@
 import DOMPurify from 'isomorphic-dompurify';
 
 const TRUSTED_IMAGE_HOSTS = new Set(['i0.hdslb.com', 'i1.hdslb.com', 'i2.hdslb.com', 'res.cloudinary.com']);
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083';
+import { STRAPI_API_URL as API_URL } from '@/lib/config';
 
 try {
     const parsedApiUrl = new URL(API_URL);

@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 
 import type { User } from '@/lib/auth'
 
-const STRAPI_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083'
+import { STRAPI_API_URL as STRAPI_URL } from '@/lib/config'
 const DEVELOPMENT_ALLOWED_ROLES = 'authenticated'
 const SESSION_MAX_AGE = 60 * 60 * 8
 

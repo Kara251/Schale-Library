@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { getAdminSession } from '@/lib/server/admin-auth'
 
-const STRAPI_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083'
+import { STRAPI_API_URL as STRAPI_URL } from '@/lib/config'
 
 export async function GET(request: NextRequest) {
   const session = await getAdminSession()

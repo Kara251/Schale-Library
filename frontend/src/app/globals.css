@@ -308,3 +308,28 @@
 .dark .ba-text-body {
   color: #E8F4FD;
 }
+/* 考据档案：wiki 式站内链接 */
+.wiki-link {
+  color: var(--primary);
+  text-decoration: none;
+  border-bottom: 1px dashed currentColor;
+  transition: border-bottom-color 0.15s ease, color 0.15s ease;
+}
+
+.wiki-link:hover {
+  border-bottom-style: solid;
+}
+
+.wiki-link-missing {
+  color: var(--muted-foreground);
+  border-bottom: 1px dashed currentColor;
+  cursor: help;
+}
+
+/* 考据档案：剧透遮罩 */
+.spoiler-blur {
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+  transition: filter 0.3s ease;
+}

@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { NextRequest } from 'next/server'
 
-const STRAPI_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083'
+import { STRAPI_API_URL as STRAPI_URL } from '@/lib/config'
 const INTERNAL_RATE_LIMIT_TIMEOUT_MS = 3000
 
 interface RateLimitOptions {
@@ -18,9 +18,14 @@ interface RateLimitResponse {
 }
 
 export function getClientIp(request: NextRequest): string {
+  // 取 x-forwarded-for 的最后一跳：它由最近的可信代理写入，
+  // 客户端自带的伪造值只会出现在更前面的位置。
   const forwardedFor = request.headers.get('x-forwarded-for')
   if (forwardedFor) {
-    return forwardedFor.split(',')[0]?.trim() || 'unknown'
+    const hops = forwardedFor.split(',').map((part) => part.trim()).filter(Boolean)
+    if (hops.length > 0) {
+      return hops[hops.length - 1]
+    }
   }
 
   return request.headers.get('x-real-ip') || 'unknown'

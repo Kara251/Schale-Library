@@ -4,13 +4,19 @@
 
 import { factories } from '@strapi/strapi';
 import type { Core } from '@strapi/strapi';
+import { acquireJobLock, releaseJobLock, BILIBILI_SYNC_LOCK } from '../../../utils/job-lock';
 
 const AUDIT_LOG_UID = 'api::admin-audit-log.admin-audit-log' as any;
+const MANUAL_SYNC_LOCK_TTL_MS = Math.max(60 * 1000, Number(process.env.RSS_SYNC_LOCK_TTL_MS || '1800000'));
 
 function getClientIp(ctx: any) {
+    // 取 x-forwarded-for 的最后一跳：它由最近的可信代理写入，前面的值可被客户端伪造
     const forwardedFor = ctx.request.headers['x-forwarded-for'];
     if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
-        return forwardedFor.split(',')[0].trim();
+        const hops = forwardedFor.split(',').map((part: string) => part.trim()).filter(Boolean);
+        if (hops.length > 0) {
+            return hops[hops.length - 1];
+        }
     }
 
     return ctx.request.ip || ctx.ip || undefined;
@@ -37,7 +43,7 @@ function getNumericId(id: unknown) {
 
 async function recordAdminAudit(strapi: Core.Strapi, ctx: any, input: {
     action: 'sync-one' | 'sync-all';
-    status: 'success' | 'failed';
+    status: 'success' | 'partial' | 'failed';
     targetId?: number;
     targetName?: string;
     message?: string;
@@ -51,7 +57,7 @@ async function recordAdminAudit(strapi: Core.Strapi, ctx: any, input: {
                 targetCollection: 'bilibili-subscriptions',
                 ip: getClientIp(ctx),
                 userAgent: typeof ctx.request.headers['user-agent'] === 'string' ? ctx.request.headers['user-agent'] : undefined,
-            },
+            } as any,
         });
     } catch (error) {
         strapi.log.warn(`后台审计日志写入失败: ${(error as Error).message}`);
@@ -64,6 +70,12 @@ export default factories.createCoreController('api::bilibili-subscription.bilibi
         const { id } = ctx.params;
         const startedAt = new Date();
         const service = strapi.service('api::bilibili-subscription.bilibili-subscription');
+
+        // 与 cron、批量同步共用同一把任务锁，避免重复导入
+        const lock = await acquireJobLock(strapi, BILIBILI_SYNC_LOCK, MANUAL_SYNC_LOCK_TTL_MS);
+        if (!lock) {
+            return ctx.conflict('已有同步任务正在执行，请稍后再试');
+        }
 
         try {
             const subscription = await strapi.entityService.findOne(
@@ -95,7 +107,7 @@ export default factories.createCoreController('api::bilibili-subscription.bilibi
             });
             await recordAdminAudit(strapi, ctx, {
                 action: 'sync-one',
-                status: 'success',
+                status: result.errors.length > 0 ? (result.created > 0 ? 'partial' : 'failed') : 'success',
                 targetId: getNumericId(subscription.id),
                 targetName: subscription.upName,
                 message,
@@ -127,6 +139,8 @@ export default factories.createCoreController('api::bilibili-subscription.bilibi
                 message: (error as Error).message,
             });
             return ctx.badRequest('同步失败: ' + (error as Error).message);
+        } finally {
+            await releaseJobLock(strapi, lock);
         }
     },
 
@@ -134,6 +148,12 @@ export default factories.createCoreController('api::bilibili-subscription.bilibi
     async syncAll(ctx) {
         const startedAt = new Date();
         const service = strapi.service('api::bilibili-subscription.bilibili-subscription');
+
+        // 与 cron、单订阅同步共用同一把任务锁，避免并发批量导入
+        const lock = await acquireJobLock(strapi, BILIBILI_SYNC_LOCK, MANUAL_SYNC_LOCK_TTL_MS);
+        if (!lock) {
+            return ctx.conflict('已有同步任务正在执行，请稍后再试');
+        }
 
         try {
             const result = await service.syncAllSubscriptions();
@@ -151,7 +171,7 @@ export default factories.createCoreController('api::bilibili-subscription.bilibi
             });
             await recordAdminAudit(strapi, ctx, {
                 action: 'sync-all',
-                status: 'success',
+                status: result.errors.length > 0 ? (result.created > 0 ? 'partial' : 'failed') : 'success',
                 message,
                 details: result,
             });
@@ -179,6 +199,8 @@ export default factories.createCoreController('api::bilibili-subscription.bilibi
                 message: (error as Error).message,
             });
             return ctx.badRequest('同步失败: ' + (error as Error).message);
+        } finally {
+            await releaseJobLock(strapi, lock);
         }
     },
 }));

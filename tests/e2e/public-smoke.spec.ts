@@ -8,16 +8,14 @@ test('renders public home content', async ({ page }) => {
 })
 
 test('keeps works filters and pagination shareable in the URL', async ({ page }) => {
-  await page.goto('/zh-Hans/works?q=alice&nature=fanmade&type=video&source=bilibili&featured=1&sort=recommended&page=2')
+  await page.goto('/zh-Hans/works?q=alice&nature=fanmade&type=video&students=1,2&page=2')
 
   await expect(page.getByRole('heading', { name: '推荐作品' })).toBeVisible()
   await expect(page.getByPlaceholder('搜索作品名称、作者...')).toHaveValue('alice')
   await expect(page).toHaveURL(/q=alice/)
   await expect(page).toHaveURL(/nature=fanmade/)
   await expect(page).toHaveURL(/type=video/)
-  await expect(page).toHaveURL(/source=bilibili/)
-  await expect(page).toHaveURL(/featured=1/)
-  await expect(page).toHaveURL(/sort=recommended/)
+  await expect(page).toHaveURL(/students=1%2C2|students=1,2/)
   await expect(page).toHaveURL(/page=2/)
 })
 
@@ -66,6 +64,54 @@ test('renders global search error fallback without crashing', async ({ page }) =
 
   await expect(page.getByRole('heading', { name: '搜索图书馆' })).toBeVisible()
   await expect(page.getByText('部分搜索结果暂时不可用，请稍后重试。')).toBeVisible()
+})
+
+test('renders research archive hub with knowledge-system navigation', async ({ page }) => {
+  await page.goto('/zh-Hans/research-archives')
+
+  await expect(page.getByRole('heading', { name: '考据档案' })).toBeVisible()
+  await expect(page.getByRole('link', { name: '考据对象' })).toBeVisible()
+  await expect(page.getByRole('link', { name: '阅读路径' })).toBeVisible()
+  await expect(page.getByRole('link', { name: '知识图谱' })).toBeVisible()
+  await expect(page.getByText('阅读进度')).toBeVisible()
+})
+
+test('renders research subjects page empty state', async ({ page }) => {
+  await page.goto('/zh-Hans/research-archives/subjects')
+
+  await expect(page.getByRole('heading', { name: '考据对象' })).toBeVisible()
+  await expect(page.getByText('暂无考据对象')).toBeVisible()
+})
+
+test('renders reading paths page empty state', async ({ page }) => {
+  await page.goto('/zh-Hans/research-archives/paths')
+
+  await expect(page.getByRole('heading', { name: '阅读路径' })).toBeVisible()
+  await expect(page.getByText('暂无阅读路径')).toBeVisible()
+})
+
+test('renders knowledge graph page', async ({ page }) => {
+  await page.goto('/zh-Hans/research-archives/graph')
+
+  await expect(page.getByRole('heading', { name: '知识图谱' })).toBeVisible()
+  await expect(page.getByText('暂无足够数据生成图谱')).toBeVisible()
+})
+
+test('renders announcements page', async ({ page }) => {
+  await page.goto('/zh-Hans/announcements')
+
+  await expect(page.getByRole('heading', { name: '公告' })).toBeVisible()
+})
+
+test('protects new manage collections without a session', async ({ page }) => {
+  await page.goto('/zh-Hans/manage/schools')
+  await expect(page).toHaveURL(/\/zh-Hans\/login\?next=/)
+
+  await page.goto('/zh-Hans/manage/research-subjects')
+  await expect(page).toHaveURL(/\/zh-Hans\/login\?next=/)
+
+  await page.goto('/zh-Hans/manage/research-paths')
+  await expect(page).toHaveURL(/\/zh-Hans\/login\?next=/)
 })
 
 test('rejects untrusted image proxy hosts', async ({ request }) => {

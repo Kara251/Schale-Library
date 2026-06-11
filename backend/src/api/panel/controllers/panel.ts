@@ -1,5 +1,6 @@
 import { errors } from '@strapi/utils'
 import crypto from 'node:crypto'
+import { acquireJobLock, releaseJobLock } from '../../../utils/job-lock'
 
 const { ApplicationError, NotFoundError } = errors
 
@@ -10,12 +11,15 @@ type PanelCollectionKey =
   | 'online-events'
   | 'offline-events'
   | 'students'
+  | 'schools'
   | 'bilibili-subscriptions'
   | 'sync-logs'
   | 'admin-audit-logs'
   | 'research-entries'
   | 'research-themes'
   | 'research-citations'
+  | 'research-subjects'
+  | 'research-paths'
 
 interface CollectionConfig {
   uid: any
@@ -107,11 +111,20 @@ const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
   students: {
     uid: 'api::student.student',
     localized: true,
-    populate: ['avatar'],
+    populate: ['avatar', 'school_ref'],
     searchFields: ['name', 'organization'],
     defaultSort: 'updatedAt:desc',
     supportsDraft: true,
-    fields: ['name', 'school', 'organization', 'avatar', 'bio', 'publishedAt'],
+    fields: ['name', 'school', 'school_ref', 'organization', 'avatar', 'bio', 'publishedAt'],
+  },
+  schools: {
+    uid: 'api::school.school',
+    localized: true,
+    populate: ['logo'],
+    searchFields: ['name', 'slug'],
+    defaultSort: ['order:asc', 'updatedAt:desc'],
+    supportsDraft: false,
+    fields: ['name', 'slug', 'description', 'color', 'order', 'logo'],
   },
   'bilibili-subscriptions': {
     uid: 'api::bilibili-subscription.bilibili-subscription',
@@ -142,11 +155,39 @@ const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
   'research-entries': {
     uid: 'api::research-entry.research-entry',
     localized: true,
-    populate: ['themes', 'citations'],
+    populate: {
+      themes: true,
+      citations: true,
+      subjects: true,
+      related_links: { populate: { target_entry: { fields: ['id', 'documentId', 'title', 'slug'] } } },
+      revisions: true,
+    },
     searchFields: ['title', 'summary'],
     defaultSort: 'updatedAt:desc',
     supportsDraft: true,
-    fields: ['title', 'slug', 'stance', 'media_type', 'affiliations', 'themes', 'citations', 'summary', 'body', 'publishedAt'],
+    fields: [
+      'title', 'slug', 'stance', 'media_type', 'spoiler_scope', 'affiliations',
+      'themes', 'citations', 'subjects', 'related_links', 'revisions',
+      'summary', 'body', 'publishedAt',
+    ],
+  },
+  'research-subjects': {
+    uid: 'api::research-subject.research-subject',
+    localized: true,
+    populate: ['cover', 'students'],
+    searchFields: ['name'],
+    defaultSort: 'updatedAt:desc',
+    supportsDraft: true,
+    fields: ['name', 'slug', 'subject_type', 'description', 'cover', 'students', 'publishedAt'],
+  },
+  'research-paths': {
+    uid: 'api::research-path.research-path',
+    localized: true,
+    populate: { steps: { populate: { entry: { fields: ['id', 'documentId', 'title', 'slug'] } } } },
+    searchFields: ['title'],
+    defaultSort: ['order:asc', 'updatedAt:desc'],
+    supportsDraft: true,
+    fields: ['title', 'slug', 'description', 'difficulty', 'order', 'steps', 'publishedAt'],
   },
   'research-themes': {
     uid: 'api::research-theme.research-theme',
@@ -370,10 +411,82 @@ function normalizeJsonArray(value: unknown): string[] {
   return []
 }
 
+function normalizeSingleRelation(value: unknown) {
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+  const id = Number(value)
+  return Number.isFinite(id) && id > 0 ? id : null
+}
+
+const RELATED_LINK_TYPES = new Set(['related', 'prototype', 'echoes', 'extends', 'contradicts', 'prerequisite'])
+const REVISION_TYPES = new Set(['created', 'updated', 'confirmed', 'refuted'])
+
+function normalizeRelatedLinks(value: unknown) {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item, index) => {
+      if (!item || typeof item !== 'object') return null
+      const record = item as Record<string, unknown>
+      const target = normalizeSingleRelation(record.target_entry)
+      if (!target) return null
+      const relationType = typeof record.relation_type === 'string' && RELATED_LINK_TYPES.has(record.relation_type)
+        ? record.relation_type
+        : 'related'
+      return {
+        target_entry: target,
+        relation_type: relationType,
+        curate_note: typeof record.curate_note === 'string' ? record.curate_note : '',
+        order: toNumber(record.order, index),
+      }
+    })
+    .filter(Boolean)
+}
+
+function normalizeRevisions(value: unknown) {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const record = item as Record<string, unknown>
+      const date = typeof record.date === 'string' ? record.date.slice(0, 10) : ''
+      if (!date || Number.isNaN(new Date(date).getTime())) return null
+      const revisionType = typeof record.revision_type === 'string' && REVISION_TYPES.has(record.revision_type)
+        ? record.revision_type
+        : 'updated'
+      return {
+        date,
+        revision_type: revisionType,
+        note: typeof record.note === 'string' ? record.note : '',
+      }
+    })
+    .filter(Boolean)
+}
+
+function normalizePathSteps(value: unknown) {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const record = item as Record<string, unknown>
+      const entry = normalizeSingleRelation(record.entry)
+      if (!entry) return null
+      return {
+        entry,
+        step_note: typeof record.step_note === 'string' ? record.step_note : '',
+      }
+    })
+    .filter(Boolean)
+}
+
 function getClientIp(ctx: any) {
+  // 取 x-forwarded-for 的最后一跳：它由最近的可信代理写入，前面的值可被客户端伪造
   const forwardedFor = ctx.request.headers['x-forwarded-for']
   if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
-    return forwardedFor.split(',')[0].trim()
+    const hops = forwardedFor.split(',').map((part: string) => part.trim()).filter(Boolean)
+    if (hops.length > 0) {
+      return hops[hops.length - 1]
+    }
   }
 
   return ctx.request.ip || ctx.ip || undefined
@@ -404,8 +517,8 @@ function getEntryLabel(entry: unknown) {
 }
 
 async function recordAdminAuditLog(ctx: any, input: {
-  action: 'create' | 'update' | 'delete' | 'upload' | 'sync-one' | 'sync-all'
-  status: 'success' | 'failed'
+  action: 'create' | 'update' | 'delete' | 'upload' | 'publish' | 'unpublish' | 'sync-one' | 'sync-all'
+  status: 'success' | 'partial' | 'failed'
   targetCollection: string
   targetId?: number
   targetName?: string
@@ -420,7 +533,7 @@ async function recordAdminAuditLog(ctx: any, input: {
         ...getActor(ctx),
         ip: getClientIp(ctx),
         userAgent: typeof ctx.request.headers['user-agent'] === 'string' ? ctx.request.headers['user-agent'] : undefined,
-      },
+      } as any,
     })
   } catch (error) {
     strapi.log.warn(`后台审计日志写入失败: ${(error as Error).message}`)
@@ -500,6 +613,7 @@ function pickAllowedFields(collection: PanelCollectionKey, input: Record<string,
       case 'priority':
       case 'syncCount':
       case 'featuredPriority':
+      case 'order':
         data[field] = toNumber(value, 0)
         break
       case 'isActive':
@@ -512,12 +626,27 @@ function pickAllowedFields(collection: PanelCollectionKey, input: Record<string,
       case 'avatar':
       case 'icon':
       case 'source_image':
+      case 'cover':
+      case 'logo':
         data[field] = normalizeMediaValue(value)
         break
       case 'students':
       case 'themes':
       case 'citations':
+      case 'subjects':
         data[field] = normalizeRelationList(value)
+        break
+      case 'school_ref':
+        data[field] = normalizeSingleRelation(value)
+        break
+      case 'related_links':
+        data[field] = normalizeRelatedLinks(value)
+        break
+      case 'revisions':
+        data[field] = normalizeRevisions(value)
+        break
+      case 'steps':
+        data[field] = normalizePathSteps(value)
         break
       case 'affiliations':
         data[field] = normalizeJsonArray(value)
@@ -531,8 +660,13 @@ function pickAllowedFields(collection: PanelCollectionKey, input: Record<string,
         data[field] = normalizeDateTime(value)
         break
       case 'publishedAt': {
-        const publishState = normalizeBoolean(value)
-        data[field] = publishState ? new Date().toISOString() : null
+        // 接受布尔值（true=立即发布）或合法的日期字符串；其余值视为不发布
+        if (typeof value === 'string' && value !== 'true' && value !== 'false') {
+          const parsed = new Date(value)
+          data[field] = Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
+        } else {
+          data[field] = normalizeBoolean(value) ? new Date().toISOString() : null
+        }
         break
       }
       default:
@@ -977,18 +1111,22 @@ async function scanContentQuality() {
 
   const scanId = crypto.randomUUID()
   const replacementDetectedAt = new Date().toISOString()
-  for (const issue of issues) {
-    await strapi.entityService.create(CONTENT_QUALITY_UID, {
-      data: {
-        ...issue,
-        detectedAt: replacementDetectedAt,
-        details: {
-          ...(issue.details || {}),
-          scanId,
-        },
-      },
-    })
+  const issueRows = issues.map((issue) => ({
+    ...issue,
+    detectedAt: replacementDetectedAt,
+    details: {
+      ...(issue.details || {}),
+      scanId,
+    },
+  }))
+
+  // 分批插入，避免大数据集下逐行创建拖慢扫描
+  const BATCH_SIZE = 100
+  for (let index = 0; index < issueRows.length; index += BATCH_SIZE) {
+    const batch = issueRows.slice(index, index + BATCH_SIZE)
+    await Promise.all(batch.map((row) => strapi.entityService.create(CONTENT_QUALITY_UID, { data: row })))
   }
+
   await strapi.db.query(CONTENT_QUALITY_UID).deleteMany({
     where: {
       status: 'open',
@@ -1027,7 +1165,7 @@ async function listQualityIssues(ctx: any) {
       start,
       limit: pageSize,
     }),
-    strapi.documents(CONTENT_QUALITY_UID).count({ filters }),
+    strapi.entityService.count(CONTENT_QUALITY_UID, { filters } as any),
   ])
 
   return {
@@ -1164,12 +1302,15 @@ async function listCollection(ctx: any, collection: PanelCollectionKey) {
     queryOptions.locale = locale
   }
 
+  // 行与计数使用同一查询引擎与同一组过滤条件，避免草稿/发布双行模型下分页错乱
+  const countOptions: Record<string, unknown> = { filters }
+  if (config.localized && locale) {
+    countOptions.locale = locale
+  }
+
   const [data, total] = await Promise.all([
     strapi.entityService.findMany(config.uid as any, queryOptions),
-    strapi.documents(config.uid as any).count({
-      filters,
-      locale,
-    }),
+    strapi.entityService.count(config.uid as any, countOptions as any),
   ])
 
   return {
@@ -1226,7 +1367,7 @@ async function createCollectionItem(ctx: any, collection: PanelCollectionKey) {
   const data = pickAllowedFields(collection, input, ctx.request.body?.locale || ctx.query.locale)
 
   const entry = await strapi.entityService.create(config.uid as any, {
-    data,
+    data: data as any,
     populate: config.populate,
   })
 
@@ -1246,7 +1387,7 @@ async function updateCollectionItem(ctx: any, collection: PanelCollectionKey) {
   const data = pickAllowedFields(collection, input, ctx.request.body?.locale || ctx.query.locale)
 
   const entry = await strapi.entityService.update(config.uid as any, id, {
-    data,
+    data: data as any,
     populate: config.populate,
   })
 
@@ -1287,7 +1428,11 @@ async function uploadMedia(ctx: any) {
 }
 
 function escapeCsv(value: unknown) {
-  const text = value === null || value === undefined ? '' : String(value)
+  let text = value === null || value === undefined ? '' : String(value)
+  // 中和以 = + - @ 或制表符开头的单元格，防止在 Excel 中被当作公式执行
+  if (/^[=+\-@\t\r]/.test(text)) {
+    text = `'${text}`
+  }
   return `"${text.replace(/"/g, '""')}"`
 }
 
@@ -1316,7 +1461,7 @@ async function exportAdminAuditLogs(ctx: any) {
     start += AUDIT_EXPORT_PAGE_SIZE
   }
 
-  const total = await strapi.documents(AUDIT_LOG_UID).count({ filters })
+  const total = await strapi.entityService.count(AUDIT_LOG_UID, { filters } as any)
   truncated = total > rows.length
   const header = ['createdAt', 'action', 'status', 'actorEmail', 'actorUsername', 'targetCollection', 'targetId', 'targetName', 'locale', 'message']
   const csv = [
@@ -1425,9 +1570,10 @@ async function runBulkAction(ctx: any) {
     }
   }
 
+  const auditAction = action === 'publish' ? 'publish' : action === 'unpublish' ? 'unpublish' : 'update'
   await recordAdminAuditLog(ctx, {
-    action: 'update',
-    status: errors.length > 0 ? 'failed' : 'success',
+    action: auditAction,
+    status: errors.length > 0 ? (updated > 0 ? 'partial' : 'failed') : 'success',
     targetCollection: collection,
     locale,
     message: `批量操作 ${action}: 成功 ${updated}/${ids.length}`,
@@ -1460,6 +1606,12 @@ export default {
   },
 
   async scanQuality(ctx: any) {
+    // 扫描会先插入新结果再清理旧结果，并发执行会互相删除数据，必须串行
+    const lock = await acquireJobLock(strapi, 'content-quality-scan', 10 * 60 * 1000)
+    if (!lock) {
+      return ctx.conflict('已有质量扫描正在执行，请稍后再试')
+    }
+
     try {
       const issues = await scanContentQuality()
       await recordAdminAuditLog(ctx, {
@@ -1478,6 +1630,8 @@ export default {
         message: (error as Error).message,
       })
       ctx.badRequest((error as Error).message)
+    } finally {
+      await releaseJobLock(strapi, lock)
     }
   },
 

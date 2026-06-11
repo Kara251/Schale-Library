@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083'
+import { STRAPI_API_URL as API_URL } from '@/lib/config'
 
 function trimTrailingSlash(value: string) {
   return value.replace(/\/+$/, '')

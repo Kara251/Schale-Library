@@ -80,7 +80,7 @@ export function Footer() {
 
             {/* 版权信息 */}
             <div className="text-sm text-muted-foreground text-center md:text-right">
-              <p>© 2025 Schale Library</p>
+              <p>© {new Date().getFullYear()} Schale Library</p>
               <p className="text-xs">{t.disclaimer}</p>
             </div>
           </div>

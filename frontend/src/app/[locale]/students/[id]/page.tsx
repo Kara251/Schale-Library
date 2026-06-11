@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
-import { ArrowLeft, BookOpen, Building2 } from 'lucide-react'
+import { ArrowLeft, BookOpen, Building2, FileSearch } from 'lucide-react'
 
 import { Footer } from '@/components/footer'
 import { Header } from '@/components/header'
@@ -10,10 +10,10 @@ import { LocaleLink } from '@/components/locale-link'
 import { getMediaUrl } from '@/lib/media'
 import { sanitizeHtml } from '@/lib/sanitize'
 import {
+  getResearchSubjectsByStudent,
   getStudentById,
   getWorksByStudent,
-  schoolNames,
-  schoolNamesLocalized,
+  resolveStudentSchoolName,
 } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 
@@ -30,6 +30,8 @@ const content: Record<Locale, {
   bio: string
   works: string
   noWorks: string
+  research: string
+  researchEntryCount: string
 }> = {
   'zh-Hans': {
     back: '返回推荐作品',
@@ -38,6 +40,8 @@ const content: Record<Locale, {
     bio: '学生简介',
     works: '关联作品',
     noWorks: '暂无关联作品',
+    research: '相关考据',
+    researchEntryCount: '{count} 篇考据',
   },
   en: {
     back: 'Back to works',
@@ -46,6 +50,8 @@ const content: Record<Locale, {
     bio: 'Profile',
     works: 'Related Works',
     noWorks: 'No related works yet',
+    research: 'Related Research',
+    researchEntryCount: '{count} entries',
   },
   ja: {
     back: '作品一覧に戻る',
@@ -54,6 +60,8 @@ const content: Record<Locale, {
     bio: '生徒紹介',
     works: '関連作品',
     noWorks: '関連作品はまだありません',
+    research: '関連考察',
+    researchEntryCount: '{count}件の考察',
   },
 }
 
@@ -84,7 +92,6 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function StudentDetailPage({ params }: PageProps) {
   const { id, locale } = await params
   const t = content[locale as Locale] || content['zh-Hans']
-  const localizedSchoolNames = schoolNamesLocalized[locale] || schoolNamesLocalized['zh-Hans']
 
   const studentRes = await getStudentById(id, locale).catch((error) => {
     console.error('Failed to load student detail:', error)
@@ -96,14 +103,16 @@ export default async function StudentDetailPage({ params }: PageProps) {
   }
 
   const student = studentRes.data
-  const worksRes = await getWorksByStudent(student, 24, locale).catch((error) => {
-    console.error('Failed to load student related works:', error)
-    return { data: [] }
-  })
+  const [worksRes, subjectsRes] = await Promise.all([
+    getWorksByStudent(student, 24, locale).catch((error) => {
+      console.error('Failed to load student related works:', error)
+      return { data: [] }
+    }),
+    getResearchSubjectsByStudent(student, locale).catch(() => ({ data: [] })),
+  ])
   const relatedWorks = worksRes.data || []
-  const schoolLabel = student.school
-    ? localizedSchoolNames[student.school] || schoolNames[student.school] || student.school
-    : null
+  const researchSubjects = subjectsRes.data || []
+  const schoolLabel = resolveStudentSchoolName(student, locale) || null
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -160,6 +169,29 @@ export default async function StudentDetailPage({ params }: PageProps) {
                 <div className="prose prose-slate dark:prose-invert max-w-none">
                   <h2 className="text-2xl font-bold mb-4">{t.bio}</h2>
                   <div className="rounded-lg border bg-card p-6" dangerouslySetInnerHTML={{ __html: sanitizeHtml(student.bio) }} />
+                </div>
+              ) : null}
+
+              {researchSubjects.length > 0 ? (
+                <div>
+                  <div className="mb-4 flex items-center gap-2">
+                    <FileSearch className="h-5 w-5 text-primary" />
+                    <h2 className="text-2xl font-bold">{t.research}</h2>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {researchSubjects.map((subject) => (
+                      <LocaleLink
+                        key={subject.id}
+                        href={`/research-archives/subjects/${subject.slug}`}
+                        className="ba-card group block p-4 transition-colors hover:border-primary/50"
+                      >
+                        <p className="font-medium group-hover:text-primary transition-colors">{subject.name}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {t.researchEntryCount.replace('{count}', String(subject.entries?.length || 0))}
+                        </p>
+                      </LocaleLink>
+                    ))}
+                  </div>
                 </div>
               ) : null}
 

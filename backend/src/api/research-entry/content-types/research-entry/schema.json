@@ -19,38 +19,76 @@
     "title": {
       "type": "string",
       "required": true,
-      "pluginOptions": { "i18n": { "localized": true } }
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
     },
     "slug": {
       "type": "uid",
       "targetField": "title",
       "required": true,
-      "pluginOptions": { "i18n": { "localized": false } }
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
     },
     "stance": {
       "type": "enumeration",
-      "enum": ["official", "personal", "speculative"],
+      "enum": [
+        "official",
+        "personal",
+        "speculative"
+      ],
       "default": "personal",
       "required": true,
-      "pluginOptions": { "i18n": { "localized": false } }
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
     },
     "summary": {
       "type": "text",
-      "pluginOptions": { "i18n": { "localized": true } }
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
     },
     "body": {
       "type": "richtext",
-      "pluginOptions": { "i18n": { "localized": true } }
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
     },
     "media_type": {
       "type": "enumeration",
-      "enum": ["character", "story", "concept", "setting", "organization"],
+      "enum": [
+        "character",
+        "story",
+        "concept",
+        "setting",
+        "organization"
+      ],
       "required": true,
-      "pluginOptions": { "i18n": { "localized": false } }
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
     },
     "affiliations": {
       "type": "json",
-      "pluginOptions": { "i18n": { "localized": false } }
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
     },
     "themes": {
       "type": "relation",
@@ -68,6 +106,38 @@
       "type": "component",
       "repeatable": true,
       "component": "research.related-link"
+    },
+    "subjects": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::research-subject.research-subject",
+      "mappedBy": "entries"
+    },
+    "spoiler_scope": {
+      "type": "enumeration",
+      "enum": [
+        "none",
+        "vol1",
+        "vol2",
+        "vol3",
+        "vol4",
+        "vol5",
+        "final",
+        "event",
+        "latest"
+      ],
+      "default": "none",
+      "required": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "revisions": {
+      "type": "component",
+      "repeatable": true,
+      "component": "research.revision"
     }
   }
 }

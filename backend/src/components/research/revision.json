@@ -1,0 +1,22 @@
+{
+  "collectionName": "components_research_revisions",
+  "info": {
+    "displayName": "修订记录",
+    "icon": "history"
+  },
+  "attributes": {
+    "date": {
+      "type": "date",
+      "required": true
+    },
+    "revision_type": {
+      "type": "enumeration",
+      "enum": ["created", "updated", "confirmed", "refuted"],
+      "default": "updated",
+      "required": true
+    },
+    "note": {
+      "type": "string"
+    }
+  }
+}

@@ -8,7 +8,7 @@ import {
 import { checkServerRateLimit, getClientIp } from '@/lib/server/rate-limit'
 import { createForbiddenOriginResponse, verifyTrustedOrigin } from '@/lib/server/request-security'
 
-const STRAPI_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083'
+import { STRAPI_API_URL as STRAPI_URL } from '@/lib/config'
 const LOGIN_IP_RATE_LIMIT = 30
 const LOGIN_ACCOUNT_RATE_LIMIT = 10
 const LOGIN_RATE_WINDOW = 10 * 60 * 1000
@@ -36,6 +36,10 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
+    return NextResponse.json({ error: '请求体无效' }, { status: 400 })
+  }
+
+  if (typeof body !== 'object' || body === null) {
     return NextResponse.json({ error: '请求体无效' }, { status: 400 })
   }
 

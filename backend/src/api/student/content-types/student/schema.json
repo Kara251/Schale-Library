@@ -38,6 +38,12 @@
         "other"
       ]
     },
+    "school_ref": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::school.school",
+      "inversedBy": "students"
+    },
     "organization": {
       "type": "string"
     },
