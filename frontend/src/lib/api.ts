@@ -1333,7 +1333,7 @@ export interface ResearchEntry {
 
 export interface ResearchPathStep {
   id: number;
-  entry?: Pick<ResearchEntry, 'id' | 'documentId' | 'title' | 'slug'>;
+  entry?: Pick<ResearchEntry, 'id' | 'documentId' | 'title' | 'slug'> & { summary?: string };
   step_note?: string;
 }
 
@@ -1655,6 +1655,27 @@ export async function getResearchPathsContainingEntry(entrySlug: string, locale:
       'sort[0]': 'order:asc',
       'pagination[pageSize]': 20,
       ...RESEARCH_PATH_POPULATE,
+    })}`
+  );
+}
+
+/** 知识图谱数据：条目（含主题/对象/条目间链接） */
+export async function getResearchGraphEntries(locale: string = 'zh-Hans') {
+  const strapiLocale = toStrapiLocale(locale);
+  return fetchAPI<StrapiResponse<ResearchEntry[]>>(
+    `/research-entries?${createCollectionQuery({
+      locale: strapiLocale,
+      sort: 'updatedAt:desc',
+      'pagination[pageSize]': 200,
+      'fields[0]': 'title',
+      'fields[1]': 'slug',
+      'fields[2]': 'media_type',
+      'fields[3]': 'body',
+      'populate[themes][fields][0]': 'name',
+      'populate[themes][fields][1]': 'slug',
+      'populate[subjects][fields][0]': 'name',
+      'populate[subjects][fields][1]': 'slug',
+      'populate[related_links][populate][target_entry][fields][0]': 'slug',
     })}`
   );
 }
