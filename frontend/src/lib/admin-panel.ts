@@ -93,18 +93,6 @@ const commonNatureOptions: AdminFieldOption[] = [
   { value: 'fanmade', label: 'fanmade' },
 ]
 
-export const spoilerScopeOptions: AdminFieldOption[] = [
-  { value: 'none', label: { 'zh-Hans': '无剧透', en: 'No spoilers', ja: 'ネタバレなし' } },
-  { value: 'vol1', label: { 'zh-Hans': '第一卷（对策委员会篇）', en: 'Vol. 1 (Abydos)', ja: '第1編（対策委員会編）' } },
-  { value: 'vol2', label: { 'zh-Hans': '第二卷（千年篇）', en: 'Vol. 2 (Millennium)', ja: '第2編（ミレニアム編）' } },
-  { value: 'vol3', label: { 'zh-Hans': '第三卷（伊甸条约篇）', en: 'Vol. 3 (Eden Treaty)', ja: '第3編（エデン条約編）' } },
-  { value: 'vol4', label: { 'zh-Hans': '第四卷（兔子小队篇）', en: 'Vol. 4 (RABBIT Squad)', ja: '第4編（カルバノグの兎編）' } },
-  { value: 'vol5', label: { 'zh-Hans': '第五卷（百鬼夜行篇）', en: 'Vol. 5 (Hyakkiyako)', ja: '第5編（百花繚乱編）' } },
-  { value: 'final', label: { 'zh-Hans': '最终篇', en: 'Final volume', ja: '最終編' } },
-  { value: 'event', label: { 'zh-Hans': '活动剧情', en: 'Event story', ja: 'イベントストーリー' } },
-  { value: 'latest', label: { 'zh-Hans': '最新进度', en: 'Latest content', ja: '最新コンテンツ' } },
-]
-
 export const relationTypeOptions: AdminFieldOption[] = [
   { value: 'related', label: { 'zh-Hans': '相关', en: 'Related', ja: '関連' } },
   { value: 'prototype', label: { 'zh-Hans': '原型', en: 'Prototype of', ja: '原型・モチーフ' } },
@@ -527,13 +515,6 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
         { value: 'setting', label: { 'zh-Hans': '世界观', en: 'Setting', ja: '設定' } },
         { value: 'organization', label: { 'zh-Hans': '组织', en: 'Organization', ja: '組織' } },
       ] },
-      { name: 'spoiler_scope', type: 'select', label: { 'zh-Hans': '剧透范围', en: 'Spoiler scope', ja: 'ネタバレ範囲' }, options: spoilerScopeOptions,
-        description: {
-          'zh-Hans': '标记本条目涉及的剧情进度，阅读进度不足的访客会先看到剧透提醒。',
-          en: 'Mark the story progress this entry spoils. Readers behind this point see a warning first.',
-          ja: 'この記事が触れるストーリー進行度。未読の訪問者には警告が表示されます。',
-        },
-      },
       { name: 'subjects', type: 'relation-multiselect', label: { 'zh-Hans': '考据对象', en: 'Subjects', ja: '考察対象' }, relationKey: 'research-subjects' },
       { name: 'themes', type: 'relation-multiselect', label: { 'zh-Hans': '关联主题', en: 'Related themes', ja: '関連テーマ' }, relationKey: 'research-themes' },
       { name: 'citations', type: 'relation-multiselect', label: { 'zh-Hans': '关联引证', en: 'Related citations', ja: '関連引証' }, relationKey: 'research-citations' },

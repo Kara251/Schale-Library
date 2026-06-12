@@ -325,11 +325,3 @@
   border-bottom: 1px dashed currentColor;
   cursor: help;
 }
-
-/* 考据档案：剧透遮罩 */
-.spoiler-blur {
-  filter: blur(6px);
-  user-select: none;
-  pointer-events: none;
-  transition: filter 0.3s ease;
-}

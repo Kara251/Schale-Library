@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { LocaleLink } from '@/components/locale-link'
-import { SpoilerGate } from '@/components/spoiler-gate'
 import { ArrowLeft, ArrowRight, CornerDownLeft, History, Route } from 'lucide-react'
 import {
   getEntriesSharingCitations,
@@ -49,7 +48,7 @@ const relationBadge: Record<string, string> = {
   related: 'bg-secondary text-secondary-foreground',
   prototype: 'bg-primary/10 text-primary',
   echoes: 'bg-accent/20 text-accent-foreground',
-  extends: 'bg-ba-blue/10 text-primary',
+  extends: 'bg-secondary text-secondary-foreground',
   contradicts: 'bg-destructive/10 text-destructive',
   prerequisite: 'bg-muted text-muted-foreground',
 }
@@ -267,8 +266,7 @@ export default async function ResearchEntryPage({ params }: ResearchEntryPagePro
             {t['research.entry.back'] as string}
           </LocaleLink>
 
-          <SpoilerGate scope={entry.spoiler_scope} locale={locale as Locale}>
-            <div className={contentGridClass}>
+          <div className={contentGridClass}>
               {hasToc ? (
                 <aside className="hidden xl:block">
                   <nav className="sticky top-4 space-y-2 text-sm">
@@ -299,7 +297,7 @@ export default async function ResearchEntryPage({ params }: ResearchEntryPagePro
                     <LocaleLink
                       key={theme.id}
                       href={`/research-archives/themes/${theme.slug}`}
-                      className="inline-block rounded px-2.5 py-1 text-sm bg-ba-blue/10 text-primary hover:bg-ba-blue/20 transition-colors"
+                      className="inline-block rounded px-2.5 py-1 text-sm bg-secondary text-secondary-foreground hover:text-primary transition-colors"
                     >
                       {theme.name}
                     </LocaleLink>
@@ -527,8 +525,7 @@ export default async function ResearchEntryPage({ params }: ResearchEntryPagePro
                   })}
                 </aside>
               )}
-            </div>
-          </SpoilerGate>
+          </div>
         </div>
       </main>
 

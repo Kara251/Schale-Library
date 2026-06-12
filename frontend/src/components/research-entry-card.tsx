@@ -1,16 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import { ShieldAlert } from 'lucide-react'
 import { LocaleLink } from '@/components/locale-link'
-import { isSpoilerBlocked, useSpoilerProgress } from '@/hooks/use-spoiler-progress'
 import {
   type ResearchEntry,
   researchMediaTypeLabels,
-  researchSpoilerScopeLabels,
   researchStanceLabels,
 } from '@/lib/api'
-import { translations, type Locale } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n'
 import { format } from 'date-fns'
 import { zhCN, enUS, ja } from 'date-fns/locale'
 
@@ -28,15 +24,9 @@ const stanceColors: Record<string, string> = {
 }
 
 export function ResearchEntryCard({ entry, locale }: ResearchEntryCardProps) {
-  const t = translations[locale] || translations['zh-Hans']
   const mediaLabels = researchMediaTypeLabels[locale] || researchMediaTypeLabels['zh-Hans']
   const stanceLabels = researchStanceLabels[locale] || researchStanceLabels['zh-Hans']
-  const spoilerLabels = researchSpoilerScopeLabels[locale] || researchSpoilerScopeLabels['zh-Hans']
   const dateLocale = dateLocales[locale] || zhCN
-
-  const [progress] = useSpoilerProgress()
-  const [revealed, setRevealed] = useState(false)
-  const blocked = isSpoilerBlocked(entry.spoiler_scope, progress) && !revealed
 
   const updatedAt = (() => {
     try {
@@ -59,7 +49,7 @@ export function ResearchEntryCard({ entry, locale }: ResearchEntryCardProps) {
           <LocaleLink
             key={theme.id}
             href={`/research-archives/themes/${theme.slug}`}
-            className="inline-block rounded px-2.5 py-1 text-sm bg-ba-blue/10 text-primary hover:bg-ba-blue/20 transition-colors"
+            className="inline-block rounded px-2.5 py-1 text-sm bg-secondary text-secondary-foreground hover:text-primary transition-colors"
           >
             {theme.name}
           </LocaleLink>
@@ -75,32 +65,17 @@ export function ResearchEntryCard({ entry, locale }: ResearchEntryCardProps) {
         ))}
       </div>
 
-      <div className={blocked ? 'spoiler-blur' : undefined} aria-hidden={blocked}>
-        <LocaleLink href={`/research-archives/${entry.slug}`}>
-          <h3 className="ba-title text-[1.0625rem] leading-snug group-hover:text-primary transition-colors line-clamp-2">
-            {entry.title}
-          </h3>
-        </LocaleLink>
+      <LocaleLink href={`/research-archives/${entry.slug}`}>
+        <h3 className="ba-title text-[1.0625rem] leading-snug group-hover:text-primary transition-colors line-clamp-2">
+          {entry.title}
+        </h3>
+      </LocaleLink>
 
-        {entry.summary && (
-          <p className="mt-2 text-sm text-muted-foreground line-clamp-3 leading-relaxed">
-            {entry.summary}
-          </p>
-        )}
-      </div>
-
-      {blocked ? (
-        <button
-          type="button"
-          onClick={() => setRevealed(true)}
-          className="absolute inset-x-4 top-1/2 z-10 -translate-y-1/2 rounded-md border border-dashed bg-background/90 px-3 py-2 text-sm text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:text-primary hover:border-primary/50 cursor-pointer"
-        >
-          <span className="inline-flex items-center gap-1.5">
-            <ShieldAlert className="h-4 w-4" />
-            {(t['research.spoiler.cardHint'] as string).replace('{scope}', spoilerLabels[entry.spoiler_scope || 'none'])}
-          </span>
-        </button>
-      ) : null}
+      {entry.summary && (
+        <p className="mt-2 text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+          {entry.summary}
+        </p>
+      )}
 
       <div className="mt-auto flex items-center justify-between text-sm text-muted-foreground pt-1">
         {updatedAt && <span>{updatedAt}</span>}

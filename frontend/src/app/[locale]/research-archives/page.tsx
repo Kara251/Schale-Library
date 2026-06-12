@@ -3,7 +3,6 @@ import { Footer } from '@/components/footer'
 import { LocaleLink } from '@/components/locale-link'
 import { ResearchFilter } from '@/components/research-filter'
 import { ResearchEditorSidebar } from '@/components/research-editor-sidebar'
-import { SpoilerProgressSelect } from '@/components/spoiler-progress-select'
 import { GitFork, Network, Route, Tags } from 'lucide-react'
 import {
   getResearchCurator,
@@ -60,19 +59,18 @@ export default async function ResearchArchivesPage({ params }: ResearchArchivesP
             </p>
           </div>
 
-          <div className="mb-8 flex flex-wrap items-center gap-2">
+          <nav className="mb-8 flex flex-wrap items-center gap-4 text-sm">
             {navChips.map(({ href, label, icon: Icon }) => (
               <LocaleLink
                 key={href}
                 href={href}
-                className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-sm font-medium transition-colors hover:border-primary/50 hover:text-primary"
+                className="inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-primary"
               >
                 <Icon className="h-4 w-4" />
                 {label}
               </LocaleLink>
             ))}
-            <SpoilerProgressSelect locale={locale as Locale} className="ml-auto" />
-          </div>
+          </nav>
 
           <div className="grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-6">
             {/* Left + Center: filter + entry grid */}

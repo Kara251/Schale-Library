@@ -97,12 +97,12 @@ export default async function ResearchSubjectPage({ params }: SubjectPageProps) 
                   {t['research.subjects.students'] as string}
                 </h2>
               </div>
-              <div className="flex flex-wrap gap-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {students.map((student) => (
                   <LocaleLink
                     key={student.id}
                     href={`/students/${student.documentId || student.id}`}
-                    className="group flex items-center gap-2 rounded-full border bg-card py-1 pl-1 pr-3 transition-colors hover:border-primary/50"
+                    className="ba-card group flex items-center gap-3 p-3 transition-colors hover:border-primary/50"
                   >
                     <span className="relative h-8 w-8 overflow-hidden rounded-full border bg-secondary">
                       {student.avatar ? (

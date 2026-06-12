@@ -70,10 +70,18 @@ test('renders research archive hub with knowledge-system navigation', async ({ p
   await page.goto('/zh-Hans/research-archives')
 
   await expect(page.getByRole('heading', { name: '考据档案' })).toBeVisible()
+  await expect(page.getByRole('link', { name: '主题' })).toBeVisible()
   await expect(page.getByRole('link', { name: '考据对象' })).toBeVisible()
   await expect(page.getByRole('link', { name: '阅读路径' })).toBeVisible()
   await expect(page.getByRole('link', { name: '知识图谱' })).toBeVisible()
-  await expect(page.getByText('阅读进度')).toBeVisible()
+  await expect(page.getByText('阅读进度')).toHaveCount(0)
+})
+
+test('renders research themes page empty state', async ({ page }) => {
+  await page.goto('/zh-Hans/research-archives/themes')
+
+  await expect(page.getByRole('heading', { name: '主题' })).toBeVisible()
+  await expect(page.getByText('暂无考据主题')).toBeVisible()
 })
 
 test('renders research subjects page empty state', async ({ page }) => {

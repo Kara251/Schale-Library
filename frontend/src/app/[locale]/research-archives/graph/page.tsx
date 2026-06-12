@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: GraphPageProps) {
   }
 }
 
-function buildGraph(entries: ResearchEntry[], locale: string) {
+function buildGraph(entries: ResearchEntry[]) {
   const nodes: GraphNode[] = []
   const edges: GraphEdge[] = []
   const nodeIds = new Set<string>()
@@ -48,7 +48,7 @@ function buildGraph(entries: ResearchEntry[], locale: string) {
       id: `entry:${entry.slug}`,
       label: entry.title,
       type: 'entry',
-      href: `/${locale}/research-archives/${entry.slug}`,
+      href: `/research-archives/${entry.slug}`,
     })
   }
 
@@ -61,7 +61,7 @@ function buildGraph(entries: ResearchEntry[], locale: string) {
         id: themeId,
         label: theme.name,
         type: 'theme',
-        href: `/${locale}/research-archives/themes/${theme.slug}`,
+        href: `/research-archives/themes/${theme.slug}`,
       })
       addEdge(entryId, themeId)
     }
@@ -72,7 +72,7 @@ function buildGraph(entries: ResearchEntry[], locale: string) {
         id: subjectId,
         label: subject.name,
         type: 'subject',
-        href: `/${locale}/research-archives/subjects/${subject.slug}`,
+        href: `/research-archives/subjects/${subject.slug}`,
       })
       addEdge(entryId, subjectId)
     }
@@ -98,7 +98,7 @@ export default async function ResearchGraphPage({ params }: GraphPageProps) {
   const t = translations[locale as Locale] || translations['zh-Hans']
 
   const entriesRes = await getResearchGraphEntries(locale).catch(() => ({ data: [] as ResearchEntry[] }))
-  const { nodes, edges } = buildGraph(entriesRes.data || [], locale)
+  const { nodes, edges } = buildGraph(entriesRes.data || [])
 
   return (
     <div className="min-h-screen flex flex-col">

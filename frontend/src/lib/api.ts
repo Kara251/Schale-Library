@@ -1232,7 +1232,6 @@ export type ResearchAffiliation =
 export type CitationSourceType = 'game_line' | 'interview' | 'visual' | 'external';
 export type CitationConfidence = 'official' | 'derived' | 'conjecture';
 export type ResearchRelationType = 'related' | 'prototype' | 'echoes' | 'extends' | 'contradicts' | 'prerequisite';
-export type ResearchSpoilerScope = 'none' | 'vol1' | 'vol2' | 'vol3' | 'vol4' | 'vol5' | 'final' | 'event' | 'latest';
 export type ResearchSubjectType = 'school' | 'organization' | 'club' | 'character' | 'location' | 'concept' | 'item';
 export type ResearchRevisionType = 'created' | 'updated' | 'confirmed' | 'refuted';
 export type ResearchPathDifficulty = 'intro' | 'deep' | 'expert';
@@ -1318,7 +1317,7 @@ export interface ResearchEntry {
   summary?: string;
   body?: string;
   media_type: ResearchMediaType;
-  spoiler_scope?: ResearchSpoilerScope;
+  spoiler_scope?: string | null;
   affiliations?: ResearchAffiliation[];
   themes?: ResearchTheme[];
   citations?: ResearchCitation[];
@@ -1348,11 +1347,6 @@ export const RESEARCH_MEDIA_TYPES: ResearchMediaType[] = [
   'character', 'story', 'concept', 'setting', 'organization',
 ];
 
-export const RESEARCH_AFFILIATIONS: ResearchAffiliation[] = [
-  'millennium', 'trinity', 'gehenna', 'hyakkiyako', 'shanhaijing',
-  'redwinter', 'abydos', 'schale', 'extra', 'mainline', 'other',
-];
-
 export const researchMediaTypeLabels: Record<string, Record<ResearchMediaType, string>> = {
   'zh-Hans': {
     character: '角色', story: '剧情', concept: '概念', setting: '设定', organization: '组织',
@@ -1362,24 +1356,6 @@ export const researchMediaTypeLabels: Record<string, Record<ResearchMediaType, s
   },
   'ja': {
     character: 'キャラクター', story: 'ストーリー', concept: '概念', setting: '設定', organization: '組織',
-  },
-};
-
-export const researchAffiliationLabels: Record<string, Record<ResearchAffiliation, string>> = {
-  'zh-Hans': {
-    millennium: '千年', trinity: '三一', gehenna: '格黑娜', hyakkiyako: '百鬼夜行',
-    shanhaijing: '山海经', redwinter: '红冬', abydos: '阿拜多斯', schale: '夏莱',
-    extra: 'Ex篇', mainline: '主线', other: '其他',
-  },
-  'en': {
-    millennium: 'Millennium', trinity: 'Trinity', gehenna: 'Gehenna', hyakkiyako: 'Hyakkiyako',
-    shanhaijing: 'Shanhaijing', redwinter: 'Red Winter', abydos: 'Abydos', schale: 'Schale',
-    extra: 'Extra Chapter', mainline: 'Main Story', other: 'Other',
-  },
-  'ja': {
-    millennium: 'ミレニアム', trinity: 'トリニティ', gehenna: 'ゲヘナ', hyakkiyako: '百鬼夜行',
-    shanhaijing: '山海経', redwinter: 'レッドウィンター', abydos: 'アビドス', schale: 'シャーレ',
-    extra: 'Ex章', mainline: 'メインストーリー', other: 'その他',
   },
 };
 
@@ -1405,26 +1381,6 @@ export const researchRelationTypeLabels: Record<string, Record<ResearchRelationT
   'zh-Hans': { related: '相关', prototype: '原型', echoes: '呼应', extends: '补充', contradicts: '相左', prerequisite: '前置阅读' },
   'en': { related: 'Related', prototype: 'Prototype', echoes: 'Echoes', extends: 'Builds on', contradicts: 'Contradicts', prerequisite: 'Read first' },
   'ja': { related: '関連', prototype: '原型・モチーフ', echoes: '呼応', extends: '補足', contradicts: '対立', prerequisite: '前提知識' },
-};
-
-export const researchSpoilerScopeLabels: Record<string, Record<ResearchSpoilerScope, string>> = {
-  'zh-Hans': {
-    none: '无剧透', vol1: '第一卷（对策委员会篇）', vol2: '第二卷（千年篇）', vol3: '第三卷（伊甸条约篇）',
-    vol4: '第四卷（兔子小队篇）', vol5: '第五卷（百鬼夜行篇）', final: '最终篇', event: '活动剧情', latest: '最新进度',
-  },
-  'en': {
-    none: 'No spoilers', vol1: 'Vol. 1 (Abydos)', vol2: 'Vol. 2 (Millennium)', vol3: 'Vol. 3 (Eden Treaty)',
-    vol4: 'Vol. 4 (RABBIT Squad)', vol5: 'Vol. 5 (Hyakkiyako)', final: 'Final volume', event: 'Event story', latest: 'Latest content',
-  },
-  'ja': {
-    none: 'ネタバレなし', vol1: '第1編（対策委員会編）', vol2: '第2編（ミレニアム編）', vol3: '第3編（エデン条約編）',
-    vol4: '第4編（カルバノグの兎編）', vol5: '第5編（百花繚乱編）', final: '最終編', event: 'イベント', latest: '最新コンテンツ',
-  },
-};
-
-/** 剧透范围的先后顺序：用于和读者的阅读进度比较 */
-export const SPOILER_SCOPE_ORDER: Record<ResearchSpoilerScope, number> = {
-  none: 0, vol1: 1, vol2: 2, vol3: 3, vol4: 4, vol5: 5, final: 6, event: 7, latest: 8,
 };
 
 export const researchSubjectTypeLabels: Record<string, Record<ResearchSubjectType, string>> = {

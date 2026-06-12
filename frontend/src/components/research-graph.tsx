@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLocalePath } from '@/components/locale-link'
 import { translations, type Locale } from '@/lib/i18n'
 
 export type GraphNodeType = 'entry' | 'theme' | 'subject'
@@ -50,6 +51,7 @@ const NODE_COLORS: Record<GraphNodeType, string> = {
 export function ResearchGraph({ nodes, edges, locale }: ResearchGraphProps) {
   const t = translations[locale] || translations['zh-Hans']
   const router = useRouter()
+  const toLocalePath = useLocalePath()
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const simRef = useRef<{ nodes: SimNode[]; edges: GraphEdge[] }>({ nodes: [], edges: [] })
@@ -313,10 +315,10 @@ export function ResearchGraph({ nodes, edges, locale }: ResearchGraphProps) {
   const handlePointerUp = useCallback(() => {
     const drag = dragRef.current
     if (drag.node && !drag.moved) {
-      router.push(drag.node.href)
+      router.push(toLocalePath(drag.node.href))
     }
     dragRef.current = { node: null, panning: false, lastX: 0, lastY: 0, moved: false }
-  }, [router])
+  }, [router, toLocalePath])
 
   const handleWheel = useCallback((event: React.WheelEvent<HTMLCanvasElement>) => {
     const view = viewRef.current

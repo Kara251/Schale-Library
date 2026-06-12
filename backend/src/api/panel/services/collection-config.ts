@@ -160,7 +160,7 @@ export const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
     defaultSort: 'updatedAt:desc',
     supportsDraft: true,
     fields: [
-      'title', 'slug', 'stance', 'media_type', 'spoiler_scope',
+      'title', 'slug', 'stance', 'media_type',
       'themes', 'citations', 'subjects', 'related_links', 'revisions',
       'summary', 'body', 'publishedAt',
     ],

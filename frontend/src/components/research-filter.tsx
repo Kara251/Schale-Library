@@ -1,18 +1,13 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import { ArrowUpRight } from 'lucide-react'
-import { LocaleLink } from '@/components/locale-link'
 import { ResearchEntryCard } from '@/components/research-entry-card'
 import {
   type ResearchEntry,
   type ResearchTheme,
   type ResearchMediaType,
-  type ResearchAffiliation,
   RESEARCH_MEDIA_TYPES,
-  RESEARCH_AFFILIATIONS,
   researchMediaTypeLabels,
-  researchAffiliationLabels,
 } from '@/lib/api'
 import { translations, type Locale } from '@/lib/i18n'
 
@@ -22,47 +17,36 @@ interface ResearchFilterProps {
   locale: Locale
 }
 
-type FilterMode = 'and' | 'or'
-
 interface FilterState {
-  mode: FilterMode
   mediaTypes: Set<ResearchMediaType>
-  affiliations: Set<ResearchAffiliation>
   themeIds: Set<number>
 }
 
 function applyFilter(entries: ResearchEntry[], filter: FilterState): ResearchEntry[] {
   const hasMedia = filter.mediaTypes.size > 0
-  const hasAff = filter.affiliations.size > 0
   const hasTheme = filter.themeIds.size > 0
 
-  if (!hasMedia && !hasAff && !hasTheme) return entries
+  if (!hasMedia && !hasTheme) return entries
 
   return entries.filter((entry) => {
     const matchMedia = !hasMedia || filter.mediaTypes.has(entry.media_type)
-    const matchAff =
-      !hasAff || (entry.affiliations || []).some((a) => filter.affiliations.has(a))
     const matchTheme =
       !hasTheme || (entry.themes || []).some((t) => filter.themeIds.has(t.id))
 
     const checks: boolean[] = []
     if (hasMedia) checks.push(matchMedia)
-    if (hasAff) checks.push(matchAff)
     if (hasTheme) checks.push(matchTheme)
 
-    return filter.mode === 'and' ? checks.every(Boolean) : checks.some(Boolean)
+    return checks.every(Boolean)
   })
 }
 
 export function ResearchFilter({ entries, themes, locale }: ResearchFilterProps) {
   const t = translations[locale] || translations['zh-Hans']
   const mediaLabels = researchMediaTypeLabels[locale] || researchMediaTypeLabels['zh-Hans']
-  const affLabels = researchAffiliationLabels[locale] || researchAffiliationLabels['zh-Hans']
 
   const [filter, setFilter] = useState<FilterState>({
-    mode: 'and',
     mediaTypes: new Set(),
-    affiliations: new Set(),
     themeIds: new Set(),
   })
 
@@ -71,16 +55,7 @@ export function ResearchFilter({ entries, themes, locale }: ResearchFilterProps)
     () => RESEARCH_MEDIA_TYPES.filter((mt) => entries.some((e) => e.media_type === mt)),
     [entries]
   )
-  const availableAffiliations = useMemo(
-    () => RESEARCH_AFFILIATIONS.filter((aff) => entries.some((e) => (e.affiliations || []).includes(aff))),
-    [entries]
-  )
-
   const filtered = useMemo(() => applyFilter(entries, filter), [entries, filter])
-
-  const toggleMode = useCallback(() => {
-    setFilter((prev) => ({ ...prev, mode: prev.mode === 'and' ? 'or' : 'and' }))
-  }, [])
 
   const toggleMediaType = useCallback((value: ResearchMediaType) => {
     setFilter((prev) => {
@@ -88,15 +63,6 @@ export function ResearchFilter({ entries, themes, locale }: ResearchFilterProps)
       if (next.has(value)) next.delete(value)
       else next.add(value)
       return { ...prev, mediaTypes: next }
-    })
-  }, [])
-
-  const toggleAffiliation = useCallback((value: ResearchAffiliation) => {
-    setFilter((prev) => {
-      const next = new Set(prev.affiliations)
-      if (next.has(value)) next.delete(value)
-      else next.add(value)
-      return { ...prev, affiliations: next }
     })
   }, [])
 
@@ -110,13 +76,11 @@ export function ResearchFilter({ entries, themes, locale }: ResearchFilterProps)
   }, [])
 
   const clearAll = useCallback(() => {
-    setFilter({ mode: filter.mode, mediaTypes: new Set(), affiliations: new Set(), themeIds: new Set() })
-  }, [filter.mode])
+    setFilter({ mediaTypes: new Set(), themeIds: new Set() })
+  }, [])
 
   const hasActiveFilters =
-    filter.mediaTypes.size > 0 || filter.affiliations.size > 0 || filter.themeIds.size > 0
-
-  const hasAnyFilterOptions = availableMediaTypes.length > 0 || availableAffiliations.length > 0 || themes.length > 0
+    filter.mediaTypes.size > 0 || filter.themeIds.size > 0
 
   const countLabel = (t['research.filter.count'] as string || '{count} found').replace(
     '{count}',
@@ -128,35 +92,6 @@ export function ResearchFilter({ entries, themes, locale }: ResearchFilterProps)
     <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
       {/* Left: Filter panel */}
       <aside className="space-y-5">
-        {/* Mode toggle — only show when there's something to filter */}
-        {hasAnyFilterOptions && (
-          <div className="rounded-lg border bg-card p-3">
-            <button
-              type="button"
-              onClick={toggleMode}
-              title={filter.mode === 'and'
-                ? (t['research.filter.mode.hint.and'] as string)
-                : (t['research.filter.mode.hint.or'] as string)}
-              className="w-full flex items-center justify-between gap-2 text-sm"
-            >
-              <span className="text-muted-foreground text-sm">
-                {filter.mode === 'and'
-                  ? (t['research.filter.mode.hint.and'] as string)
-                  : (t['research.filter.mode.hint.or'] as string)}
-              </span>
-              <span className={`shrink-0 rounded px-2 py-0.5 text-xs font-semibold transition-colors ${
-                filter.mode === 'and'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
-              }`}>
-                {filter.mode === 'and'
-                  ? (t['research.filter.mode.and'] as string)
-                  : (t['research.filter.mode.or'] as string)}
-              </span>
-            </button>
-          </div>
-        )}
-
         {/* Media types — only show options present in data */}
         {availableMediaTypes.length > 0 && (
           <section>
@@ -169,38 +104,13 @@ export function ResearchFilter({ entries, themes, locale }: ResearchFilterProps)
                   key={mt}
                   type="button"
                   onClick={() => toggleMediaType(mt)}
-                  className={`rounded px-2.5 py-1 text-sm font-medium transition-colors cursor-pointer ${
+                  className={`rounded px-3 py-1.5 text-sm transition-colors cursor-pointer ${
                     filter.mediaTypes.has(mt)
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary'
+                      ? 'text-primary font-medium'
+                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                   }`}
                 >
                   {mediaLabels[mt]}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Affiliations — only show options present in data */}
-        {availableAffiliations.length > 0 && (
-          <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-              {t['research.filter.affiliation'] as string}
-            </h3>
-            <div className="flex flex-wrap gap-1.5">
-              {availableAffiliations.map((aff) => (
-                <button
-                  key={aff}
-                  type="button"
-                  onClick={() => toggleAffiliation(aff)}
-                  className={`rounded px-2.5 py-1 text-sm font-medium transition-colors cursor-pointer ${
-                    filter.affiliations.has(aff)
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary'
-                  }`}
-                >
-                  {affLabels[aff]}
                 </button>
               ))}
             </div>
@@ -215,30 +125,18 @@ export function ResearchFilter({ entries, themes, locale }: ResearchFilterProps)
             </h3>
             <div className="flex flex-wrap gap-1.5">
               {themes.map((theme) => (
-                <span key={theme.id} className="inline-flex overflow-hidden rounded">
-                  <button
-                    type="button"
-                    onClick={() => toggleTheme(theme.id)}
-                    className={`px-2.5 py-1 text-sm font-medium transition-colors cursor-pointer ${
-                      filter.themeIds.has(theme.id)
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary'
-                    }`}
-                  >
-                    {theme.name}
-                  </button>
-                  <LocaleLink
-                    href={`/research-archives/themes/${theme.slug}`}
-                    className={`inline-flex items-center px-1.5 transition-colors ${
-                      filter.themeIds.has(theme.id)
-                        ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                        : 'bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary'
-                    }`}
-                    aria-label={`${theme.name} ${t['research.theme.open'] as string || ''}`.trim()}
-                  >
-                    <ArrowUpRight className="h-3 w-3" />
-                  </LocaleLink>
-                </span>
+                <button
+                  key={theme.id}
+                  type="button"
+                  onClick={() => toggleTheme(theme.id)}
+                  className={`rounded px-3 py-1.5 text-sm transition-colors cursor-pointer ${
+                    filter.themeIds.has(theme.id)
+                      ? 'text-primary font-medium'
+                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                  }`}
+                >
+                  {theme.name}
+                </button>
               ))}
             </div>
           </section>
