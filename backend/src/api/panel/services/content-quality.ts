@@ -207,13 +207,11 @@ export async function scanContentQuality() {
       if (['ticketing', 'lottery'].includes(String(event.ticketStatus || '')) && !event.ticketPriceText && event.priceMin == null && event.priceMax == null) {
         issues.push(toIssue({ issueType: 'ticketing-missing-price', severity: 'info', collection, entry: event, message: '售票或抽选活动缺少票价说明' }))
       }
-      if (!event.eventFormat || event.eventFormat === 'other') {
-        issues.push(toIssue({ issueType: 'event-format-unspecified', severity: 'info', collection, entry: event, message: '活动形式未细分' }))
+      const sourceName = normalizeText(event.sourceName || event.sourcePlatform)
+      if (sourceName && !event.sourceUrl) {
+        issues.push(toIssue({ issueType: 'source-name-missing-url', severity: 'warning', collection, entry: event, message: '活动已填写来源但缺少来源链接' }))
       }
-      if (event.sourcePlatform && event.sourcePlatform !== 'manual' && !event.sourceUrl) {
-        issues.push(toIssue({ issueType: 'source-platform-missing-url', severity: 'warning', collection, entry: event, message: '活动已设置外部信源平台但缺少信源链接' }))
-      }
-      if (['baonly', 'official', 'ticketing'].includes(String(event.sourcePlatform || '')) && !event.lastVerifiedAt) {
+      if (/(baonly|official|ticket|票务|官方)/i.test(sourceName) && !event.lastVerifiedAt) {
         issues.push(toIssue({ issueType: 'source-missing-verification', severity: 'info', collection, entry: event, message: '活动缺少最后核验时间' }))
       }
       if (event.sourceUrl) {
@@ -225,12 +223,12 @@ export async function scanContentQuality() {
         issues.push(toIssue({ issueType: 'invalid-event-time', severity: 'error', collection, entry: event, message: '活动结束时间早于开始时间' }))
       }
       if (collection === 'online-events') {
-        if (!normalizeText(event.platform)) {
-          issues.push(toIssue({ issueType: 'online-event-missing-platform', severity: 'warning', collection, entry: event, message: '线上活动缺少平台信息' }))
+        if (!normalizeText(event.country) && !normalizeText(event.region)) {
+          issues.push(toIssue({ issueType: 'online-event-missing-region', severity: 'warning', collection, entry: event, message: '线上活动缺少国家/地区信息' }))
         }
       }
       if (collection === 'offline-events') {
-        if (!normalizeText(event.country) && !normalizeText(event.region) && !normalizeText(event.city)) {
+        if (!normalizeText(event.country) && !normalizeText(event.region) && !normalizeText(event.city) && !normalizeText(event.district)) {
           issues.push(toIssue({ issueType: 'offline-event-missing-region', severity: 'warning', collection, entry: event, message: '线下活动缺少国家/地区、省市信息' }))
         }
         if (!normalizeText(event.venue) && !normalizeText(event.location)) {

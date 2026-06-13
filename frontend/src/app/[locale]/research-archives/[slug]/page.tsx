@@ -293,24 +293,26 @@ export default async function ResearchEntryPage({ params }: ResearchEntryPagePro
                   <span className={`inline-block rounded border px-2.5 py-1 text-sm font-medium ${stanceColors[entry.stance] || stanceColors.speculative}`}>
                     {stanceL[entry.stance]}
                   </span>
-                  {entry.themes?.map((theme) => (
-                    <LocaleLink
-                      key={theme.id}
-                      href={`/research-archives/themes/${theme.slug}`}
-                      className="inline-block rounded px-2.5 py-1 text-sm bg-secondary text-secondary-foreground hover:text-primary transition-colors"
-                    >
-                      {theme.name}
-                    </LocaleLink>
-                  ))}
-                  {entry.subjects?.map((subject) => (
-                    <LocaleLink
-                      key={subject.id}
-                      href={`/research-archives/subjects/${subject.slug}`}
-                      className="inline-block rounded px-2.5 py-1 text-sm bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary transition-colors"
-                    >
-                      {subject.name}
-                    </LocaleLink>
-                  ))}
+                  {entry.themes?.map((theme) => {
+                    const className = 'inline-block rounded px-2.5 py-1 text-sm bg-secondary text-secondary-foreground hover:text-primary transition-colors'
+                    return theme.slug ? (
+                      <LocaleLink key={theme.id} href={`/research-archives/themes/${theme.slug}`} className={className}>
+                        {theme.name}
+                      </LocaleLink>
+                    ) : (
+                      <span key={theme.id} className={className}>{theme.name}</span>
+                    )
+                  })}
+                  {entry.subjects?.map((subject) => {
+                    const className = 'inline-block rounded px-2.5 py-1 text-sm bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary transition-colors'
+                    return subject.slug ? (
+                      <LocaleLink key={subject.id} href={`/research-archives/subjects/${subject.slug}`} className={className}>
+                        {subject.name}
+                      </LocaleLink>
+                    ) : (
+                      <span key={subject.id} className={className}>{subject.name}</span>
+                    )
+                  })}
                   <span className="text-sm text-muted-foreground ml-auto">
                     {formatDate(entry.updatedAt)}
                   </span>

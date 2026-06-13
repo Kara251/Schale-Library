@@ -75,35 +75,47 @@ export default async function ResearchSubjectsPage({ params }: SubjectsPageProps
                     {typeLabels[type]}
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {grouped.get(type)!.map((subject) => (
-                      <LocaleLink
-                        key={subject.id}
-                        href={`/research-archives/subjects/${subject.slug}`}
-                        className="ba-card group flex items-center gap-3 p-4 transition-colors hover:border-primary/50"
-                      >
-                        {subject.cover ? (
-                          <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border bg-secondary">
-                            <Image
-                              src={getMediaUrl(subject.cover.formats?.thumbnail?.url || subject.cover.url)}
-                              alt={subject.name}
-                              fill
-                              sizes="48px"
-                              className="object-cover"
-                            />
+                    {grouped.get(type)!.map((subject) => {
+                      const content = (
+                        <>
+                          {subject.cover ? (
+                            <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border bg-secondary">
+                              <Image
+                                src={getMediaUrl(subject.cover.formats?.thumbnail?.url || subject.cover.url)}
+                                alt={subject.name}
+                                fill
+                                sizes="48px"
+                                className="object-cover"
+                              />
+                            </span>
+                          ) : (
+                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border bg-secondary text-lg font-bold text-muted-foreground">
+                              {subject.name.charAt(0)}
+                            </span>
+                          )}
+                          <span className="min-w-0">
+                            <span className="block truncate font-medium group-hover:text-primary transition-colors">
+                              {subject.name}
+                            </span>
+                            <span className="block text-xs text-muted-foreground">{typeLabels[subject.subject_type]}</span>
                           </span>
-                        ) : (
-                          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border bg-secondary text-lg font-bold text-muted-foreground">
-                            {subject.name.charAt(0)}
-                          </span>
-                        )}
-                        <span className="min-w-0">
-                          <span className="block truncate font-medium group-hover:text-primary transition-colors">
-                            {subject.name}
-                          </span>
-                          <span className="block text-xs text-muted-foreground">{typeLabels[subject.subject_type]}</span>
-                        </span>
-                      </LocaleLink>
-                    ))}
+                        </>
+                      )
+
+                      return subject.slug ? (
+                        <LocaleLink
+                          key={subject.id}
+                          href={`/research-archives/subjects/${subject.slug}`}
+                          className="ba-card group flex items-center gap-3 p-4 transition-colors hover:border-primary/50"
+                        >
+                          {content}
+                        </LocaleLink>
+                      ) : (
+                        <article key={subject.id} className="ba-card group flex items-center gap-3 p-4">
+                          {content}
+                        </article>
+                      )
+                    })}
                   </div>
                 </section>
               ))}

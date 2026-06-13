@@ -45,24 +45,30 @@ export function ResearchEntryCard({ entry, locale }: ResearchEntryCardProps) {
         <span className={`inline-block rounded px-2.5 py-1 text-sm font-medium ${stanceColors[entry.stance] || stanceColors.speculative}`}>
           {stanceLabels[entry.stance]}
         </span>
-        {entry.themes?.slice(0, 2).map((theme) => (
-          <LocaleLink
-            key={theme.id}
-            href={`/research-archives/themes/${theme.slug}`}
-            className="inline-block rounded px-2.5 py-1 text-sm bg-secondary text-secondary-foreground hover:text-primary transition-colors"
-          >
-            {theme.name}
-          </LocaleLink>
-        ))}
-        {entry.subjects?.slice(0, 2).map((subject) => (
-          <LocaleLink
-            key={subject.id}
-            href={`/research-archives/subjects/${subject.slug}`}
-            className="inline-block rounded px-2.5 py-1 text-sm bg-secondary/80 text-secondary-foreground hover:bg-primary/10 hover:text-primary transition-colors"
-          >
-            {subject.name}
-          </LocaleLink>
-        ))}
+        {entry.themes?.slice(0, 2).map((theme) => {
+          const className = 'inline-block rounded px-2.5 py-1 text-sm bg-secondary text-secondary-foreground hover:text-primary transition-colors'
+          return theme.slug ? (
+            <LocaleLink key={theme.id} href={`/research-archives/themes/${theme.slug}`} className={className}>
+              {theme.name}
+            </LocaleLink>
+          ) : (
+            <span key={theme.id} className={className}>
+              {theme.name}
+            </span>
+          )
+        })}
+        {entry.subjects?.slice(0, 2).map((subject) => {
+          const className = 'inline-block rounded px-2.5 py-1 text-sm bg-secondary/80 text-secondary-foreground hover:bg-primary/10 hover:text-primary transition-colors'
+          return subject.slug ? (
+            <LocaleLink key={subject.id} href={`/research-archives/subjects/${subject.slug}`} className={className}>
+              {subject.name}
+            </LocaleLink>
+          ) : (
+            <span key={subject.id} className={className}>
+              {subject.name}
+            </span>
+          )
+        })}
       </div>
 
       <LocaleLink href={`/research-archives/${entry.slug}`}>

@@ -142,23 +142,22 @@ export async function getFriendLinks(locale: string = 'zh-Hans', limit: number =
 export type EventNatureFilter = 'all' | 'official' | 'fanmade';
 export type EventStatusFilter = 'all' | 'upcoming' | 'ongoing' | 'ended';
 export type EventSortMode = 'relevant' | 'startTime' | 'endTime';
-export type EventFormat = 'live_stream' | 'live_show' | 'only_event' | 'collaboration' | 'contest' | 'campaign' | 'exhibition' | 'meetup' | 'release' | 'other';
-export type EventFormatFilter = 'all' | EventFormat;
+export type EventKindFilter = 'all' | 'online' | 'offline';
+export type EventFormat = 'stream' | 'stage' | 'only' | 'exhibition' | 'contest' | 'uncategorized' | 'live_stream' | 'live_show' | 'only_event' | 'collaboration' | 'campaign' | 'meetup' | 'release' | 'other';
 export type EventStatusOverride = 'normal' | 'postponed' | 'cancelled' | 'rescheduled' | 'ticketing' | 'sold_out' | 'changed';
 export type EventTicketStatus = 'unknown' | 'free' | 'ticketing' | 'lottery' | 'sold_out' | 'closed';
-export type EventSourcePlatform = 'manual' | 'official' | 'baonly' | 'bilibili' | 'x' | 'youtube' | 'website' | 'ticketing' | 'other';
-export type EventSourcePlatformFilter = 'all' | EventSourcePlatform;
 type EventCollection = 'online-events' | 'offline-events';
 export type EventKind = 'online' | 'offline';
 
 export interface EventListOptions {
   query?: string;
+  kind?: EventKindFilter;
   nature?: EventNatureFilter;
   status?: EventStatusFilter;
-  format?: EventFormatFilter;
+  country?: string;
+  region?: string;
   city?: string;
-  platform?: string;
-  source?: EventSourcePlatformFilter;
+  district?: string;
   sort?: EventSortMode;
   page?: number;
   pageSize?: number;
@@ -174,6 +173,16 @@ function appendEventFilters(
 ) {
   const query = options.query?.trim();
   const status = statusOverride || options.status || 'all';
+  let andIndex = 0;
+  const addLocationFilter = (value: string | undefined, fields: string[]) => {
+    const text = value?.trim();
+    if (!text) return;
+
+    fields.forEach((field, index) => {
+      params[`filters[$and][${andIndex}][$or][${index}][${field}][$containsi]`] = text;
+    });
+    andIndex++;
+  };
 
   if (query) {
     params['filters[$or][0][title][$containsi]'] = query;
@@ -185,15 +194,18 @@ function appendEventFilters(
       params['filters[$or][5][country][$containsi]'] = query;
       params['filters[$or][6][region][$containsi]'] = query;
       params['filters[$or][7][city][$containsi]'] = query;
-      params['filters[$or][8][venue][$containsi]'] = query;
-      params['filters[$or][9][address][$containsi]'] = query;
-      params['filters[$or][10][tags][$containsi]'] = query;
-      params['filters[$or][11][ticketPriceText][$containsi]'] = query;
+      params['filters[$or][8][district][$containsi]'] = query;
+      params['filters[$or][9][venue][$containsi]'] = query;
+      params['filters[$or][10][address][$containsi]'] = query;
+      params['filters[$or][11][tags][$containsi]'] = query;
+      params['filters[$or][12][ticketPriceText][$containsi]'] = query;
+      params['filters[$or][13][sourceName][$containsi]'] = query;
     } else {
-      params['filters[$or][3][region][$containsi]'] = query;
-      params['filters[$or][4][platform][$containsi]'] = query;
+      params['filters[$or][3][country][$containsi]'] = query;
+      params['filters[$or][4][region][$containsi]'] = query;
       params['filters[$or][5][tags][$containsi]'] = query;
       params['filters[$or][6][ticketPriceText][$containsi]'] = query;
+      params['filters[$or][7][sourceName][$containsi]'] = query;
     }
   }
 
@@ -201,35 +213,17 @@ function appendEventFilters(
     params['filters[nature][$eq]'] = options.nature;
   }
 
-  if (options.format && options.format !== 'all') {
-    params['filters[eventFormat][$eq]'] = options.format;
-  }
-
-  if (options.source && options.source !== 'all') {
-    params['filters[sourcePlatform][$eq]'] = options.source;
-  }
-
-  const city = options.city?.trim();
-  if (city) {
-    if (kind === 'offline') {
-      params['filters[$and][0][$or][0][city][$containsi]'] = city;
-      params['filters[$and][0][$or][1][region][$containsi]'] = city;
-      params['filters[$and][0][$or][2][country][$containsi]'] = city;
-      params['filters[$and][0][$or][3][location][$containsi]'] = city;
-      params['filters[$and][0][$or][4][venue][$containsi]'] = city;
-    } else {
+  if (kind === 'online') {
+    addLocationFilter(options.country, ['country', 'region']);
+    addLocationFilter(options.region, ['region', 'country']);
+    if (options.city?.trim() || options.district?.trim()) {
       params['filters[id][$eq]'] = -1;
     }
-  }
-
-  const platform = options.platform?.trim();
-  if (platform) {
-    if (kind === 'online') {
-      params['filters[$and][0][$or][0][platform][$containsi]'] = platform;
-      params['filters[$and][0][$or][1][region][$containsi]'] = platform;
-    } else {
-      params['filters[id][$eq]'] = -1;
-    }
+  } else {
+    addLocationFilter(options.country, ['country', 'location']);
+    addLocationFilter(options.region, ['region', 'location']);
+    addLocationFilter(options.city, ['city', 'location', 'venue']);
+    addLocationFilter(options.district, ['district', 'address', 'location']);
   }
 
   if (options.excludeId) {
@@ -514,8 +508,12 @@ export async function getAllEvents(
 
   // 一次性取全两个集合再统一排序切片，避免跨页丢失/重复（活动量级小，可承受）。
   const [online, offline] = await Promise.all([
-    fetchAllEventsForCollection<OnlineEvent>('online-events', 'online', locale, options, nowIso),
-    fetchAllEventsForCollection<OfflineEvent>('offline-events', 'offline', locale, options, nowIso),
+    options.kind === 'offline'
+      ? Promise.resolve([] as OnlineEvent[])
+      : fetchAllEventsForCollection<OnlineEvent>('online-events', 'online', locale, options, nowIso),
+    options.kind === 'online'
+      ? Promise.resolve([] as OfflineEvent[])
+      : fetchAllEventsForCollection<OfflineEvent>('offline-events', 'offline', locale, options, nowIso),
   ]);
 
   const merged = [
@@ -636,10 +634,12 @@ export async function searchOnlineEvents(
       'filters[$or][0][title][$containsi]': query,
       'filters[$or][1][organizer][$containsi]': query,
       'filters[$or][2][description][$containsi]': query,
-      'filters[$or][3][region][$containsi]': query,
-      'filters[$or][4][platform][$containsi]': query,
-      'filters[$or][5][tags][$containsi]': query,
-      'filters[$or][6][ticketPriceText][$containsi]': query,
+      'filters[$or][3][country][$containsi]': query,
+      'filters[$or][4][region][$containsi]': query,
+      'filters[$or][5][platform][$containsi]': query,
+      'filters[$or][6][tags][$containsi]': query,
+      'filters[$or][7][ticketPriceText][$containsi]': query,
+      'filters[$or][8][sourceName][$containsi]': query,
       sort: 'startTime:desc',
       'pagination[limit]': 50,
       ...COVER_IMAGE_POPULATE_PARAMS,
@@ -668,10 +668,12 @@ export async function searchOfflineEvents(
       'filters[$or][5][country][$containsi]': query,
       'filters[$or][6][region][$containsi]': query,
       'filters[$or][7][city][$containsi]': query,
-      'filters[$or][8][venue][$containsi]': query,
-      'filters[$or][9][address][$containsi]': query,
-      'filters[$or][10][tags][$containsi]': query,
-      'filters[$or][11][ticketPriceText][$containsi]': query,
+      'filters[$or][8][district][$containsi]': query,
+      'filters[$or][9][venue][$containsi]': query,
+      'filters[$or][10][address][$containsi]': query,
+      'filters[$or][11][tags][$containsi]': query,
+      'filters[$or][12][ticketPriceText][$containsi]': query,
+      'filters[$or][13][sourceName][$containsi]': query,
       sort: 'startTime:desc',
       'pagination[limit]': 50,
       ...COVER_IMAGE_POPULATE_PARAMS,
@@ -743,6 +745,7 @@ export interface OnlineEvent {
   nature: 'official' | 'fanmade';
   eventFormat?: EventFormat | null;
   statusOverride?: EventStatusOverride | null;
+  country?: string;
   region?: string;
   platform?: string;
   startTime: string;
@@ -758,7 +761,8 @@ export interface OnlineEvent {
   organizer?: string;
   organizerVerified?: boolean;
   tags?: string;
-  sourcePlatform?: EventSourcePlatform | null;
+  sourcePlatform?: string | null;
+  sourceName?: string;
   sourceUrl?: string;
   lastVerifiedAt?: string;
   description?: string;
@@ -781,6 +785,7 @@ export interface OfflineEvent {
   country?: string;
   region?: string;
   city?: string;
+  district?: string;
   venue?: string;
   address?: string;
   location: string;
@@ -799,7 +804,8 @@ export interface OfflineEvent {
   organizer?: string;
   organizerVerified?: boolean;
   tags?: string;
-  sourcePlatform?: EventSourcePlatform | null;
+  sourcePlatform?: string | null;
+  sourceName?: string;
   sourceUrl?: string;
   lastVerifiedAt?: string;
   description?: string;

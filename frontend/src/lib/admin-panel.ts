@@ -94,16 +94,12 @@ const commonNatureOptions: AdminFieldOption[] = [
 ]
 
 const eventFormatOptions: AdminFieldOption[] = [
-  { value: 'live_stream', label: { 'zh-Hans': '线上直播', en: 'Live stream', ja: 'オンライン配信' } },
-  { value: 'live_show', label: { 'zh-Hans': 'Live / 演出', en: 'Live show', ja: 'ライブ公演' } },
-  { value: 'only_event', label: { 'zh-Hans': 'Only / 同人展', en: 'Only event', ja: 'Only / 同人イベント' } },
-  { value: 'collaboration', label: { 'zh-Hans': '联动 / 快闪', en: 'Collaboration', ja: 'コラボ / ポップアップ' } },
-  { value: 'contest', label: { 'zh-Hans': '征集 / 比赛', en: 'Contest', ja: 'コンテスト' } },
-  { value: 'campaign', label: { 'zh-Hans': '企划 / 活动', en: 'Campaign', ja: 'キャンペーン' } },
-  { value: 'exhibition', label: { 'zh-Hans': '展览', en: 'Exhibition', ja: '展示' } },
-  { value: 'meetup', label: { 'zh-Hans': '聚会', en: 'Meetup', ja: '交流会' } },
-  { value: 'release', label: { 'zh-Hans': '发布 / 放送', en: 'Release', ja: '公開 / 放送' } },
-  { value: 'other', label: { 'zh-Hans': '其他', en: 'Other', ja: 'その他' } },
+  { value: 'stream', label: { 'zh-Hans': '线上直播 / 放送', en: 'Stream / broadcast', ja: '配信 / 放送' } },
+  { value: 'stage', label: { 'zh-Hans': '线下演出', en: 'Stage event', ja: '公演' } },
+  { value: 'only', label: { 'zh-Hans': '同人专场', en: 'Only event', ja: 'オンリーイベント' } },
+  { value: 'exhibition', label: { 'zh-Hans': '展览 / 快闪', en: 'Exhibition / pop-up', ja: '展示 / ポップアップ' } },
+  { value: 'contest', label: { 'zh-Hans': '征集 / 比赛', en: 'Contest / call', ja: '募集 / コンテスト' } },
+  { value: 'uncategorized', label: { 'zh-Hans': '未分类', en: 'Uncategorized', ja: '未分類' } },
 ]
 
 const eventStatusOverrideOptions: AdminFieldOption[] = [
@@ -123,18 +119,6 @@ const ticketStatusOptions: AdminFieldOption[] = [
   { value: 'lottery', label: { 'zh-Hans': '抽选 / 抽票', en: 'Lottery', ja: '抽選' } },
   { value: 'sold_out', label: { 'zh-Hans': '已售罄', en: 'Sold out', ja: '完売' } },
   { value: 'closed', label: { 'zh-Hans': '已截止', en: 'Closed', ja: '終了' } },
-]
-
-const eventSourcePlatformOptions: AdminFieldOption[] = [
-  { value: 'manual', label: { 'zh-Hans': '手动维护', en: 'Manual', ja: '手動管理' } },
-  { value: 'official', label: { 'zh-Hans': '官方来源', en: 'Official', ja: '公式情報' } },
-  { value: 'baonly', label: 'baonly.cn' },
-  { value: 'bilibili', label: 'Bilibili' },
-  { value: 'x', label: 'X / Twitter' },
-  { value: 'youtube', label: 'YouTube' },
-  { value: 'website', label: { 'zh-Hans': '官网 / 页面', en: 'Website', ja: 'Webサイト' } },
-  { value: 'ticketing', label: { 'zh-Hans': '票务平台', en: 'Ticketing', ja: 'チケットサイト' } },
-  { value: 'other', label: { 'zh-Hans': '其他', en: 'Other', ja: 'その他' } },
 ]
 
 export const relationTypeOptions: AdminFieldOption[] = [
@@ -322,10 +306,10 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
     fields: [
       { name: 'title', type: 'text', label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
       { name: 'nature', type: 'select', label: { 'zh-Hans': '性质', en: 'Nature', ja: '区分' }, options: commonNatureOptions },
-      { name: 'eventFormat', type: 'select', label: { 'zh-Hans': '活动形式', en: 'Event format', ja: 'イベント形式' }, options: eventFormatOptions },
+      { name: 'eventFormat', type: 'select', label: { 'zh-Hans': '活动类型', en: 'Event type', ja: 'イベント種別' }, options: eventFormatOptions },
       { name: 'statusOverride', type: 'select', label: { 'zh-Hans': '状态覆盖', en: 'Status override', ja: 'ステータス上書き' }, options: eventStatusOverrideOptions },
-      { name: 'region', type: 'text', label: { 'zh-Hans': '区域 / 服务器', en: 'Region / server', ja: '地域 / サーバー' } },
-      { name: 'platform', type: 'text', label: { 'zh-Hans': '平台', en: 'Platform', ja: 'プラットフォーム' } },
+      { name: 'country', type: 'text', label: { 'zh-Hans': '国家（地区）', en: 'Country / region', ja: '国 / 地域' } },
+      { name: 'region', type: 'text', label: { 'zh-Hans': '地区', en: 'Region', ja: '地域' } },
       { name: 'startTime', type: 'datetime-local', label: { 'zh-Hans': '开始时间', en: 'Start time', ja: '開始日時' } },
       { name: 'endTime', type: 'datetime-local', label: { 'zh-Hans': '结束时间', en: 'End time', ja: '終了日時' } },
       { name: 'link', type: 'url', label: { 'zh-Hans': '活动链接', en: 'Event link', ja: 'イベントリンク' } },
@@ -338,7 +322,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       { name: 'organizer', type: 'text', label: { 'zh-Hans': '主办方', en: 'Organizer', ja: '主催' } },
       { name: 'organizerVerified', type: 'boolean', label: { 'zh-Hans': '主办方已认证', en: 'Organizer verified', ja: '主催確認済み' } },
       { name: 'tags', type: 'textarea', label: { 'zh-Hans': '标签（逗号分隔）', en: 'Tags (comma-separated)', ja: 'タグ（カンマ区切り）' } },
-      { name: 'sourcePlatform', type: 'select', label: { 'zh-Hans': '信源平台', en: 'Source platform', ja: '情報源' }, options: eventSourcePlatformOptions },
+      { name: 'sourceName', type: 'text', label: { 'zh-Hans': '来源名称', en: 'Source name', ja: '情報源名' } },
       { name: 'sourceUrl', type: 'url', label: { 'zh-Hans': '信源链接', en: 'Source URL', ja: '情報源URL' } },
       { name: 'lastVerifiedAt', type: 'datetime-local', label: { 'zh-Hans': '最后核验时间', en: 'Last verified at', ja: '最終確認日時' } },
       { name: 'description', type: 'textarea', label: { 'zh-Hans': '活动说明', en: 'Description', ja: '説明' } },
@@ -373,11 +357,12 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
     fields: [
       { name: 'title', type: 'text', label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
       { name: 'nature', type: 'select', label: { 'zh-Hans': '性质', en: 'Nature', ja: '区分' }, options: commonNatureOptions },
-      { name: 'eventFormat', type: 'select', label: { 'zh-Hans': '活动形式', en: 'Event format', ja: 'イベント形式' }, options: eventFormatOptions },
+      { name: 'eventFormat', type: 'select', label: { 'zh-Hans': '活动类型', en: 'Event type', ja: 'イベント種別' }, options: eventFormatOptions },
       { name: 'statusOverride', type: 'select', label: { 'zh-Hans': '状态覆盖', en: 'Status override', ja: 'ステータス上書き' }, options: eventStatusOverrideOptions },
-      { name: 'country', type: 'text', label: { 'zh-Hans': '国家 / 地区', en: 'Country / region', ja: '国 / 地域' } },
+      { name: 'country', type: 'text', label: { 'zh-Hans': '国家（地区）', en: 'Country / region', ja: '国 / 地域' } },
       { name: 'region', type: 'text', label: { 'zh-Hans': '省州 / 都道府县', en: 'Province / prefecture', ja: '州 / 都道府県' } },
       { name: 'city', type: 'text', label: { 'zh-Hans': '城市', en: 'City', ja: '都市' } },
+      { name: 'district', type: 'text', label: { 'zh-Hans': '区县', en: 'District', ja: '区 / 郡' } },
       { name: 'venue', type: 'text', label: { 'zh-Hans': '场馆', en: 'Venue', ja: '会場' } },
       { name: 'address', type: 'text', label: { 'zh-Hans': '详细地址', en: 'Address', ja: '住所' } },
       { name: 'location', type: 'text', label: { 'zh-Hans': '地点', en: 'Location', ja: '場所' } },
@@ -395,7 +380,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       { name: 'organizer', type: 'text', label: { 'zh-Hans': '主办方', en: 'Organizer', ja: '主催' } },
       { name: 'organizerVerified', type: 'boolean', label: { 'zh-Hans': '主办方已认证', en: 'Organizer verified', ja: '主催確認済み' } },
       { name: 'tags', type: 'textarea', label: { 'zh-Hans': '标签（逗号分隔）', en: 'Tags (comma-separated)', ja: 'タグ（カンマ区切り）' } },
-      { name: 'sourcePlatform', type: 'select', label: { 'zh-Hans': '信源平台', en: 'Source platform', ja: '情報源' }, options: eventSourcePlatformOptions },
+      { name: 'sourceName', type: 'text', label: { 'zh-Hans': '来源名称', en: 'Source name', ja: '情報源名' } },
       { name: 'sourceUrl', type: 'url', label: { 'zh-Hans': '信源链接', en: 'Source URL', ja: '情報源URL' } },
       { name: 'lastVerifiedAt', type: 'datetime-local', label: { 'zh-Hans': '最后核验时间', en: 'Last verified at', ja: '最終確認日時' } },
       { name: 'description', type: 'textarea', label: { 'zh-Hans': '活动说明', en: 'Description', ja: '説明' } },

@@ -50,24 +50,36 @@ export default async function ResearchThemesPage({ params }: ResearchThemesPageP
             <p className="py-16 text-center text-muted-foreground">{t['research.themes.empty'] as string}</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {themes.map((theme) => (
-                <LocaleLink
-                  key={theme.id}
-                  href={`/research-archives/themes/${theme.slug}`}
-                  className="ba-card group block p-5 transition-colors hover:border-primary/50"
-                >
-                  <h2 className="ba-title text-lg leading-snug group-hover:text-primary transition-colors">
-                    {theme.name}
-                  </h2>
-                  {theme.curated_intro ? (
-                    <div
-                      className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground"
-                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(theme.curated_intro) }}
-                    />
-                  ) : null}
-                  <p className="mt-4 text-sm text-primary">{t['research.themes.entries'] as string}</p>
-                </LocaleLink>
-              ))}
+              {themes.map((theme) => {
+                const content = (
+                  <>
+                    <h2 className="ba-title text-lg leading-snug group-hover:text-primary transition-colors">
+                      {theme.name}
+                    </h2>
+                    {theme.curated_intro ? (
+                      <div
+                        className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground"
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(theme.curated_intro) }}
+                      />
+                    ) : null}
+                    {theme.slug ? <p className="mt-4 text-sm text-primary">{t['research.themes.entries'] as string}</p> : null}
+                  </>
+                )
+
+                return theme.slug ? (
+                  <LocaleLink
+                    key={theme.id}
+                    href={`/research-archives/themes/${theme.slug}`}
+                    className="ba-card group block p-5 transition-colors hover:border-primary/50"
+                  >
+                    {content}
+                  </LocaleLink>
+                ) : (
+                  <article key={theme.id} className="ba-card group block p-5">
+                    {content}
+                  </article>
+                )
+              })}
             </div>
           )}
         </div>

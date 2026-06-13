@@ -56,6 +56,7 @@ function buildGraph(entries: ResearchEntry[]) {
     const entryId = `entry:${entry.slug}`
 
     for (const theme of entry.themes || []) {
+      if (!theme.slug) continue
       const themeId = `theme:${theme.slug}`
       addNode({
         id: themeId,
@@ -67,6 +68,7 @@ function buildGraph(entries: ResearchEntry[]) {
     }
 
     for (const subject of entry.subjects || []) {
+      if (!subject.slug) continue
       const subjectId = `subject:${subject.slug}`
       addNode({
         id: subjectId,

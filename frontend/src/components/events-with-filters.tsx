@@ -8,9 +8,8 @@ import { EventFilters, type EventNature, type EventStatus } from '@/components/e
 import { Pagination } from '@/components/pagination'
 import { useLocale } from '@/contexts/locale-context'
 import type {
-  EventFormatFilter,
+  EventKindFilter,
   EventListItem,
-  EventSourcePlatformFilter,
   OnlineEvent,
   OfflineEvent,
 } from '@/lib/api'
@@ -23,12 +22,13 @@ interface EventsWithFiltersProps {
   type: 'online' | 'offline' | 'all'
   title?: string
   initialSearchQuery?: string
+  initialKind?: EventKindFilter
   initialNature?: EventNature
   initialStatus?: EventStatus
-  initialFormat?: EventFormatFilter
+  initialCountry?: string
+  initialRegion?: string
   initialCity?: string
-  initialPlatform?: string
-  initialSource?: EventSourcePlatformFilter
+  initialDistrict?: string
   initialSort?: EventSortMode
   total: number
   page: number
@@ -98,12 +98,13 @@ export function EventsWithFilters({
   type,
   title,
   initialSearchQuery = '',
+  initialKind = 'all',
   initialNature = 'all',
   initialStatus = 'all',
-  initialFormat = 'all',
+  initialCountry = '',
+  initialRegion = '',
   initialCity = '',
-  initialPlatform = '',
-  initialSource = 'all',
+  initialDistrict = '',
   initialSort = 'relevant',
   total,
   page,
@@ -118,6 +119,9 @@ export function EventsWithFilters({
 
   const writeParams = useCallback((updates: Record<string, string | null>, nextPage?: number) => {
     const params = new URLSearchParams(searchParams.toString())
+    for (const legacyKey of ['format', 'source', 'platform']) {
+      params.delete(legacyKey)
+    }
     for (const [key, value] of Object.entries(updates)) {
       if (value) {
         params.set(key, value)
@@ -138,7 +142,16 @@ export function EventsWithFilters({
     router.replace(pathname, { scroll: true })
   }, [pathname, router])
 
-  const hasActiveFilters = Boolean(initialSearchQuery) || initialNature !== 'all' || initialStatus !== 'all' || initialFormat !== 'all' || initialSource !== 'all' || Boolean(initialCity) || Boolean(initialPlatform) || initialSort !== 'relevant'
+  const hasActiveFilters =
+    Boolean(initialSearchQuery) ||
+    (type === 'all' && initialKind !== 'all') ||
+    initialNature !== 'all' ||
+    initialStatus !== 'all' ||
+    Boolean(initialCountry) ||
+    Boolean(initialRegion) ||
+    Boolean(initialCity) ||
+    Boolean(initialDistrict) ||
+    initialSort !== 'relevant'
 
   return (
     <div>
@@ -157,19 +170,21 @@ export function EventsWithFilters({
       />
 
       <EventFilters
+        kind={initialKind}
         nature={initialNature}
         status={initialStatus}
-        format={initialFormat}
-        source={initialSource}
+        country={initialCountry}
+        region={initialRegion}
         city={initialCity}
-        platform={initialPlatform}
+        district={initialDistrict}
         scope={type}
+        onKindChange={(value) => writeParams({ kind: value === 'all' ? null : value })}
         onNatureChange={(value) => writeParams({ nature: value === 'all' ? null : value })}
         onStatusChange={(value) => writeParams({ status: value === 'all' ? null : value })}
-        onFormatChange={(value) => writeParams({ format: value === 'all' ? null : value })}
-        onSourceChange={(value) => writeParams({ source: value === 'all' ? null : value })}
+        onCountryChange={(value) => writeParams({ country: value || null })}
+        onRegionChange={(value) => writeParams({ region: value || null })}
         onCityChange={(value) => writeParams({ city: value || null })}
-        onPlatformChange={(value) => writeParams({ platform: value || null })}
+        onDistrictChange={(value) => writeParams({ district: value || null })}
         onReset={handleReset}
       />
 

@@ -11,7 +11,6 @@ import { getContentEntryPathId, type OnlineEvent, type OfflineEvent } from '@/li
 import {
   formatEventPrice,
   getEventDisplayPlace,
-  getEventFormatLabel,
   getEventStatusOverrideLabel,
   splitEventTags,
 } from '@/lib/utils/event-display'
@@ -95,7 +94,6 @@ export const EventCard = memo(function EventCard({ event, type }: EventCardProps
 
   const status = getEventStatusOverrideLabel(event.statusOverride, locale) || getEventStatus()
   const natureLabel = event.nature === 'official' ? t.official : t.fanmade
-  const formatLabel = getEventFormatLabel(event.eventFormat, locale)
   const displayPlace = getEventDisplayPlace(event, type)
   const priceLabel = formatEventPrice(event, locale)
   const tags = splitEventTags(event.tags).slice(0, 3)
@@ -138,12 +136,6 @@ export const EventCard = memo(function EventCard({ event, type }: EventCardProps
           {/* 信息行 */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{natureLabel}</span>
-            {formatLabel ? (
-              <>
-                <span>·</span>
-                <span>{formatLabel}</span>
-              </>
-            ) : null}
             <span>·</span>
             <span>{formatDate(event.startTime)}</span>
           </div>

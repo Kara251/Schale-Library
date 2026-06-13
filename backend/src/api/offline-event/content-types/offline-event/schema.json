@@ -39,8 +39,8 @@
     },
     "eventFormat": {
       "type": "enumeration",
-      "enum": ["live_stream", "live_show", "only_event", "collaboration", "contest", "campaign", "exhibition", "meetup", "release", "other"],
-      "default": "other",
+      "enum": ["stream", "stage", "only", "exhibition", "contest", "uncategorized", "live_stream", "live_show", "only_event", "collaboration", "campaign", "meetup", "release", "other"],
+      "default": "uncategorized",
       "pluginOptions": {
         "i18n": {
           "localized": false
@@ -74,6 +74,14 @@
       }
     },
     "city": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "district": {
       "type": "string",
       "pluginOptions": {
         "i18n": {
@@ -241,6 +249,14 @@
       "pluginOptions": {
         "i18n": {
           "localized": false
+        }
+      }
+    },
+    "sourceName": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
         }
       }
     },

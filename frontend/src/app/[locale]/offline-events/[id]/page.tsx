@@ -5,14 +5,12 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { EventCard } from "@/components/event-card"
-import { Calendar, CheckCircle, MapPin, Tag, Ticket, User, ArrowLeft, ExternalLink } from 'lucide-react'
+import { Calendar, CheckCircle, MapPin, Ticket, User, ArrowLeft, ExternalLink } from 'lucide-react'
 import { getOfflineEventById, getOfflineEvents } from "@/lib/api"
 import {
     formatEventPrice,
     getEventDisplayPlace,
-    getEventFormatLabel,
     getEventSourceHost,
-    getEventSourcePlatformLabel,
     getEventStatusOverrideLabel,
     splitEventTags,
 } from "@/lib/utils/event-display"
@@ -79,9 +77,7 @@ const content: Record<Locale, {
     endsIn: string
     endedAgo: string
     source: string
-    sourcePlatform: string
     lastVerifiedAt: string
-    format: string
     venue: string
     address: string
     ticket: string
@@ -108,9 +104,7 @@ const content: Record<Locale, {
         endsIn: '距离结束约 {days} 天',
         endedAgo: '已结束约 {days} 天',
         source: '来源',
-        sourcePlatform: '信源',
         lastVerifiedAt: '最后核验',
-        format: '活动形式',
         venue: '场馆',
         address: '地址',
         ticket: '票务',
@@ -137,9 +131,7 @@ const content: Record<Locale, {
         endsIn: 'Ends in about {days} days',
         endedAgo: 'Ended about {days} days ago',
         source: 'Source',
-        sourcePlatform: 'Source platform',
         lastVerifiedAt: 'Last verified',
-        format: 'Format',
         venue: 'Venue',
         address: 'Address',
         ticket: 'Ticket',
@@ -166,9 +158,7 @@ const content: Record<Locale, {
         endsIn: '終了まで約{days}日',
         endedAgo: '終了から約{days}日',
         source: '出典',
-        sourcePlatform: '情報源',
         lastVerifiedAt: '最終確認',
-        format: '形式',
         venue: '会場',
         address: '住所',
         ticket: 'チケット',
@@ -240,13 +230,12 @@ export default async function OfflineEventDetailPage({ params }: PageProps) {
         return t.endedAgo.replace('{days}', String(Math.max(1, Math.ceil((now.getTime() - end.getTime()) / dayMs))))
     }
     const sourceHost = getSourceHost(event.link)
-    const formatLabel = getEventFormatLabel(event.eventFormat, locale as Locale)
     const displayPlace = getEventDisplayPlace(event, 'offline')
     const priceLabel = formatEventPrice(event, locale as Locale)
-    const sourcePlatformLabel = getEventSourcePlatformLabel(event.sourcePlatform, locale as Locale)
     const verifiedAt = event.lastVerifiedAt ? formatDate(event.lastVerifiedAt) : ''
     const tags = splitEventTags(event.tags)
     const sourceDisplayHost = getEventSourceHost(event) || sourceHost
+    const sourceLabel = [event.sourceName, sourceDisplayHost].filter(Boolean).join(' / ')
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -292,13 +281,6 @@ export default async function OfflineEventDetailPage({ params }: PageProps) {
                                         ) : null}
                                     </div>
                                 )}
-                                {formatLabel ? (
-                                    <div className="flex items-center gap-2">
-                                        <Tag className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-muted-foreground">{t.format}:</span>
-                                        <span>{formatLabel}</span>
-                                    </div>
-                                ) : null}
                                 <div className="flex items-center gap-2">
                                     <Calendar className="h-4 w-4 text-muted-foreground" />
                                     <span className="text-muted-foreground">{t.eventPeriod}:</span>
@@ -330,11 +312,11 @@ export default async function OfflineEventDetailPage({ params }: PageProps) {
                                         <span>{priceLabel}</span>
                                     </div>
                                 ) : null}
-                                {sourcePlatformLabel || sourceDisplayHost ? (
+                                {sourceLabel ? (
                                     <div className="flex items-center gap-2 md:col-span-2">
                                         <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-muted-foreground">{sourcePlatformLabel ? t.sourcePlatform : t.source}:</span>
-                                        <span>{[sourcePlatformLabel, sourceDisplayHost].filter(Boolean).join(' / ')}</span>
+                                        <span className="text-muted-foreground">{t.source}:</span>
+                                        <span>{sourceLabel}</span>
                                     </div>
                                 ) : null}
                                 {verifiedAt ? (

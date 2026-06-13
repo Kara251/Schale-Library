@@ -1,7 +1,7 @@
 import { Footer } from '@/components/footer'
 import { Header } from '@/components/header'
 import { EventsWithFilters, type EventSortMode } from '@/components/events-with-filters'
-import { getAllEvents, type EventFormatFilter, type EventNatureFilter, type EventSourcePlatformFilter, type EventStatusFilter } from '@/lib/api'
+import { getAllEvents, type EventKindFilter, type EventNatureFilter, type EventStatusFilter } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 
 export const revalidate = 60
@@ -10,12 +10,13 @@ interface EventsPageProps {
   params: Promise<{ locale: string }>
   searchParams: Promise<{
     q?: string
+    kind?: EventKindFilter
     nature?: EventNatureFilter
     status?: EventStatusFilter
-    format?: EventFormatFilter
+    country?: string
+    region?: string
     city?: string
-    platform?: string
-    source?: EventSourcePlatformFilter
+    district?: string
     sort?: EventSortMode
     page?: string
   }>
@@ -29,8 +30,7 @@ const titles: Record<Locale, string> = {
 
 const eventNatures: EventNatureFilter[] = ['all', 'official', 'fanmade']
 const eventStatuses: EventStatusFilter[] = ['all', 'upcoming', 'ongoing', 'ended']
-const eventFormats: EventFormatFilter[] = ['all', 'live_stream', 'live_show', 'only_event', 'collaboration', 'contest', 'campaign', 'exhibition', 'meetup', 'release', 'other']
-const eventSources: EventSourcePlatformFilter[] = ['all', 'manual', 'official', 'baonly', 'bilibili', 'x', 'youtube', 'website', 'ticketing', 'other']
+const eventKinds: EventKindFilter[] = ['all', 'online', 'offline']
 const eventSorts: EventSortMode[] = ['relevant', 'startTime', 'endTime']
 
 function parseValue<T extends string>(value: string | undefined, allowed: T[], fallback: T): T {
@@ -42,20 +42,20 @@ export default async function EventsPage({ params, searchParams }: EventsPagePro
   const filters = await searchParams
   const title = titles[locale as Locale] || titles['zh-Hans']
   const page = Math.max(1, Number(filters.page || '1'))
+  const kind = parseValue(filters.kind, eventKinds, 'all')
   const nature = parseValue(filters.nature, eventNatures, 'all')
   const status = parseValue(filters.status, eventStatuses, 'all')
-  const format = parseValue(filters.format, eventFormats, 'all')
-  const source = parseValue(filters.source, eventSources, 'all')
   const sort = parseValue(filters.sort, eventSorts, 'relevant')
 
   const eventsResult = await getAllEvents(24, locale, {
     query: filters.q,
+    kind,
     nature,
     status,
-    format,
+    country: filters.country,
+    region: filters.region,
     city: filters.city,
-    platform: filters.platform,
-    source,
+    district: filters.district,
     sort,
     page,
     pageSize: 24,
@@ -81,12 +81,13 @@ export default async function EventsPage({ params, searchParams }: EventsPagePro
             type="all"
             title={title}
             initialSearchQuery={filters.q || ''}
+            initialKind={kind}
             initialNature={nature}
             initialStatus={status}
-            initialFormat={format}
+            initialCountry={filters.country || ''}
+            initialRegion={filters.region || ''}
             initialCity={filters.city || ''}
-            initialPlatform={filters.platform || ''}
-            initialSource={source}
+            initialDistrict={filters.district || ''}
             initialSort={sort}
             total={pagination.total}
             page={pagination.page}

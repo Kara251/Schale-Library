@@ -2,28 +2,30 @@
 
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/contexts/locale-context'
-import type { EventFormatFilter, EventSourcePlatformFilter } from '@/lib/api'
-import { getEventFormatLabel, getEventSourcePlatformLabel } from '@/lib/utils/event-display'
+import type { EventKindFilter } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
+import type { ReactNode } from 'react'
 
 export type EventNature = 'all' | 'official' | 'fanmade'
 export type EventStatus = 'all' | 'upcoming' | 'ongoing' | 'ended'
 type EventFilterScope = 'online' | 'offline' | 'all'
 
 interface EventFiltersProps {
+  kind: EventKindFilter
   nature: EventNature
   status: EventStatus
-  format: EventFormatFilter
-  source: EventSourcePlatformFilter
+  country: string
+  region: string
   city: string
-  platform: string
+  district: string
   scope: EventFilterScope
+  onKindChange: (kind: EventKindFilter) => void
   onNatureChange: (nature: EventNature) => void
   onStatusChange: (status: EventStatus) => void
-  onFormatChange: (format: EventFormatFilter) => void
-  onSourceChange: (source: EventSourcePlatformFilter) => void
+  onCountryChange: (country: string) => void
+  onRegionChange: (region: string) => void
   onCityChange: (city: string) => void
-  onPlatformChange: (platform: string) => void
+  onDistrictChange: (district: string) => void
   onReset: () => void
   showNatureFilter?: boolean
   showStatusFilter?: boolean
@@ -31,126 +33,131 @@ interface EventFiltersProps {
 
 const labels: Record<Locale, {
   nature: string
+  kind: string
   status: string
   all: string
+  allKinds: string
+  online: string
+  offline: string
   official: string
   fanmade: string
   upcoming: string
   ongoing: string
   ended: string
-  format: string
-  source: string
+  country: string
+  region: string
   city: string
-  platform: string
-  allFormats: string
-  allSources: string
+  district: string
   clearFilters: string
 }> = {
   'zh-Hans': {
     nature: '性质',
+    kind: '类型',
     status: '状态',
     all: '全部',
+    allKinds: '全部类型',
+    online: '线上',
+    offline: '线下',
     official: '官方',
     fanmade: '同人',
     upcoming: '未开始',
     ongoing: '进行中',
     ended: '已结束',
-    format: '形式',
-    source: '信源',
-    city: '城市 / 地区',
-    platform: '平台 / 区域',
-    allFormats: '全部形式',
-    allSources: '全部信源',
+    country: '国家（地区）',
+    region: '省 / 州 / 都道府县',
+    city: '城市',
+    district: '区县',
     clearFilters: '清除筛选',
   },
   'en': {
     nature: 'Nature',
+    kind: 'Type',
     status: 'Status',
     all: 'All',
+    allKinds: 'All types',
+    online: 'Online',
+    offline: 'Offline',
     official: 'Official',
     fanmade: 'Fan-made',
     upcoming: 'Upcoming',
     ongoing: 'Ongoing',
     ended: 'Ended',
-    format: 'Format',
-    source: 'Source',
-    city: 'City / region',
-    platform: 'Platform / region',
-    allFormats: 'All formats',
-    allSources: 'All sources',
+    country: 'Country / region',
+    region: 'Province / state',
+    city: 'City',
+    district: 'District',
     clearFilters: 'Clear filters',
   },
   'ja': {
     nature: '性質',
+    kind: '種別',
     status: 'ステータス',
     all: 'すべて',
+    allKinds: 'すべて',
+    online: 'オンライン',
+    offline: 'オフライン',
     official: '公式',
     fanmade: '二次創作',
     upcoming: '未開始',
     ongoing: '開催中',
     ended: '終了',
-    format: '形式',
-    source: '情報源',
-    city: '都市 / 地域',
-    platform: 'プラットフォーム / 地域',
-    allFormats: 'すべての形式',
-    allSources: 'すべての情報源',
+    country: '国・地域',
+    region: '都道府県 / 州',
+    city: '都市',
+    district: '区市町村',
     clearFilters: 'フィルターをクリア',
   },
 }
-
-const eventFormats: Exclude<EventFormatFilter, 'all'>[] = [
-  'live_stream',
-  'live_show',
-  'only_event',
-  'collaboration',
-  'contest',
-  'campaign',
-  'exhibition',
-  'meetup',
-  'release',
-  'other',
-]
-
-const sourcePlatforms: Exclude<EventSourcePlatformFilter, 'all'>[] = [
-  'manual',
-  'official',
-  'baonly',
-  'bilibili',
-  'x',
-  'youtube',
-  'website',
-  'ticketing',
-  'other',
-]
 
 /**
  * 活动筛选组件 - 简洁风格
  */
 export function EventFilters({
+  kind,
   nature,
   status,
-  format,
-  source,
+  country,
+  region,
   city,
-  platform,
+  district,
   scope,
+  onKindChange,
   onNatureChange,
   onStatusChange,
-  onFormatChange,
-  onSourceChange,
+  onCountryChange,
+  onRegionChange,
   onCityChange,
-  onPlatformChange,
+  onDistrictChange,
   onReset,
   showNatureFilter = true,
   showStatusFilter = true,
 }: EventFiltersProps) {
   const { locale } = useLocale()
   const t = labels[locale] || labels['zh-Hans']
-  const hasActiveFilters = nature !== 'all' || status !== 'all' || format !== 'all' || source !== 'all' || Boolean(city) || Boolean(platform)
+  const showKindFilter = scope === 'all'
+  const showOfflineLocation = scope !== 'online'
+  const hasActiveFilters =
+    (showKindFilter && kind !== 'all') ||
+    nature !== 'all' ||
+    status !== 'all' ||
+    Boolean(country) ||
+    Boolean(region) ||
+    Boolean(city) ||
+    Boolean(district)
 
   return (
     <div className="space-y-3 mb-6">
+      {showKindFilter && (
+        <div>
+          <div className="text-sm font-bold text-foreground mb-2">{t.kind}</div>
+          <div className="flex flex-wrap gap-1">
+            <FilterTag active={kind === 'all'} onClick={() => onKindChange('all')}>{t.allKinds}</FilterTag>
+            <FilterTag active={kind === 'online'} onClick={() => onKindChange('online')}>{t.online}</FilterTag>
+            <FilterTag active={kind === 'offline'} onClick={() => onKindChange('offline')}>{t.offline}</FilterTag>
+          </div>
+        </div>
+      )}
+
       {/* 性质筛选 */}
       {showNatureFilter && (
         <div>
@@ -177,40 +184,13 @@ export function EventFilters({
       )}
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <label className="block">
-          <span className="mb-2 block text-sm font-bold text-foreground">{t.format}</span>
-          <select
-            value={format}
-            onChange={(event) => onFormatChange(event.target.value as EventFormatFilter)}
-            className="h-9 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-          >
-            <option value="all">{t.allFormats}</option>
-            {eventFormats.map((item) => (
-              <option key={item} value={item}>{getEventFormatLabel(item, locale)}</option>
-            ))}
-          </select>
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block text-sm font-bold text-foreground">{t.source}</span>
-          <select
-            value={source}
-            onChange={(event) => onSourceChange(event.target.value as EventSourcePlatformFilter)}
-            className="h-9 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-          >
-            <option value="all">{t.allSources}</option>
-            {sourcePlatforms.map((item) => (
-              <option key={item} value={item}>{getEventSourcePlatformLabel(item, locale)}</option>
-            ))}
-          </select>
-        </label>
-
-        {scope !== 'online' ? (
-          <FilterTextInput label={t.city} value={city} onCommit={onCityChange} />
-        ) : null}
-
-        {scope !== 'offline' ? (
-          <FilterTextInput label={t.platform} value={platform} onCommit={onPlatformChange} />
+        <FilterTextInput label={t.country} value={country} onCommit={onCountryChange} />
+        <FilterTextInput label={t.region} value={region} onCommit={onRegionChange} />
+        {showOfflineLocation ? (
+          <>
+            <FilterTextInput label={t.city} value={city} onCommit={onCityChange} />
+            <FilterTextInput label={t.district} value={district} onCommit={onDistrictChange} />
+          </>
         ) : null}
       </div>
 
@@ -254,7 +234,7 @@ function FilterTextInput({
 interface FilterTagProps {
   active: boolean
   onClick: () => void
-  children: React.ReactNode
+  children: ReactNode
 }
 
 function FilterTag({ active, onClick, children }: FilterTagProps) {

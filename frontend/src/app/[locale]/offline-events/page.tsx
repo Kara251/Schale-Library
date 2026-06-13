@@ -1,7 +1,7 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { EventsWithFilters, type EventSortMode } from "@/components/events-with-filters"
-import { getOfflineEvents, type EventFormatFilter, type EventNatureFilter, type EventSourcePlatformFilter, type EventStatusFilter } from "@/lib/api"
+import { getOfflineEvents, type EventNatureFilter, type EventStatusFilter } from "@/lib/api"
 import type { Locale } from "@/lib/i18n"
 
 export const revalidate = 60;
@@ -12,9 +12,10 @@ interface OfflineEventsPageProps {
         q?: string
         nature?: EventNatureFilter
         status?: EventStatusFilter
-        format?: EventFormatFilter
+        country?: string
+        region?: string
         city?: string
-        source?: EventSourcePlatformFilter
+        district?: string
         sort?: EventSortMode
         page?: string
     }>
@@ -28,8 +29,6 @@ const titles: Record<Locale, string> = {
 
 const eventNatures: EventNatureFilter[] = ['all', 'official', 'fanmade']
 const eventStatuses: EventStatusFilter[] = ['all', 'upcoming', 'ongoing', 'ended']
-const eventFormats: EventFormatFilter[] = ['all', 'live_stream', 'live_show', 'only_event', 'collaboration', 'contest', 'campaign', 'exhibition', 'meetup', 'release', 'other']
-const eventSources: EventSourcePlatformFilter[] = ['all', 'manual', 'official', 'baonly', 'bilibili', 'x', 'youtube', 'website', 'ticketing', 'other']
 const eventSorts: EventSortMode[] = ['relevant', 'startTime', 'endTime']
 
 function parseValue<T extends string>(value: string | undefined, allowed: T[], fallback: T): T {
@@ -43,17 +42,16 @@ export default async function OfflineEventsPage({ params, searchParams }: Offlin
     const page = Math.max(1, Number(filters.page || '1'))
     const nature = parseValue(filters.nature, eventNatures, 'all')
     const status = parseValue(filters.status, eventStatuses, 'all')
-    const format = parseValue(filters.format, eventFormats, 'all')
-    const source = parseValue(filters.source, eventSources, 'all')
     const sort = parseValue(filters.sort, eventSorts, 'relevant')
 
     const eventsResult = await getOfflineEvents(24, locale, {
         query: filters.q,
         nature,
         status,
-        format,
+        country: filters.country,
+        region: filters.region,
         city: filters.city,
-        source,
+        district: filters.district,
         sort,
         page,
         pageSize: 24,
@@ -81,9 +79,10 @@ export default async function OfflineEventsPage({ params, searchParams }: Offlin
                         initialSearchQuery={filters.q || ''}
                         initialNature={nature}
                         initialStatus={status}
-                        initialFormat={format}
+                        initialCountry={filters.country || ''}
+                        initialRegion={filters.region || ''}
                         initialCity={filters.city || ''}
-                        initialSource={source}
+                        initialDistrict={filters.district || ''}
                         initialSort={sort}
                         total={pagination.total}
                         page={pagination.page}

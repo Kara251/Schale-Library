@@ -1,6 +1,4 @@
 import type {
-  EventFormat,
-  EventSourcePlatform,
   EventStatusOverride,
   EventTicketStatus,
   OfflineEvent,
@@ -40,45 +38,6 @@ const statusOverrideLabels: Record<Locale, Record<EventStatusOverride, string>> 
   },
 }
 
-const formatLabels: Record<Locale, Record<EventFormat, string>> = {
-  'zh-Hans': {
-    live_stream: '线上直播',
-    live_show: 'Live',
-    only_event: 'Only',
-    collaboration: '联动',
-    contest: '征集',
-    campaign: '企划',
-    exhibition: '展览',
-    meetup: '聚会',
-    release: '放送',
-    other: '活动',
-  },
-  en: {
-    live_stream: 'Live stream',
-    live_show: 'Live',
-    only_event: 'Only',
-    collaboration: 'Collab',
-    contest: 'Contest',
-    campaign: 'Campaign',
-    exhibition: 'Exhibition',
-    meetup: 'Meetup',
-    release: 'Release',
-    other: 'Event',
-  },
-  ja: {
-    live_stream: '配信',
-    live_show: 'ライブ',
-    only_event: 'Only',
-    collaboration: 'コラボ',
-    contest: '募集',
-    campaign: '企画',
-    exhibition: '展示',
-    meetup: '交流会',
-    release: '放送',
-    other: 'イベント',
-  },
-}
-
 const ticketLabels: Record<Locale, Record<EventTicketStatus, string>> = {
   'zh-Hans': {
     unknown: '',
@@ -106,42 +65,6 @@ const ticketLabels: Record<Locale, Record<EventTicketStatus, string>> = {
   },
 }
 
-const sourceLabels: Record<Locale, Record<EventSourcePlatform, string>> = {
-  'zh-Hans': {
-    manual: '手动维护',
-    official: '官方',
-    baonly: 'baonly.cn',
-    bilibili: 'Bilibili',
-    x: 'X / Twitter',
-    youtube: 'YouTube',
-    website: '官网',
-    ticketing: '票务平台',
-    other: '其他',
-  },
-  en: {
-    manual: 'Manual',
-    official: 'Official',
-    baonly: 'baonly.cn',
-    bilibili: 'Bilibili',
-    x: 'X / Twitter',
-    youtube: 'YouTube',
-    website: 'Website',
-    ticketing: 'Ticketing',
-    other: 'Other',
-  },
-  ja: {
-    manual: '手動管理',
-    official: '公式',
-    baonly: 'baonly.cn',
-    bilibili: 'Bilibili',
-    x: 'X / Twitter',
-    youtube: 'YouTube',
-    website: 'Webサイト',
-    ticketing: 'チケット',
-    other: 'その他',
-  },
-}
-
 export function splitEventTags(tags?: string | null) {
   return String(tags || '')
     .split(/[,，、\n]/)
@@ -155,29 +78,21 @@ export function getEventStatusOverrideLabel(status: EventStatusOverride | null |
   return (statusOverrideLabels[locale] || statusOverrideLabels['zh-Hans'])[status] || status
 }
 
-export function getEventFormatLabel(format: EventFormat | null | undefined, locale: Locale) {
-  if (!format) return ''
-  return (formatLabels[locale] || formatLabels['zh-Hans'])[format] || format
-}
-
 export function getTicketStatusLabel(status: EventTicketStatus | null | undefined, locale: Locale) {
   if (!status || status === 'unknown') return ''
   return (ticketLabels[locale] || ticketLabels['zh-Hans'])[status] || status
 }
 
-export function getEventSourcePlatformLabel(source: EventSourcePlatform | null | undefined, locale: Locale) {
-  if (!source) return ''
-  return (sourceLabels[locale] || sourceLabels['zh-Hans'])[source] || source
-}
-
 export function getEventDisplayPlace(event: AnyEvent, type: 'online' | 'offline') {
   if (type === 'offline') {
     const offline = event as OfflineEvent
-    return [offline.city, offline.venue].filter(Boolean).join(' / ') || offline.location || offline.address || ''
+    const area = [offline.country, offline.region, offline.city, offline.district].filter(Boolean).join(' / ')
+    return [area, offline.venue].filter(Boolean).join(' · ') || offline.location || offline.address || ''
   }
 
   const online = event as OnlineEvent
-  return [online.platform, online.region].filter(Boolean).join(' / ')
+  const area = [online.country, online.region].filter(Boolean).join(' / ')
+  return [area, online.platform].filter(Boolean).join(' · ')
 }
 
 export function formatEventPrice(event: AnyEvent, locale: Locale) {

@@ -5,14 +5,12 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { EventCard } from "@/components/event-card"
-import { Calendar, CheckCircle, Globe, Tag, Ticket, User, ArrowLeft } from 'lucide-react'
+import { Calendar, CheckCircle, Globe, Ticket, User, ArrowLeft } from 'lucide-react'
 import { getOnlineEventById, getOnlineEvents } from "@/lib/api"
 import {
     formatEventPrice,
     getEventDisplayPlace,
-    getEventFormatLabel,
     getEventSourceHost,
-    getEventSourcePlatformLabel,
     getEventStatusOverrideLabel,
     splitEventTags,
 } from "@/lib/utils/event-display"
@@ -79,10 +77,8 @@ const content: Record<Locale, {
     endsIn: string
     endedAgo: string
     source: string
-    sourcePlatform: string
     lastVerifiedAt: string
-    format: string
-    platform: string
+    region: string
     ticket: string
     ticketLink: string
     verified: string
@@ -105,10 +101,8 @@ const content: Record<Locale, {
         endsIn: '距离结束约 {days} 天',
         endedAgo: '已结束约 {days} 天',
         source: '来源',
-        sourcePlatform: '信源',
         lastVerifiedAt: '最后核验',
-        format: '活动形式',
-        platform: '平台 / 区域',
+        region: '地区',
         ticket: '票务',
         ticketLink: '票务 / 报名',
         verified: '已认证',
@@ -131,10 +125,8 @@ const content: Record<Locale, {
         endsIn: 'Ends in about {days} days',
         endedAgo: 'Ended about {days} days ago',
         source: 'Source',
-        sourcePlatform: 'Source platform',
         lastVerifiedAt: 'Last verified',
-        format: 'Format',
-        platform: 'Platform / region',
+        region: 'Region',
         ticket: 'Ticket',
         ticketLink: 'Ticket / registration',
         verified: 'Verified',
@@ -157,10 +149,8 @@ const content: Record<Locale, {
         endsIn: '終了まで約{days}日',
         endedAgo: '終了から約{days}日',
         source: '出典',
-        sourcePlatform: '情報源',
         lastVerifiedAt: '最終確認',
-        format: '形式',
-        platform: 'プラットフォーム / 地域',
+        region: '地域',
         ticket: 'チケット',
         ticketLink: 'チケット / 申込',
         verified: '確認済み',
@@ -228,13 +218,12 @@ export default async function OnlineEventDetailPage({ params }: PageProps) {
         return t.endedAgo.replace('{days}', String(Math.max(1, Math.ceil((now.getTime() - end.getTime()) / dayMs))))
     }
     const sourceHost = getSourceHost(event.link)
-    const formatLabel = getEventFormatLabel(event.eventFormat, locale as Locale)
     const displayPlace = getEventDisplayPlace(event, 'online')
     const priceLabel = formatEventPrice(event, locale as Locale)
-    const sourcePlatformLabel = getEventSourcePlatformLabel(event.sourcePlatform, locale as Locale)
     const verifiedAt = event.lastVerifiedAt ? formatDate(event.lastVerifiedAt) : ''
     const tags = splitEventTags(event.tags)
     const sourceDisplayHost = getEventSourceHost(event) || sourceHost
+    const sourceLabel = [event.sourceName, sourceDisplayHost].filter(Boolean).join(' / ')
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -280,17 +269,10 @@ export default async function OnlineEventDetailPage({ params }: PageProps) {
                                         ) : null}
                                     </div>
                                 )}
-                                {formatLabel ? (
-                                    <div className="flex items-center gap-2">
-                                        <Tag className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-muted-foreground">{t.format}:</span>
-                                        <span>{formatLabel}</span>
-                                    </div>
-                                ) : null}
                                 {displayPlace ? (
                                     <div className="flex items-center gap-2">
                                         <Globe className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-muted-foreground">{t.platform}:</span>
+                                        <span className="text-muted-foreground">{t.region}:</span>
                                         <span>{displayPlace}</span>
                                     </div>
                                 ) : null}
@@ -311,11 +293,11 @@ export default async function OnlineEventDetailPage({ params }: PageProps) {
                                         <span>{priceLabel}</span>
                                     </div>
                                 ) : null}
-                                {sourcePlatformLabel || sourceDisplayHost ? (
+                                {sourceLabel ? (
                                     <div className="flex items-center gap-2">
                                         <Globe className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-muted-foreground">{sourcePlatformLabel ? t.sourcePlatform : t.source}:</span>
-                                        <span>{[sourcePlatformLabel, sourceDisplayHost].filter(Boolean).join(' / ')}</span>
+                                        <span className="text-muted-foreground">{t.source}:</span>
+                                        <span>{sourceLabel}</span>
                                     </div>
                                 ) : null}
                                 {verifiedAt ? (
