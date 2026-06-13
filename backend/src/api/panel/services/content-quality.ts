@@ -222,11 +222,6 @@ export async function scanContentQuality() {
       if (event.startTime && event.endTime && new Date(event.startTime).getTime() > new Date(event.endTime).getTime()) {
         issues.push(toIssue({ issueType: 'invalid-event-time', severity: 'error', collection, entry: event, message: '活动结束时间早于开始时间' }))
       }
-      if (collection === 'online-events') {
-        if (!normalizeText(event.country) && !normalizeText(event.region)) {
-          issues.push(toIssue({ issueType: 'online-event-missing-region', severity: 'warning', collection, entry: event, message: '线上活动缺少国家/地区信息' }))
-        }
-      }
       if (collection === 'offline-events') {
         if (!normalizeText(event.country) && !normalizeText(event.region) && !normalizeText(event.city)) {
           issues.push(toIssue({ issueType: 'offline-event-missing-region', severity: 'warning', collection, entry: event, message: '线下活动缺少国家/地区、省市信息' }))

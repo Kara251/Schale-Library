@@ -22,6 +22,12 @@ import type { AdminStrapiEntry } from '@/lib/server/admin-content'
 import type { Locale } from '@/lib/i18n'
 import { getMediaUrl } from '@/lib/media'
 import { cn } from '@/lib/utils'
+import {
+  getEventLocationLabel,
+  getEventLocationOptions,
+  normalizeEventLocationName,
+  type EventLocationLevel,
+} from '@/lib/utils/event-location'
 
 interface AdminEditorFormProps {
   collection: AdminCollectionKey
@@ -55,6 +61,7 @@ const labels: Record<Locale, {
   moveUp: string
   moveDown: string
   emptyRows: string
+  emptyLocation: string
 }> = {
   'zh-Hans': {
     save: '保存',
@@ -74,6 +81,7 @@ const labels: Record<Locale, {
     moveUp: '上移',
     moveDown: '下移',
     emptyRows: '尚未添加内容',
+    emptyLocation: '不填写',
   },
   en: {
     save: 'Save',
@@ -93,6 +101,7 @@ const labels: Record<Locale, {
     moveUp: 'Move up',
     moveDown: 'Move down',
     emptyRows: 'Nothing added yet',
+    emptyLocation: 'Leave empty',
   },
   ja: {
     save: '保存',
@@ -112,6 +121,7 @@ const labels: Record<Locale, {
     moveUp: '上へ',
     moveDown: '下へ',
     emptyRows: 'まだ何も追加されていません',
+    emptyLocation: '空欄',
   },
 }
 
@@ -234,6 +244,49 @@ function getDisplayLabel(field: AdminEditorField, locale: Locale) {
   return field.label[locale] || field.label['zh-Hans']
 }
 
+function getLocationLevel(field: AdminEditorField): EventLocationLevel {
+  if (field.locationLevel) {
+    return field.locationLevel
+  }
+  if (field.name === 'city') {
+    return 'city'
+  }
+  if (field.name === 'region') {
+    return 'region'
+  }
+  return 'country'
+}
+
+function getFormStringValue(values: Record<string, unknown>, key: string) {
+  const value = values[key]
+  return typeof value === 'string' ? value : ''
+}
+
+function getLocationSelectOptions(field: AdminEditorField, values: Record<string, unknown>, locale: Locale) {
+  const level = getLocationLevel(field)
+  const options = getEventLocationOptions(level, locale, {
+    country: getFormStringValue(values, 'country'),
+    region: getFormStringValue(values, 'region'),
+  })
+  const currentValue = normalizeEventLocationName(getFormStringValue(values, field.name))
+
+  if (currentValue && !options.some((option) => option.value === currentValue)) {
+    return [
+      {
+        value: currentValue,
+        label: {
+          'zh-Hans': currentValue,
+          en: getEventLocationLabel(currentValue, 'en'),
+          ja: getEventLocationLabel(currentValue, 'ja'),
+        },
+      },
+      ...options,
+    ]
+  }
+
+  return options
+}
+
 export function AdminEditorForm({ collection, locale, returnPath, initialData, relationOptions }: AdminEditorFormProps) {
   const router = useRouter()
   const { showToast } = useToast()
@@ -256,6 +309,20 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
 
   const updateField = (name: string, value: unknown) => {
     setFormValues((current) => ({ ...current, [name]: value }))
+  }
+
+  const updateLocationField = (field: AdminEditorField, value: string) => {
+    setFormValues((current) => {
+      const next = { ...current, [field.name]: value }
+      if (field.name === 'country') {
+        next.region = ''
+        next.city = ''
+      }
+      if (field.name === 'region') {
+        next.city = ''
+      }
+      return next
+    })
   }
 
   const handleUpload = async (fieldName: string, file: File | null) => {
@@ -317,6 +384,8 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
         return typeof value === 'string' ? value.trim() : value
       case 'datetime-local':
         return value || null
+      case 'location-select':
+        return normalizeEventLocationName(typeof value === 'string' ? value : '')
       default:
         return value
     }
@@ -418,6 +487,22 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
                     value={typeof value === 'string' ? value : ''}
                     onChange={(event) => updateField(field.name, event.target.value)}
                   />
+                ) : null}
+
+                {field.type === 'location-select' ? (
+                  <select
+                    id={field.name}
+                    value={normalizeEventLocationName(typeof value === 'string' ? value : '')}
+                    onChange={(event) => updateLocationField(field, event.target.value)}
+                    className="h-9 w-full rounded-md border bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                  >
+                    <option value="">{t.emptyLocation}</option>
+                    {getLocationSelectOptions(field, formValues, locale).map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {getEventLocationLabel(option.value, locale)}
+                      </option>
+                    ))}
+                  </select>
                 ) : null}
 
                 {field.type === 'boolean' ? (

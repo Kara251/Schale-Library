@@ -94,7 +94,7 @@ export const EventCard = memo(function EventCard({ event, type }: EventCardProps
 
   const status = getEventStatusOverrideLabel(event.statusOverride, locale) || getEventStatus()
   const natureLabel = event.nature === 'official' ? t.official : t.fanmade
-  const displayPlace = getEventDisplayPlace(event, type)
+  const displayPlace = getEventDisplayPlace(event, type, locale)
   const priceLabel = formatEventPrice(event, locale)
   const tags = splitEventTags(event.tags).slice(0, 3)
 

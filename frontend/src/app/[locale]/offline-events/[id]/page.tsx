@@ -230,7 +230,7 @@ export default async function OfflineEventDetailPage({ params }: PageProps) {
         return t.endedAgo.replace('{days}', String(Math.max(1, Math.ceil((now.getTime() - end.getTime()) / dayMs))))
     }
     const sourceHost = getSourceHost(event.link)
-    const displayPlace = getEventDisplayPlace(event, 'offline')
+    const displayPlace = getEventDisplayPlace(event, 'offline', locale as Locale)
     const priceLabel = formatEventPrice(event, locale as Locale)
     const verifiedAt = event.lastVerifiedAt ? formatDate(event.lastVerifiedAt) : ''
     const tags = splitEventTags(event.tags)

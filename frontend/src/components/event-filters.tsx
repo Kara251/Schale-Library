@@ -4,11 +4,17 @@ import { cn } from '@/lib/utils'
 import { useLocale } from '@/contexts/locale-context'
 import type { EventKindFilter, EventLocationRecord } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
+import { getEventLocationLabel } from '@/lib/utils/event-location'
 import type { ChangeEvent, ReactNode } from 'react'
 
 export type EventNature = 'all' | 'official' | 'fanmade'
 export type EventStatus = 'all' | 'upcoming' | 'ongoing' | 'ended'
 type EventFilterScope = 'online' | 'offline' | 'all'
+
+interface LocationFilterOption {
+  value: string
+  label: string
+}
 
 interface EventFiltersProps {
   kind: EventKindFilter
@@ -134,12 +140,13 @@ export function EventFilters({
   const relevantLocationRecords = locationRecords.filter((record) => (
     activeKind === 'all' || record.kind === activeKind
   ))
-  const countryOptions = uniqueLocationOptions(relevantLocationRecords.map((record) => record.country), country)
+  const countryOptions = uniqueLocationOptions(relevantLocationRecords.map((record) => record.country), country, locale)
   const regionOptions = uniqueLocationOptions(
     relevantLocationRecords
       .filter((record) => matchesLocation(record.country, country))
       .map((record) => record.region),
-    region
+    region,
+    locale
   )
   const cityOptions = uniqueLocationOptions(
     relevantLocationRecords
@@ -147,7 +154,8 @@ export function EventFilters({
       .filter((record) => matchesLocation(record.country, country))
       .filter((record) => matchesLocation(record.region, region))
       .map((record) => record.city),
-    city
+    city,
+    locale
   )
   const hasActiveFilters =
     (showKindFilter && kind !== 'all') ||
@@ -213,13 +221,15 @@ export function EventFilters({
   )
 }
 
-function uniqueLocationOptions(values: string[], selected: string) {
+function uniqueLocationOptions(values: string[], selected: string, locale: Locale): LocationFilterOption[] {
   const options = [...new Set(values.map((value) => value.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh-Hans'));
   const current = selected.trim();
   if (current && !options.includes(current)) {
     options.unshift(current);
   }
-  return options;
+  return options
+    .map((value) => ({ value, label: getEventLocationLabel(value, locale) }))
+    .sort((a, b) => a.label.localeCompare(b.label, locale === 'zh-Hans' ? 'zh-Hans' : locale));
 }
 
 function matchesLocation(value: string, selected: string) {
@@ -235,7 +245,7 @@ function FilterSelect({
 }: {
   label: string
   value: string
-  options: string[]
+  options: LocationFilterOption[]
   allLabel: string
   onChange: (value: string) => void
 }) {
@@ -253,7 +263,7 @@ function FilterSelect({
       >
         <option value="">{allLabel}</option>
         {options.map((option) => (
-          <option key={option} value={option}>{option}</option>
+          <option key={option.value} value={option.value}>{option.label}</option>
         ))}
       </select>
     </label>

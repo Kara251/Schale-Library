@@ -5,7 +5,7 @@ import type {
   OnlineEvent,
 } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
-import { normalizeEventLocationName } from '@/lib/utils/event-location'
+import { getEventLocationLabel, normalizeEventLocationName } from '@/lib/utils/event-location'
 
 type AnyEvent = OnlineEvent | OfflineEvent
 
@@ -84,11 +84,11 @@ export function getTicketStatusLabel(status: EventTicketStatus | null | undefine
   return (ticketLabels[locale] || ticketLabels['zh-Hans'])[status] || status
 }
 
-export function getEventDisplayPlace(event: AnyEvent, type: 'online' | 'offline') {
+export function getEventDisplayPlace(event: AnyEvent, type: 'online' | 'offline', locale: Locale = 'zh-Hans') {
   if (type === 'offline') {
     const offline = event as OfflineEvent
     const area = [offline.country, offline.region, offline.city]
-      .map((value) => normalizeEventLocationName(value))
+      .map((value) => getEventLocationLabel(normalizeEventLocationName(value), locale))
       .filter(Boolean)
       .join(' / ')
     return [area, offline.venue].filter(Boolean).join(' · ') || offline.location || offline.address || ''
@@ -96,7 +96,7 @@ export function getEventDisplayPlace(event: AnyEvent, type: 'online' | 'offline'
 
   const online = event as OnlineEvent
   return [online.country, online.region]
-    .map((value) => normalizeEventLocationName(value))
+    .map((value) => getEventLocationLabel(normalizeEventLocationName(value), locale))
     .filter(Boolean)
     .join(' / ')
 }

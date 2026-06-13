@@ -1,4 +1,5 @@
 import type { Locale } from '@/lib/i18n'
+import type { EventLocationLevel } from '@/lib/utils/event-location'
 
 export type AdminCollectionKey =
   | 'announcements'
@@ -25,6 +26,7 @@ export type AdminFieldType =
   | 'boolean'
   | 'datetime-local'
   | 'select'
+  | 'location-select'
   | 'media'
   | 'multiselect'
   | 'relation-multiselect'
@@ -60,6 +62,7 @@ export interface AdminEditorField {
   description?: Record<Locale, string>
   options?: AdminFieldOption[]
   relationKey?: string
+  locationLevel?: EventLocationLevel
   columns?: AdminRowColumn[]
 }
 
@@ -308,8 +311,20 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       { name: 'nature', type: 'select', label: { 'zh-Hans': '性质', en: 'Nature', ja: '区分' }, options: commonNatureOptions },
       { name: 'eventFormat', type: 'select', label: { 'zh-Hans': '活动类型', en: 'Event type', ja: 'イベント種別' }, options: eventFormatOptions },
       { name: 'statusOverride', type: 'select', label: { 'zh-Hans': '状态覆盖', en: 'Status override', ja: 'ステータス上書き' }, options: eventStatusOverrideOptions },
-      { name: 'country', type: 'text', label: { 'zh-Hans': '国家（地区）', en: 'Country / region', ja: '国 / 地域' } },
-      { name: 'region', type: 'text', label: { 'zh-Hans': '地区', en: 'Region', ja: '地域' } },
+      {
+        name: 'country',
+        type: 'location-select',
+        locationLevel: 'country',
+        label: { 'zh-Hans': '国家（地区）', en: 'Country / region', ja: '国 / 地域' },
+        description: { 'zh-Hans': '可留空，适用于纯线上直播。', en: 'Optional for online-only streams.', ja: 'オンライン配信のみの場合は空欄にできます。' },
+      },
+      {
+        name: 'region',
+        type: 'location-select',
+        locationLevel: 'region',
+        label: { 'zh-Hans': '地区', en: 'Region', ja: '地域' },
+        description: { 'zh-Hans': '可留空；若填写，会随国家（地区）筛选候选项。', en: 'Optional; choices follow the selected country / region.', ja: '任意。国・地域に応じて候補を絞り込みます。' },
+      },
       { name: 'startTime', type: 'datetime-local', label: { 'zh-Hans': '开始时间', en: 'Start time', ja: '開始日時' } },
       { name: 'endTime', type: 'datetime-local', label: { 'zh-Hans': '结束时间', en: 'End time', ja: '終了日時' } },
       { name: 'link', type: 'url', label: { 'zh-Hans': '活动链接', en: 'Event link', ja: 'イベントリンク' } },
@@ -359,9 +374,9 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       { name: 'nature', type: 'select', label: { 'zh-Hans': '性质', en: 'Nature', ja: '区分' }, options: commonNatureOptions },
       { name: 'eventFormat', type: 'select', label: { 'zh-Hans': '活动类型', en: 'Event type', ja: 'イベント種別' }, options: eventFormatOptions },
       { name: 'statusOverride', type: 'select', label: { 'zh-Hans': '状态覆盖', en: 'Status override', ja: 'ステータス上書き' }, options: eventStatusOverrideOptions },
-      { name: 'country', type: 'text', label: { 'zh-Hans': '国家（地区）', en: 'Country / region', ja: '国 / 地域' } },
-      { name: 'region', type: 'text', label: { 'zh-Hans': '省州 / 都道府县', en: 'Province / prefecture', ja: '州 / 都道府県' } },
-      { name: 'city', type: 'text', label: { 'zh-Hans': '城市', en: 'City', ja: '都市' } },
+      { name: 'country', type: 'location-select', locationLevel: 'country', label: { 'zh-Hans': '国家（地区）', en: 'Country / region', ja: '国 / 地域' } },
+      { name: 'region', type: 'location-select', locationLevel: 'region', label: { 'zh-Hans': '省州 / 都道府县', en: 'Province / prefecture', ja: '州 / 都道府県' } },
+      { name: 'city', type: 'location-select', locationLevel: 'city', label: { 'zh-Hans': '城市', en: 'City', ja: '都市' } },
       { name: 'venue', type: 'text', label: { 'zh-Hans': '场馆', en: 'Venue', ja: '会場' } },
       { name: 'address', type: 'text', label: { 'zh-Hans': '详细地址', en: 'Address', ja: '住所' } },
       { name: 'location', type: 'text', label: { 'zh-Hans': '地点', en: 'Location', ja: '場所' } },
