@@ -16,7 +16,6 @@ interface OfflineEventsPageProps {
         country?: string
         region?: string
         city?: string
-        district?: string
         sort?: EventSortMode
         page?: string
     }>
@@ -47,7 +46,6 @@ export default async function OfflineEventsPage({ params, searchParams }: Offlin
     const country = normalizeEventLocationName(filters.country)
     const region = normalizeEventLocationName(filters.region)
     const city = normalizeEventLocationName(filters.city)
-    const district = normalizeEventLocationName(filters.district)
 
     const [eventsResult, locationRecords] = await Promise.all([
         getOfflineEvents(24, locale, {
@@ -57,7 +55,6 @@ export default async function OfflineEventsPage({ params, searchParams }: Offlin
             country,
             region,
             city,
-            district,
             sort,
             page,
             pageSize: 24,
@@ -93,7 +90,6 @@ export default async function OfflineEventsPage({ params, searchParams }: Offlin
                         initialCountry={country}
                         initialRegion={region}
                         initialCity={city}
-                        initialDistrict={district}
                         locationRecords={locationRecords}
                         initialSort={sort}
                         total={pagination.total}

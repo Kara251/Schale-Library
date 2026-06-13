@@ -17,7 +17,6 @@ interface EventsPageProps {
     country?: string
     region?: string
     city?: string
-    district?: string
     sort?: EventSortMode
     page?: string
   }>
@@ -50,7 +49,6 @@ export default async function EventsPage({ params, searchParams }: EventsPagePro
   const country = normalizeEventLocationName(filters.country)
   const region = normalizeEventLocationName(filters.region)
   const city = kind === 'online' ? '' : normalizeEventLocationName(filters.city)
-  const district = kind === 'online' ? '' : normalizeEventLocationName(filters.district)
 
   const [eventsResult, locationRecords] = await Promise.all([
     getAllEvents(24, locale, {
@@ -61,7 +59,6 @@ export default async function EventsPage({ params, searchParams }: EventsPagePro
       country,
       region,
       city,
-      district,
       sort,
       page,
       pageSize: 24,
@@ -98,7 +95,6 @@ export default async function EventsPage({ params, searchParams }: EventsPagePro
             initialCountry={country}
             initialRegion={region}
             initialCity={city}
-            initialDistrict={district}
             locationRecords={locationRecords}
             initialSort={sort}
             total={pagination.total}

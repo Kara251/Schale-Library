@@ -155,7 +155,6 @@ export interface EventLocationRecord {
   country: string;
   region: string;
   city: string;
-  district: string;
 }
 
 export interface EventListOptions {
@@ -166,7 +165,6 @@ export interface EventListOptions {
   country?: string;
   region?: string;
   city?: string;
-  district?: string;
   sort?: EventSortMode;
   page?: number;
   pageSize?: number;
@@ -207,12 +205,11 @@ function appendEventFilters(
       params['filters[$or][5][country][$containsi]'] = query;
       params['filters[$or][6][region][$containsi]'] = query;
       params['filters[$or][7][city][$containsi]'] = query;
-      params['filters[$or][8][district][$containsi]'] = query;
-      params['filters[$or][9][venue][$containsi]'] = query;
-      params['filters[$or][10][address][$containsi]'] = query;
-      params['filters[$or][11][tags][$containsi]'] = query;
-      params['filters[$or][12][ticketPriceText][$containsi]'] = query;
-      params['filters[$or][13][sourceName][$containsi]'] = query;
+      params['filters[$or][8][venue][$containsi]'] = query;
+      params['filters[$or][9][address][$containsi]'] = query;
+      params['filters[$or][10][tags][$containsi]'] = query;
+      params['filters[$or][11][ticketPriceText][$containsi]'] = query;
+      params['filters[$or][12][sourceName][$containsi]'] = query;
     } else {
       params['filters[$or][3][country][$containsi]'] = query;
       params['filters[$or][4][region][$containsi]'] = query;
@@ -229,14 +226,13 @@ function appendEventFilters(
   if (kind === 'online') {
     addLocationFilter(options.country, ['country', 'region']);
     addLocationFilter(options.region, ['region', 'country']);
-    if (options.city?.trim() || options.district?.trim()) {
+    if (options.city?.trim()) {
       params['filters[id][$eq]'] = -1;
     }
   } else {
     addLocationFilter(options.country, ['country', 'location']);
     addLocationFilter(options.region, ['region', 'location']);
     addLocationFilter(options.city, ['city', 'location', 'venue']);
-    addLocationFilter(options.district, ['district', 'address', 'location']);
   }
 
   if (options.excludeId) {
@@ -519,7 +515,7 @@ async function fetchEventLocationRecordsForCollection(
   const records: EventLocationRecord[] = [];
   const seen = new Set<string>();
   const fields = kind === 'offline'
-    ? ['country', 'region', 'city', 'district']
+    ? ['country', 'region', 'city']
     : ['country', 'region'];
   let page = 1;
   let pageCount = 1;
@@ -542,12 +538,11 @@ async function fetchEventLocationRecordsForCollection(
         country: normalizeEventLocationName(event.country),
         region: normalizeEventLocationName(event.region),
         city: kind === 'offline' ? normalizeEventLocationName(event.city) : '',
-        district: kind === 'offline' ? normalizeEventLocationName(event.district) : '',
       };
-      if (!record.country && !record.region && !record.city && !record.district) {
+      if (!record.country && !record.region && !record.city) {
         continue;
       }
-      const key = `${record.kind}|${record.country}|${record.region}|${record.city}|${record.district}`;
+      const key = `${record.kind}|${record.country}|${record.region}|${record.city}`;
       if (!seen.has(key)) {
         seen.add(key);
         records.push(record);
@@ -748,12 +743,11 @@ export async function searchOfflineEvents(
       'filters[$or][5][country][$containsi]': query,
       'filters[$or][6][region][$containsi]': query,
       'filters[$or][7][city][$containsi]': query,
-      'filters[$or][8][district][$containsi]': query,
-      'filters[$or][9][venue][$containsi]': query,
-      'filters[$or][10][address][$containsi]': query,
-      'filters[$or][11][tags][$containsi]': query,
-      'filters[$or][12][ticketPriceText][$containsi]': query,
-      'filters[$or][13][sourceName][$containsi]': query,
+      'filters[$or][8][venue][$containsi]': query,
+      'filters[$or][9][address][$containsi]': query,
+      'filters[$or][10][tags][$containsi]': query,
+      'filters[$or][11][ticketPriceText][$containsi]': query,
+      'filters[$or][12][sourceName][$containsi]': query,
       sort: 'startTime:desc',
       'pagination[limit]': 50,
       ...COVER_IMAGE_POPULATE_PARAMS,
@@ -865,7 +859,6 @@ export interface OfflineEvent {
   country?: string;
   region?: string;
   city?: string;
-  district?: string;
   venue?: string;
   address?: string;
   location: string;

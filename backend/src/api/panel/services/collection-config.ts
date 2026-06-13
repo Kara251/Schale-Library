@@ -102,11 +102,11 @@ export const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
     uid: 'api::offline-event.offline-event',
     localized: true,
     populate: ['coverImage'],
-    searchFields: ['title', 'organizer', 'country', 'region', 'city', 'district', 'venue', 'address', 'location', 'guests', 'tags', 'sourceName', 'sourceUrl'],
+    searchFields: ['title', 'organizer', 'country', 'region', 'city', 'venue', 'address', 'location', 'guests', 'tags', 'sourceName', 'sourceUrl'],
     defaultSort: 'startTime:desc',
     supportsDraft: true,
     fields: [
-      'title', 'nature', 'eventFormat', 'statusOverride', 'country', 'region', 'city', 'district',
+      'title', 'nature', 'eventFormat', 'statusOverride', 'country', 'region', 'city',
       'venue', 'address', 'location', 'mapUrl', 'guests', 'startTime', 'endTime',
       'link', 'ticketUrl', 'ticketStatus', 'ticketPriceText', 'priceMin', 'priceMax',
       'currency', 'coverImage', 'organizer', 'organizerVerified', 'tags', 'sourceName',

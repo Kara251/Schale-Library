@@ -228,7 +228,7 @@ export async function scanContentQuality() {
         }
       }
       if (collection === 'offline-events') {
-        if (!normalizeText(event.country) && !normalizeText(event.region) && !normalizeText(event.city) && !normalizeText(event.district)) {
+        if (!normalizeText(event.country) && !normalizeText(event.region) && !normalizeText(event.city)) {
           issues.push(toIssue({ issueType: 'offline-event-missing-region', severity: 'warning', collection, entry: event, message: '线下活动缺少国家/地区、省市信息' }))
         }
         if (!normalizeText(event.venue) && !normalizeText(event.location)) {

@@ -87,7 +87,7 @@ export function getTicketStatusLabel(status: EventTicketStatus | null | undefine
 export function getEventDisplayPlace(event: AnyEvent, type: 'online' | 'offline') {
   if (type === 'offline') {
     const offline = event as OfflineEvent
-    const area = [offline.country, offline.region, offline.city, offline.district]
+    const area = [offline.country, offline.region, offline.city]
       .map((value) => normalizeEventLocationName(value))
       .filter(Boolean)
       .join(' / ')

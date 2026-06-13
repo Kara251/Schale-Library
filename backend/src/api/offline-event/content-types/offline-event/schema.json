@@ -81,14 +81,6 @@
         }
       }
     },
-    "district": {
-      "type": "string",
-      "pluginOptions": {
-        "i18n": {
-          "localized": true
-        }
-      }
-    },
     "venue": {
       "type": "string",
       "pluginOptions": {

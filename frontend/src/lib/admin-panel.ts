@@ -362,7 +362,6 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       { name: 'country', type: 'text', label: { 'zh-Hans': '国家（地区）', en: 'Country / region', ja: '国 / 地域' } },
       { name: 'region', type: 'text', label: { 'zh-Hans': '省州 / 都道府县', en: 'Province / prefecture', ja: '州 / 都道府県' } },
       { name: 'city', type: 'text', label: { 'zh-Hans': '城市', en: 'City', ja: '都市' } },
-      { name: 'district', type: 'text', label: { 'zh-Hans': '区县', en: 'District', ja: '区 / 郡' } },
       { name: 'venue', type: 'text', label: { 'zh-Hans': '场馆', en: 'Venue', ja: '会場' } },
       { name: 'address', type: 'text', label: { 'zh-Hans': '详细地址', en: 'Address', ja: '住所' } },
       { name: 'location', type: 'text', label: { 'zh-Hans': '地点', en: 'Location', ja: '場所' } },

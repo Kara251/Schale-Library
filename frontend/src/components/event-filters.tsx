@@ -17,7 +17,6 @@ interface EventFiltersProps {
   country: string
   region: string
   city: string
-  district: string
   locationRecords: EventLocationRecord[]
   scope: EventFilterScope
   onKindChange: (kind: EventKindFilter) => void
@@ -26,7 +25,6 @@ interface EventFiltersProps {
   onCountryChange: (country: string) => void
   onRegionChange: (region: string) => void
   onCityChange: (city: string) => void
-  onDistrictChange: (district: string) => void
   onReset: () => void
   showNatureFilter?: boolean
   showStatusFilter?: boolean
@@ -48,7 +46,6 @@ const labels: Record<Locale, {
   country: string
   region: string
   city: string
-  district: string
   clearFilters: string
 }> = {
   'zh-Hans': {
@@ -67,7 +64,6 @@ const labels: Record<Locale, {
     country: '国家（地区）',
     region: '省 / 州 / 都道府县',
     city: '城市',
-    district: '区县',
     clearFilters: '清除筛选',
   },
   'en': {
@@ -86,7 +82,6 @@ const labels: Record<Locale, {
     country: 'Country / region',
     region: 'Province / state',
     city: 'City',
-    district: 'District',
     clearFilters: 'Clear filters',
   },
   'ja': {
@@ -105,7 +100,6 @@ const labels: Record<Locale, {
     country: '国・地域',
     region: '都道府県 / 州',
     city: '都市',
-    district: '区市町村',
     clearFilters: 'フィルターをクリア',
   },
 }
@@ -120,7 +114,6 @@ export function EventFilters({
   country,
   region,
   city,
-  district,
   locationRecords,
   scope,
   onKindChange,
@@ -129,7 +122,6 @@ export function EventFilters({
   onCountryChange,
   onRegionChange,
   onCityChange,
-  onDistrictChange,
   onReset,
   showNatureFilter = true,
   showStatusFilter = true,
@@ -157,23 +149,13 @@ export function EventFilters({
       .map((record) => record.city),
     city
   )
-  const districtOptions = uniqueLocationOptions(
-    relevantLocationRecords
-      .filter((record) => record.kind === 'offline')
-      .filter((record) => matchesLocation(record.country, country))
-      .filter((record) => matchesLocation(record.region, region))
-      .filter((record) => matchesLocation(record.city, city))
-      .map((record) => record.district),
-    district
-  )
   const hasActiveFilters =
     (showKindFilter && kind !== 'all') ||
     nature !== 'all' ||
     status !== 'all' ||
     Boolean(country) ||
     Boolean(region) ||
-    Boolean(city) ||
-    Boolean(district)
+    Boolean(city)
 
   return (
     <div className="space-y-3 mb-6">
@@ -217,10 +199,7 @@ export function EventFilters({
         <FilterSelect label={t.country} value={country} options={countryOptions} allLabel={t.all} onChange={onCountryChange} />
         <FilterSelect label={t.region} value={region} options={regionOptions} allLabel={t.all} onChange={onRegionChange} />
         {showOfflineLocation ? (
-          <>
-            <FilterSelect label={t.city} value={city} options={cityOptions} allLabel={t.all} onChange={onCityChange} />
-            <FilterSelect label={t.district} value={district} options={districtOptions} allLabel={t.all} onChange={onDistrictChange} />
-          </>
+          <FilterSelect label={t.city} value={city} options={cityOptions} allLabel={t.all} onChange={onCityChange} />
         ) : null}
       </div>
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { EventCard } from '@/components/event-card'
 import { SearchBar } from '@/components/search-bar'
 import { EventFilters, type EventNature, type EventStatus } from '@/components/event-filters'
@@ -29,7 +29,6 @@ interface EventsWithFiltersProps {
   initialCountry?: string
   initialRegion?: string
   initialCity?: string
-  initialDistrict?: string
   locationRecords: EventLocationRecord[]
   initialSort?: EventSortMode
   total: number
@@ -106,7 +105,6 @@ export function EventsWithFilters({
   initialCountry = '',
   initialRegion = '',
   initialCity = '',
-  initialDistrict = '',
   locationRecords,
   initialSort = 'relevant',
   total,
@@ -117,14 +115,27 @@ export function EventsWithFilters({
   const { locale } = useLocale()
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const t = labels[locale] || labels['zh-Hans']
 
   const writeParams = useCallback((updates: Record<string, string | null>, nextPage?: number) => {
-    const params = new URLSearchParams(searchParams.toString())
-    for (const legacyKey of ['format', 'source', 'platform']) {
-      params.delete(legacyKey)
+    const params = new URLSearchParams()
+    const currentParams: Record<string, string | null> = {
+      q: initialSearchQuery || null,
+      kind: type === 'all' && initialKind !== 'all' ? initialKind : null,
+      nature: initialNature !== 'all' ? initialNature : null,
+      status: initialStatus !== 'all' ? initialStatus : null,
+      country: initialCountry || null,
+      region: initialRegion || null,
+      city: initialCity || null,
+      sort: initialSort !== 'relevant' ? initialSort : null,
     }
+
+    for (const [key, value] of Object.entries(currentParams)) {
+      if (value) {
+        params.set(key, value)
+      }
+    }
+
     for (const [key, value] of Object.entries(updates)) {
       if (value) {
         params.set(key, value)
@@ -139,7 +150,19 @@ export function EventsWithFilters({
     }
     const nextSearch = params.toString()
     router.replace(`${pathname}${nextSearch ? `?${nextSearch}` : ''}`, { scroll: nextPage !== undefined })
-  }, [pathname, router, searchParams])
+  }, [
+    initialCity,
+    initialCountry,
+    initialKind,
+    initialNature,
+    initialRegion,
+    initialSearchQuery,
+    initialSort,
+    initialStatus,
+    pathname,
+    router,
+    type,
+  ])
 
   const handleReset = useCallback(() => {
     router.replace(pathname, { scroll: true })
@@ -153,7 +176,6 @@ export function EventsWithFilters({
     Boolean(initialCountry) ||
     Boolean(initialRegion) ||
     Boolean(initialCity) ||
-    Boolean(initialDistrict) ||
     initialSort !== 'relevant'
 
   return (
@@ -179,20 +201,17 @@ export function EventsWithFilters({
         country={initialCountry}
         region={initialRegion}
         city={initialCity}
-        district={initialDistrict}
         locationRecords={locationRecords}
         scope={type}
         onKindChange={(value) => writeParams({
           kind: value === 'all' ? null : value,
           city: value === 'online' ? null : initialCity || null,
-          district: value === 'online' ? null : initialDistrict || null,
         })}
         onNatureChange={(value) => writeParams({ nature: value === 'all' ? null : value })}
         onStatusChange={(value) => writeParams({ status: value === 'all' ? null : value })}
-        onCountryChange={(value) => writeParams({ country: value || null, region: null, city: null, district: null })}
-        onRegionChange={(value) => writeParams({ region: value || null, city: null, district: null })}
-        onCityChange={(value) => writeParams({ city: value || null, district: null })}
-        onDistrictChange={(value) => writeParams({ district: value || null })}
+        onCountryChange={(value) => writeParams({ country: value || null, region: null, city: null })}
+        onRegionChange={(value) => writeParams({ region: value || null, city: null })}
+        onCityChange={(value) => writeParams({ city: value || null })}
         onReset={handleReset}
       />
 
