@@ -4,6 +4,7 @@
  */
 
 import { STRAPI_API_URL as API_URL } from '@/lib/config';
+import { eventLocationSearchTerms, normalizeEventLocationName } from '@/lib/utils/event-location';
 const API_TIMEOUT_MS = Math.max(1000, Number(process.env.API_TIMEOUT_MS || '10000'));
 
 type ContentIdentifier = string | number;
@@ -149,6 +150,14 @@ export type EventTicketStatus = 'unknown' | 'free' | 'ticketing' | 'lottery' | '
 type EventCollection = 'online-events' | 'offline-events';
 export type EventKind = 'online' | 'offline';
 
+export interface EventLocationRecord {
+  kind: EventKind;
+  country: string;
+  region: string;
+  city: string;
+  district: string;
+}
+
 export interface EventListOptions {
   query?: string;
   kind?: EventKindFilter;
@@ -175,11 +184,15 @@ function appendEventFilters(
   const status = statusOverride || options.status || 'all';
   let andIndex = 0;
   const addLocationFilter = (value: string | undefined, fields: string[]) => {
-    const text = value?.trim();
-    if (!text) return;
+    const terms = eventLocationSearchTerms(value);
+    if (!terms.length) return;
 
-    fields.forEach((field, index) => {
-      params[`filters[$and][${andIndex}][$or][${index}][${field}][$containsi]`] = text;
+    let optionIndex = 0;
+    fields.forEach((field) => {
+      terms.forEach((term) => {
+        params[`filters[$and][${andIndex}][$or][${optionIndex}][${field}][$containsi]`] = term;
+        optionIndex++;
+      });
     });
     andIndex++;
   };
@@ -495,6 +508,73 @@ async function fetchAllEventsForCollection<T>(
   } while (page <= pageCount);
 
   return items;
+}
+
+async function fetchEventLocationRecordsForCollection(
+  collection: EventCollection,
+  kind: EventKind,
+  locale: string
+): Promise<EventLocationRecord[]> {
+  const strapiLocale = toStrapiLocale(locale);
+  const records: EventLocationRecord[] = [];
+  const seen = new Set<string>();
+  const fields = kind === 'offline'
+    ? ['country', 'region', 'city', 'district']
+    : ['country', 'region'];
+  let page = 1;
+  let pageCount = 1;
+
+  do {
+    const fieldParams = Object.fromEntries(fields.map((field, index) => [`fields[${index}]`, field]));
+    const response = await fetchAPI<StrapiResponse<Array<Partial<EventLocationRecord>>>>(
+      `/${collection}?${createCollectionQuery({
+        locale: strapiLocale,
+        sort: 'startTime:desc',
+        'pagination[page]': page,
+        'pagination[pageSize]': 100,
+        ...fieldParams,
+      })}`
+    );
+
+    for (const event of response.data || []) {
+      const record = {
+        kind,
+        country: normalizeEventLocationName(event.country),
+        region: normalizeEventLocationName(event.region),
+        city: kind === 'offline' ? normalizeEventLocationName(event.city) : '',
+        district: kind === 'offline' ? normalizeEventLocationName(event.district) : '',
+      };
+      if (!record.country && !record.region && !record.city && !record.district) {
+        continue;
+      }
+      const key = `${record.kind}|${record.country}|${record.region}|${record.city}|${record.district}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        records.push(record);
+      }
+    }
+
+    pageCount = response.meta?.pagination?.pageCount || 1;
+    page++;
+  } while (page <= pageCount);
+
+  return records;
+}
+
+export async function getEventLocationRecords(
+  locale: string = 'zh-Hans',
+  kind: EventKindFilter = 'all'
+): Promise<EventLocationRecord[]> {
+  const [online, offline] = await Promise.all([
+    kind === 'offline'
+      ? Promise.resolve([] as EventLocationRecord[])
+      : fetchEventLocationRecordsForCollection('online-events', 'online', locale),
+    kind === 'online'
+      ? Promise.resolve([] as EventLocationRecord[])
+      : fetchEventLocationRecordsForCollection('offline-events', 'offline', locale),
+  ]);
+
+  return [...online, ...offline];
 }
 
 export async function getAllEvents(

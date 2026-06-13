@@ -2,9 +2,9 @@
 
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/contexts/locale-context'
-import type { EventKindFilter } from '@/lib/api'
+import type { EventKindFilter, EventLocationRecord } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
-import type { ReactNode } from 'react'
+import type { ChangeEvent, ReactNode } from 'react'
 
 export type EventNature = 'all' | 'official' | 'fanmade'
 export type EventStatus = 'all' | 'upcoming' | 'ongoing' | 'ended'
@@ -18,6 +18,7 @@ interface EventFiltersProps {
   region: string
   city: string
   district: string
+  locationRecords: EventLocationRecord[]
   scope: EventFilterScope
   onKindChange: (kind: EventKindFilter) => void
   onNatureChange: (nature: EventNature) => void
@@ -120,6 +121,7 @@ export function EventFilters({
   region,
   city,
   district,
+  locationRecords,
   scope,
   onKindChange,
   onNatureChange,
@@ -135,7 +137,35 @@ export function EventFilters({
   const { locale } = useLocale()
   const t = labels[locale] || labels['zh-Hans']
   const showKindFilter = scope === 'all'
-  const showOfflineLocation = scope !== 'online'
+  const activeKind = scope === 'all' ? kind : scope
+  const showOfflineLocation = activeKind !== 'online'
+  const relevantLocationRecords = locationRecords.filter((record) => (
+    activeKind === 'all' || record.kind === activeKind
+  ))
+  const countryOptions = uniqueLocationOptions(relevantLocationRecords.map((record) => record.country), country)
+  const regionOptions = uniqueLocationOptions(
+    relevantLocationRecords
+      .filter((record) => matchesLocation(record.country, country))
+      .map((record) => record.region),
+    region
+  )
+  const cityOptions = uniqueLocationOptions(
+    relevantLocationRecords
+      .filter((record) => record.kind === 'offline')
+      .filter((record) => matchesLocation(record.country, country))
+      .filter((record) => matchesLocation(record.region, region))
+      .map((record) => record.city),
+    city
+  )
+  const districtOptions = uniqueLocationOptions(
+    relevantLocationRecords
+      .filter((record) => record.kind === 'offline')
+      .filter((record) => matchesLocation(record.country, country))
+      .filter((record) => matchesLocation(record.region, region))
+      .filter((record) => matchesLocation(record.city, city))
+      .map((record) => record.district),
+    district
+  )
   const hasActiveFilters =
     (showKindFilter && kind !== 'all') ||
     nature !== 'all' ||
@@ -184,12 +214,12 @@ export function EventFilters({
       )}
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <FilterTextInput label={t.country} value={country} onCommit={onCountryChange} />
-        <FilterTextInput label={t.region} value={region} onCommit={onRegionChange} />
+        <FilterSelect label={t.country} value={country} options={countryOptions} allLabel={t.all} onChange={onCountryChange} />
+        <FilterSelect label={t.region} value={region} options={regionOptions} allLabel={t.all} onChange={onRegionChange} />
         {showOfflineLocation ? (
           <>
-            <FilterTextInput label={t.city} value={city} onCommit={onCityChange} />
-            <FilterTextInput label={t.district} value={district} onCommit={onDistrictChange} />
+            <FilterSelect label={t.city} value={city} options={cityOptions} allLabel={t.all} onChange={onCityChange} />
+            <FilterSelect label={t.district} value={district} options={districtOptions} allLabel={t.all} onChange={onDistrictChange} />
           </>
         ) : null}
       </div>
@@ -204,29 +234,49 @@ export function EventFilters({
   )
 }
 
-function FilterTextInput({
+function uniqueLocationOptions(values: string[], selected: string) {
+  const options = [...new Set(values.map((value) => value.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh-Hans'));
+  const current = selected.trim();
+  if (current && !options.includes(current)) {
+    options.unshift(current);
+  }
+  return options;
+}
+
+function matchesLocation(value: string, selected: string) {
+  return !selected || value === selected;
+}
+
+function FilterSelect({
   label,
   value,
-  onCommit,
+  options,
+  allLabel,
+  onChange,
 }: {
   label: string
   value: string
-  onCommit: (value: string) => void
+  options: string[]
+  allLabel: string
+  onChange: (value: string) => void
 }) {
+  const handleChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    onChange(event.currentTarget.value)
+  }
+
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-bold text-foreground">{label}</span>
-      <input
-        key={value}
-        defaultValue={value}
-        onBlur={(event) => onCommit(event.currentTarget.value.trim())}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            event.currentTarget.blur()
-          }
-        }}
+      <select
+        value={value}
+        onChange={handleChange}
         className="h-9 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-      />
+      >
+        <option value="">{allLabel}</option>
+        {options.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
     </label>
   )
 }

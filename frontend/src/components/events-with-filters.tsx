@@ -10,6 +10,7 @@ import { useLocale } from '@/contexts/locale-context'
 import type {
   EventKindFilter,
   EventListItem,
+  EventLocationRecord,
   OnlineEvent,
   OfflineEvent,
 } from '@/lib/api'
@@ -29,6 +30,7 @@ interface EventsWithFiltersProps {
   initialRegion?: string
   initialCity?: string
   initialDistrict?: string
+  locationRecords: EventLocationRecord[]
   initialSort?: EventSortMode
   total: number
   page: number
@@ -105,6 +107,7 @@ export function EventsWithFilters({
   initialRegion = '',
   initialCity = '',
   initialDistrict = '',
+  locationRecords,
   initialSort = 'relevant',
   total,
   page,
@@ -177,13 +180,18 @@ export function EventsWithFilters({
         region={initialRegion}
         city={initialCity}
         district={initialDistrict}
+        locationRecords={locationRecords}
         scope={type}
-        onKindChange={(value) => writeParams({ kind: value === 'all' ? null : value })}
+        onKindChange={(value) => writeParams({
+          kind: value === 'all' ? null : value,
+          city: value === 'online' ? null : initialCity || null,
+          district: value === 'online' ? null : initialDistrict || null,
+        })}
         onNatureChange={(value) => writeParams({ nature: value === 'all' ? null : value })}
         onStatusChange={(value) => writeParams({ status: value === 'all' ? null : value })}
-        onCountryChange={(value) => writeParams({ country: value || null })}
-        onRegionChange={(value) => writeParams({ region: value || null })}
-        onCityChange={(value) => writeParams({ city: value || null })}
+        onCountryChange={(value) => writeParams({ country: value || null, region: null, city: null, district: null })}
+        onRegionChange={(value) => writeParams({ region: value || null, city: null, district: null })}
+        onCityChange={(value) => writeParams({ city: value || null, district: null })}
         onDistrictChange={(value) => writeParams({ district: value || null })}
         onReset={handleReset}
       />

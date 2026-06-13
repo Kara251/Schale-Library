@@ -5,6 +5,7 @@ import type {
   OnlineEvent,
 } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
+import { normalizeEventLocationName } from '@/lib/utils/event-location'
 
 type AnyEvent = OnlineEvent | OfflineEvent
 
@@ -86,13 +87,18 @@ export function getTicketStatusLabel(status: EventTicketStatus | null | undefine
 export function getEventDisplayPlace(event: AnyEvent, type: 'online' | 'offline') {
   if (type === 'offline') {
     const offline = event as OfflineEvent
-    const area = [offline.country, offline.region, offline.city, offline.district].filter(Boolean).join(' / ')
+    const area = [offline.country, offline.region, offline.city, offline.district]
+      .map((value) => normalizeEventLocationName(value))
+      .filter(Boolean)
+      .join(' / ')
     return [area, offline.venue].filter(Boolean).join(' · ') || offline.location || offline.address || ''
   }
 
   const online = event as OnlineEvent
-  const area = [online.country, online.region].filter(Boolean).join(' / ')
-  return [area, online.platform].filter(Boolean).join(' · ')
+  return [online.country, online.region]
+    .map((value) => normalizeEventLocationName(value))
+    .filter(Boolean)
+    .join(' / ')
 }
 
 export function formatEventPrice(event: AnyEvent, locale: Locale) {

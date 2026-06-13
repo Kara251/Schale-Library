@@ -1,8 +1,9 @@
 import { Footer } from '@/components/footer'
 import { Header } from '@/components/header'
 import { EventsWithFilters, type EventSortMode } from '@/components/events-with-filters'
-import { getAllEvents, type EventKindFilter, type EventNatureFilter, type EventStatusFilter } from '@/lib/api'
+import { getAllEvents, getEventLocationRecords, type EventKindFilter, type EventNatureFilter, type EventStatusFilter } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
+import { normalizeEventLocationName } from '@/lib/utils/event-location'
 
 export const revalidate = 60
 
@@ -46,26 +47,36 @@ export default async function EventsPage({ params, searchParams }: EventsPagePro
   const nature = parseValue(filters.nature, eventNatures, 'all')
   const status = parseValue(filters.status, eventStatuses, 'all')
   const sort = parseValue(filters.sort, eventSorts, 'relevant')
+  const country = normalizeEventLocationName(filters.country)
+  const region = normalizeEventLocationName(filters.region)
+  const city = kind === 'online' ? '' : normalizeEventLocationName(filters.city)
+  const district = kind === 'online' ? '' : normalizeEventLocationName(filters.district)
 
-  const eventsResult = await getAllEvents(24, locale, {
-    query: filters.q,
-    kind,
-    nature,
-    status,
-    country: filters.country,
-    region: filters.region,
-    city: filters.city,
-    district: filters.district,
-    sort,
-    page,
-    pageSize: 24,
-  }).then((response) => ({ response, hasError: false })).catch((error) => {
-    console.error('Failed to load events:', error)
-    return {
-      response: { data: [], meta: { pagination: { page, pageSize: 24, pageCount: 1, total: 0 } } },
-      hasError: true,
-    }
-  })
+  const [eventsResult, locationRecords] = await Promise.all([
+    getAllEvents(24, locale, {
+      query: filters.q,
+      kind,
+      nature,
+      status,
+      country,
+      region,
+      city,
+      district,
+      sort,
+      page,
+      pageSize: 24,
+    }).then((response) => ({ response, hasError: false })).catch((error) => {
+      console.error('Failed to load events:', error)
+      return {
+        response: { data: [], meta: { pagination: { page, pageSize: 24, pageCount: 1, total: 0 } } },
+        hasError: true,
+      }
+    }),
+    getEventLocationRecords(locale, 'all').catch((error) => {
+      console.error('Failed to load event location filters:', error)
+      return []
+    }),
+  ])
   const eventsRes = eventsResult.response
   const events = eventsRes.data || []
   const pagination = eventsRes.meta?.pagination || { page, pageCount: 1, total: events.length }
@@ -84,10 +95,11 @@ export default async function EventsPage({ params, searchParams }: EventsPagePro
             initialKind={kind}
             initialNature={nature}
             initialStatus={status}
-            initialCountry={filters.country || ''}
-            initialRegion={filters.region || ''}
-            initialCity={filters.city || ''}
-            initialDistrict={filters.district || ''}
+            initialCountry={country}
+            initialRegion={region}
+            initialCity={city}
+            initialDistrict={district}
+            locationRecords={locationRecords}
             initialSort={sort}
             total={pagination.total}
             page={pagination.page}
