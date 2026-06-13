@@ -64,6 +64,22 @@ function addMissingTranslations(issues: any[], collection: string, entries: any[
   }
 }
 
+function normalizeText(value: unknown) {
+  return String(value || '').trim()
+}
+
+function hasUsableUrl(value: unknown) {
+  const url = normalizeText(value)
+  if (!url) return false
+
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+  } catch {
+    return false
+  }
+}
+
 async function findAllForQuality(uid: any, options: Record<string, unknown> = {}) {
   const entries: any[] = []
   let start = 0
@@ -167,6 +183,8 @@ export async function scanContentQuality() {
   }
 
   for (const [collection, events] of [['online-events', onlineEvents], ['offline-events', offlineEvents]] as const) {
+    const eventSourceGroups = new Map<string, any[]>()
+
     for (const event of events) {
       if (!event.coverImage) {
         issues.push(toIssue({ issueType: 'missing-image', collection, entry: event, message: '活动缺少封面图', severity: 'info' }))
@@ -174,11 +192,71 @@ export async function scanContentQuality() {
       if (!event.link) {
         issues.push(toIssue({ issueType: 'missing-link', collection, entry: event, message: '活动缺少外链', severity: 'info' }))
       }
+      if (event.link && !hasUsableUrl(event.link)) {
+        issues.push(toIssue({ issueType: 'invalid-link', severity: 'error', collection, entry: event, message: '活动外链不是有效 URL' }))
+      }
+      if (event.sourceUrl && !hasUsableUrl(event.sourceUrl)) {
+        issues.push(toIssue({ issueType: 'invalid-source-url', severity: 'error', collection, entry: event, message: '活动信源链接不是有效 URL' }))
+      }
+      if (event.ticketUrl && !hasUsableUrl(event.ticketUrl)) {
+        issues.push(toIssue({ issueType: 'invalid-ticket-url', severity: 'error', collection, entry: event, message: '活动票务链接不是有效 URL' }))
+      }
+      if (event.ticketStatus && event.ticketStatus !== 'unknown' && !event.ticketUrl && !event.link) {
+        issues.push(toIssue({ issueType: 'ticket-status-missing-link', severity: 'warning', collection, entry: event, message: '活动已设置票务状态但缺少票务或活动链接' }))
+      }
+      if (['ticketing', 'lottery'].includes(String(event.ticketStatus || '')) && !event.ticketPriceText && event.priceMin == null && event.priceMax == null) {
+        issues.push(toIssue({ issueType: 'ticketing-missing-price', severity: 'info', collection, entry: event, message: '售票或抽选活动缺少票价说明' }))
+      }
+      if (!event.eventFormat || event.eventFormat === 'other') {
+        issues.push(toIssue({ issueType: 'event-format-unspecified', severity: 'info', collection, entry: event, message: '活动形式未细分' }))
+      }
+      if (event.sourcePlatform && event.sourcePlatform !== 'manual' && !event.sourceUrl) {
+        issues.push(toIssue({ issueType: 'source-platform-missing-url', severity: 'warning', collection, entry: event, message: '活动已设置外部信源平台但缺少信源链接' }))
+      }
+      if (['baonly', 'official', 'ticketing'].includes(String(event.sourcePlatform || '')) && !event.lastVerifiedAt) {
+        issues.push(toIssue({ issueType: 'source-missing-verification', severity: 'info', collection, entry: event, message: '活动缺少最后核验时间' }))
+      }
+      if (event.sourceUrl) {
+        const list = eventSourceGroups.get(event.sourceUrl) || []
+        list.push(event)
+        eventSourceGroups.set(event.sourceUrl, list)
+      }
       if (event.startTime && event.endTime && new Date(event.startTime).getTime() > new Date(event.endTime).getTime()) {
         issues.push(toIssue({ issueType: 'invalid-event-time', severity: 'error', collection, entry: event, message: '活动结束时间早于开始时间' }))
       }
+      if (collection === 'online-events') {
+        if (!normalizeText(event.platform)) {
+          issues.push(toIssue({ issueType: 'online-event-missing-platform', severity: 'warning', collection, entry: event, message: '线上活动缺少平台信息' }))
+        }
+      }
+      if (collection === 'offline-events') {
+        if (!normalizeText(event.country) && !normalizeText(event.region) && !normalizeText(event.city)) {
+          issues.push(toIssue({ issueType: 'offline-event-missing-region', severity: 'warning', collection, entry: event, message: '线下活动缺少国家/地区、省市信息' }))
+        }
+        if (!normalizeText(event.venue) && !normalizeText(event.location)) {
+          issues.push(toIssue({ issueType: 'offline-event-missing-venue', severity: 'warning', collection, entry: event, message: '线下活动缺少场馆或地点' }))
+        }
+        if (event.mapUrl && !hasUsableUrl(event.mapUrl)) {
+          issues.push(toIssue({ issueType: 'invalid-map-url', severity: 'error', collection, entry: event, message: '活动地图链接不是有效 URL' }))
+        }
+      }
       if (!event.publishedAt) {
         issues.push(toIssue({ issueType: 'draft', severity: 'info', collection, entry: event, message: '活动仍处于草稿状态' }))
+      }
+    }
+
+    for (const duplicates of eventSourceGroups.values()) {
+      if (duplicates.length > 1) {
+        for (const event of duplicates) {
+          issues.push(toIssue({
+            issueType: 'duplicate-event-source',
+            severity: 'error',
+            collection,
+            entry: event,
+            message: '存在重复信源的活动',
+            details: { duplicateIds: duplicates.map((item) => item.id) },
+          }))
+        }
       }
     }
   }
