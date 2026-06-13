@@ -1,13 +1,20 @@
 'use client'
 
 import { memo } from 'react'
-import { Calendar, MapPin } from 'lucide-react'
+import { Calendar, Globe, MapPin, Ticket } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN, enUS, ja } from 'date-fns/locale'
 import { OptimizedImage } from '@/components/optimized-image'
 import { LocaleLink } from '@/components/locale-link'
 import { useLocale } from '@/contexts/locale-context'
 import { getContentEntryPathId, type OnlineEvent, type OfflineEvent } from '@/lib/api'
+import {
+  formatEventPrice,
+  getEventDisplayPlace,
+  getEventFormatLabel,
+  getEventStatusOverrideLabel,
+  splitEventTags,
+} from '@/lib/utils/event-display'
 import type { Locale } from '@/lib/i18n'
 
 interface EventCardProps {
@@ -65,7 +72,6 @@ export const EventCard = memo(function EventCard({ event, type }: EventCardProps
   const dateLocale = dateLocales[locale] || zhCN
 
   const isOffline = type === 'offline'
-  const offlineEvent = isOffline ? (event as OfflineEvent) : null
 
   // 格式化时间
   const formatDate = (dateString: string) => {
@@ -87,8 +93,12 @@ export const EventCard = memo(function EventCard({ event, type }: EventCardProps
     return t.ongoing
   }
 
-  const status = getEventStatus()
+  const status = getEventStatusOverrideLabel(event.statusOverride, locale) || getEventStatus()
   const natureLabel = event.nature === 'official' ? t.official : t.fanmade
+  const formatLabel = getEventFormatLabel(event.eventFormat, locale)
+  const displayPlace = getEventDisplayPlace(event, type)
+  const priceLabel = formatEventPrice(event, locale)
+  const tags = splitEventTags(event.tags).slice(0, 3)
 
   return (
     <LocaleLink
@@ -128,19 +138,39 @@ export const EventCard = memo(function EventCard({ event, type }: EventCardProps
           {/* 信息行 */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{natureLabel}</span>
-            <span>·</span>
-            <span>{status}</span>
+            {formatLabel ? (
+              <>
+                <span>·</span>
+                <span>{formatLabel}</span>
+              </>
+            ) : null}
             <span>·</span>
             <span>{formatDate(event.startTime)}</span>
           </div>
 
-          {/* 地点（线下） */}
-          {isOffline && offlineEvent?.location && (
+          {displayPlace && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-              <MapPin className="w-3 h-3" />
-              <span className="line-clamp-1">{offlineEvent.location}</span>
+              {isOffline ? <MapPin className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+              <span className="line-clamp-1">{displayPlace}</span>
             </div>
           )}
+
+          {priceLabel ? (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+              <Ticket className="w-3 h-3" />
+              <span className="line-clamp-1">{priceLabel}</span>
+            </div>
+          ) : null}
+
+          {tags.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {tags.map((tag) => (
+                <span key={tag} className="rounded bg-secondary px-1.5 py-0.5 text-[11px] text-secondary-foreground">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
     </LocaleLink>

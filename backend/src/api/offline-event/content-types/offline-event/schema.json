@@ -37,12 +37,80 @@
         }
       }
     },
+    "eventFormat": {
+      "type": "enumeration",
+      "enum": ["live_stream", "live_show", "only_event", "collaboration", "contest", "campaign", "exhibition", "meetup", "release", "other"],
+      "default": "other",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "statusOverride": {
+      "type": "enumeration",
+      "enum": ["normal", "postponed", "cancelled", "rescheduled", "ticketing", "sold_out", "changed"],
+      "default": "normal",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "country": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "region": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "city": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "venue": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "address": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
     "location": {
       "type": "string",
       "required": true,
       "pluginOptions": {
         "i18n": {
           "localized": true
+        }
+      }
+    },
+    "mapUrl": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
         }
       }
     },
@@ -80,6 +148,56 @@
         }
       }
     },
+    "ticketUrl": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "ticketStatus": {
+      "type": "enumeration",
+      "enum": ["unknown", "free", "ticketing", "lottery", "sold_out", "closed"],
+      "default": "unknown",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "ticketPriceText": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "priceMin": {
+      "type": "decimal",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "priceMax": {
+      "type": "decimal",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "currency": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
     "coverImage": {
       "type": "media",
       "multiple": false,
@@ -96,6 +214,49 @@
       "pluginOptions": {
         "i18n": {
           "localized": true
+        }
+      }
+    },
+    "organizerVerified": {
+      "type": "boolean",
+      "default": false,
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "tags": {
+      "type": "text",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "sourcePlatform": {
+      "type": "enumeration",
+      "enum": ["manual", "official", "baonly", "bilibili", "x", "youtube", "website", "ticketing", "other"],
+      "default": "manual",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "sourceUrl": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "lastVerifiedAt": {
+      "type": "datetime",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
         }
       }
     },

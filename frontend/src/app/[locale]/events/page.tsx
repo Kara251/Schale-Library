@@ -1,7 +1,7 @@
 import { Footer } from '@/components/footer'
 import { Header } from '@/components/header'
 import { EventsWithFilters, type EventSortMode } from '@/components/events-with-filters'
-import { getAllEvents, type EventNatureFilter, type EventStatusFilter } from '@/lib/api'
+import { getAllEvents, type EventFormatFilter, type EventNatureFilter, type EventSourcePlatformFilter, type EventStatusFilter } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 
 export const revalidate = 60
@@ -12,6 +12,10 @@ interface EventsPageProps {
     q?: string
     nature?: EventNatureFilter
     status?: EventStatusFilter
+    format?: EventFormatFilter
+    city?: string
+    platform?: string
+    source?: EventSourcePlatformFilter
     sort?: EventSortMode
     page?: string
   }>
@@ -25,6 +29,8 @@ const titles: Record<Locale, string> = {
 
 const eventNatures: EventNatureFilter[] = ['all', 'official', 'fanmade']
 const eventStatuses: EventStatusFilter[] = ['all', 'upcoming', 'ongoing', 'ended']
+const eventFormats: EventFormatFilter[] = ['all', 'live_stream', 'live_show', 'only_event', 'collaboration', 'contest', 'campaign', 'exhibition', 'meetup', 'release', 'other']
+const eventSources: EventSourcePlatformFilter[] = ['all', 'manual', 'official', 'baonly', 'bilibili', 'x', 'youtube', 'website', 'ticketing', 'other']
 const eventSorts: EventSortMode[] = ['relevant', 'startTime', 'endTime']
 
 function parseValue<T extends string>(value: string | undefined, allowed: T[], fallback: T): T {
@@ -38,12 +44,18 @@ export default async function EventsPage({ params, searchParams }: EventsPagePro
   const page = Math.max(1, Number(filters.page || '1'))
   const nature = parseValue(filters.nature, eventNatures, 'all')
   const status = parseValue(filters.status, eventStatuses, 'all')
+  const format = parseValue(filters.format, eventFormats, 'all')
+  const source = parseValue(filters.source, eventSources, 'all')
   const sort = parseValue(filters.sort, eventSorts, 'relevant')
 
   const eventsResult = await getAllEvents(24, locale, {
     query: filters.q,
     nature,
     status,
+    format,
+    city: filters.city,
+    platform: filters.platform,
+    source,
     sort,
     page,
     pageSize: 24,
@@ -71,6 +83,10 @@ export default async function EventsPage({ params, searchParams }: EventsPagePro
             initialSearchQuery={filters.q || ''}
             initialNature={nature}
             initialStatus={status}
+            initialFormat={format}
+            initialCity={filters.city || ''}
+            initialPlatform={filters.platform || ''}
+            initialSource={source}
             initialSort={sort}
             total={pagination.total}
             page={pagination.page}

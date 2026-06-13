@@ -142,6 +142,12 @@ export async function getFriendLinks(locale: string = 'zh-Hans', limit: number =
 export type EventNatureFilter = 'all' | 'official' | 'fanmade';
 export type EventStatusFilter = 'all' | 'upcoming' | 'ongoing' | 'ended';
 export type EventSortMode = 'relevant' | 'startTime' | 'endTime';
+export type EventFormat = 'live_stream' | 'live_show' | 'only_event' | 'collaboration' | 'contest' | 'campaign' | 'exhibition' | 'meetup' | 'release' | 'other';
+export type EventFormatFilter = 'all' | EventFormat;
+export type EventStatusOverride = 'normal' | 'postponed' | 'cancelled' | 'rescheduled' | 'ticketing' | 'sold_out' | 'changed';
+export type EventTicketStatus = 'unknown' | 'free' | 'ticketing' | 'lottery' | 'sold_out' | 'closed';
+export type EventSourcePlatform = 'manual' | 'official' | 'baonly' | 'bilibili' | 'x' | 'youtube' | 'website' | 'ticketing' | 'other';
+export type EventSourcePlatformFilter = 'all' | EventSourcePlatform;
 type EventCollection = 'online-events' | 'offline-events';
 export type EventKind = 'online' | 'offline';
 
@@ -149,6 +155,10 @@ export interface EventListOptions {
   query?: string;
   nature?: EventNatureFilter;
   status?: EventStatusFilter;
+  format?: EventFormatFilter;
+  city?: string;
+  platform?: string;
+  source?: EventSourcePlatformFilter;
   sort?: EventSortMode;
   page?: number;
   pageSize?: number;
@@ -172,11 +182,54 @@ function appendEventFilters(
     if (kind === 'offline') {
       params['filters[$or][3][location][$containsi]'] = query;
       params['filters[$or][4][guests][$containsi]'] = query;
+      params['filters[$or][5][country][$containsi]'] = query;
+      params['filters[$or][6][region][$containsi]'] = query;
+      params['filters[$or][7][city][$containsi]'] = query;
+      params['filters[$or][8][venue][$containsi]'] = query;
+      params['filters[$or][9][address][$containsi]'] = query;
+      params['filters[$or][10][tags][$containsi]'] = query;
+      params['filters[$or][11][ticketPriceText][$containsi]'] = query;
+    } else {
+      params['filters[$or][3][region][$containsi]'] = query;
+      params['filters[$or][4][platform][$containsi]'] = query;
+      params['filters[$or][5][tags][$containsi]'] = query;
+      params['filters[$or][6][ticketPriceText][$containsi]'] = query;
     }
   }
 
   if (options.nature && options.nature !== 'all') {
     params['filters[nature][$eq]'] = options.nature;
+  }
+
+  if (options.format && options.format !== 'all') {
+    params['filters[eventFormat][$eq]'] = options.format;
+  }
+
+  if (options.source && options.source !== 'all') {
+    params['filters[sourcePlatform][$eq]'] = options.source;
+  }
+
+  const city = options.city?.trim();
+  if (city) {
+    if (kind === 'offline') {
+      params['filters[$and][0][$or][0][city][$containsi]'] = city;
+      params['filters[$and][0][$or][1][region][$containsi]'] = city;
+      params['filters[$and][0][$or][2][country][$containsi]'] = city;
+      params['filters[$and][0][$or][3][location][$containsi]'] = city;
+      params['filters[$and][0][$or][4][venue][$containsi]'] = city;
+    } else {
+      params['filters[id][$eq]'] = -1;
+    }
+  }
+
+  const platform = options.platform?.trim();
+  if (platform) {
+    if (kind === 'online') {
+      params['filters[$and][0][$or][0][platform][$containsi]'] = platform;
+      params['filters[$and][0][$or][1][region][$containsi]'] = platform;
+    } else {
+      params['filters[id][$eq]'] = -1;
+    }
   }
 
   if (options.excludeId) {
@@ -583,6 +636,10 @@ export async function searchOnlineEvents(
       'filters[$or][0][title][$containsi]': query,
       'filters[$or][1][organizer][$containsi]': query,
       'filters[$or][2][description][$containsi]': query,
+      'filters[$or][3][region][$containsi]': query,
+      'filters[$or][4][platform][$containsi]': query,
+      'filters[$or][5][tags][$containsi]': query,
+      'filters[$or][6][ticketPriceText][$containsi]': query,
       sort: 'startTime:desc',
       'pagination[limit]': 50,
       ...COVER_IMAGE_POPULATE_PARAMS,
@@ -608,6 +665,13 @@ export async function searchOfflineEvents(
       'filters[$or][2][location][$containsi]': query,
       'filters[$or][3][guests][$containsi]': query,
       'filters[$or][4][description][$containsi]': query,
+      'filters[$or][5][country][$containsi]': query,
+      'filters[$or][6][region][$containsi]': query,
+      'filters[$or][7][city][$containsi]': query,
+      'filters[$or][8][venue][$containsi]': query,
+      'filters[$or][9][address][$containsi]': query,
+      'filters[$or][10][tags][$containsi]': query,
+      'filters[$or][11][ticketPriceText][$containsi]': query,
       sort: 'startTime:desc',
       'pagination[limit]': 50,
       ...COVER_IMAGE_POPULATE_PARAMS,
@@ -677,11 +741,26 @@ export interface OnlineEvent {
   documentId: string;
   title: string;
   nature: 'official' | 'fanmade';
+  eventFormat?: EventFormat | null;
+  statusOverride?: EventStatusOverride | null;
+  region?: string;
+  platform?: string;
   startTime: string;
   endTime: string;
   link?: string;
+  ticketUrl?: string;
+  ticketStatus?: EventTicketStatus | null;
+  ticketPriceText?: string;
+  priceMin?: number | string | null;
+  priceMax?: number | string | null;
+  currency?: string;
   coverImage?: StrapiMedia;
   organizer?: string;
+  organizerVerified?: boolean;
+  tags?: string;
+  sourcePlatform?: EventSourcePlatform | null;
+  sourceUrl?: string;
+  lastVerifiedAt?: string;
   description?: string;
   createdAt: string;
   updatedAt: string;
@@ -697,13 +776,32 @@ export interface OfflineEvent {
   documentId: string;
   title: string;
   nature: 'official' | 'fanmade';
+  eventFormat?: EventFormat | null;
+  statusOverride?: EventStatusOverride | null;
+  country?: string;
+  region?: string;
+  city?: string;
+  venue?: string;
+  address?: string;
   location: string;
+  mapUrl?: string;
   guests?: string;
   startTime: string;
   endTime: string;
   link?: string;
+  ticketUrl?: string;
+  ticketStatus?: EventTicketStatus | null;
+  ticketPriceText?: string;
+  priceMin?: number | string | null;
+  priceMax?: number | string | null;
+  currency?: string;
   coverImage?: StrapiMedia;
   organizer?: string;
+  organizerVerified?: boolean;
+  tags?: string;
+  sourcePlatform?: EventSourcePlatform | null;
+  sourceUrl?: string;
+  lastVerifiedAt?: string;
   description?: string;
   createdAt: string;
   updatedAt: string;

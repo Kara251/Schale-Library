@@ -7,7 +7,13 @@ import { SearchBar } from '@/components/search-bar'
 import { EventFilters, type EventNature, type EventStatus } from '@/components/event-filters'
 import { Pagination } from '@/components/pagination'
 import { useLocale } from '@/contexts/locale-context'
-import type { EventListItem, OnlineEvent, OfflineEvent } from '@/lib/api'
+import type {
+  EventFormatFilter,
+  EventListItem,
+  EventSourcePlatformFilter,
+  OnlineEvent,
+  OfflineEvent,
+} from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 
 export type EventSortMode = 'relevant' | 'startTime' | 'endTime'
@@ -19,6 +25,10 @@ interface EventsWithFiltersProps {
   initialSearchQuery?: string
   initialNature?: EventNature
   initialStatus?: EventStatus
+  initialFormat?: EventFormatFilter
+  initialCity?: string
+  initialPlatform?: string
+  initialSource?: EventSourcePlatformFilter
   initialSort?: EventSortMode
   total: number
   page: number
@@ -90,6 +100,10 @@ export function EventsWithFilters({
   initialSearchQuery = '',
   initialNature = 'all',
   initialStatus = 'all',
+  initialFormat = 'all',
+  initialCity = '',
+  initialPlatform = '',
+  initialSource = 'all',
   initialSort = 'relevant',
   total,
   page,
@@ -124,7 +138,7 @@ export function EventsWithFilters({
     router.replace(pathname, { scroll: true })
   }, [pathname, router])
 
-  const hasActiveFilters = Boolean(initialSearchQuery) || initialNature !== 'all' || initialStatus !== 'all' || initialSort !== 'relevant'
+  const hasActiveFilters = Boolean(initialSearchQuery) || initialNature !== 'all' || initialStatus !== 'all' || initialFormat !== 'all' || initialSource !== 'all' || Boolean(initialCity) || Boolean(initialPlatform) || initialSort !== 'relevant'
 
   return (
     <div>
@@ -145,8 +159,17 @@ export function EventsWithFilters({
       <EventFilters
         nature={initialNature}
         status={initialStatus}
+        format={initialFormat}
+        source={initialSource}
+        city={initialCity}
+        platform={initialPlatform}
+        scope={type}
         onNatureChange={(value) => writeParams({ nature: value === 'all' ? null : value })}
         onStatusChange={(value) => writeParams({ status: value === 'all' ? null : value })}
+        onFormatChange={(value) => writeParams({ format: value === 'all' ? null : value })}
+        onSourceChange={(value) => writeParams({ source: value === 'all' ? null : value })}
+        onCityChange={(value) => writeParams({ city: value || null })}
+        onPlatformChange={(value) => writeParams({ platform: value || null })}
         onReset={handleReset}
       />
 

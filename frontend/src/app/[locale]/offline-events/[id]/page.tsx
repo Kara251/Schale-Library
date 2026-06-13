@@ -5,8 +5,17 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { EventCard } from "@/components/event-card"
-import { Calendar, MapPin, User, ArrowLeft, ExternalLink } from 'lucide-react'
+import { Calendar, CheckCircle, MapPin, Tag, Ticket, User, ArrowLeft, ExternalLink } from 'lucide-react'
 import { getOfflineEventById, getOfflineEvents } from "@/lib/api"
+import {
+    formatEventPrice,
+    getEventDisplayPlace,
+    getEventFormatLabel,
+    getEventSourceHost,
+    getEventSourcePlatformLabel,
+    getEventStatusOverrideLabel,
+    splitEventTags,
+} from "@/lib/utils/event-display"
 import { sanitizeHtml } from "@/lib/sanitize"
 import { format } from 'date-fns'
 import { zhCN, enUS, ja } from 'date-fns/locale'
@@ -70,6 +79,16 @@ const content: Record<Locale, {
     endsIn: string
     endedAgo: string
     source: string
+    sourcePlatform: string
+    lastVerifiedAt: string
+    format: string
+    venue: string
+    address: string
+    ticket: string
+    ticketLink: string
+    mapLink: string
+    verified: string
+    tags: string
     location: string
     visitLink: string
     description: string
@@ -89,6 +108,16 @@ const content: Record<Locale, {
         endsIn: '距离结束约 {days} 天',
         endedAgo: '已结束约 {days} 天',
         source: '来源',
+        sourcePlatform: '信源',
+        lastVerifiedAt: '最后核验',
+        format: '活动形式',
+        venue: '场馆',
+        address: '地址',
+        ticket: '票务',
+        ticketLink: '票务 / 报名',
+        mapLink: '地图',
+        verified: '已认证',
+        tags: '标签',
         location: '活动地点',
         visitLink: '访问活动',
         description: '活动详情',
@@ -108,6 +137,16 @@ const content: Record<Locale, {
         endsIn: 'Ends in about {days} days',
         endedAgo: 'Ended about {days} days ago',
         source: 'Source',
+        sourcePlatform: 'Source platform',
+        lastVerifiedAt: 'Last verified',
+        format: 'Format',
+        venue: 'Venue',
+        address: 'Address',
+        ticket: 'Ticket',
+        ticketLink: 'Ticket / registration',
+        mapLink: 'Map',
+        verified: 'Verified',
+        tags: 'Tags',
         location: 'Location',
         visitLink: 'Visit Event',
         description: 'Details',
@@ -127,6 +166,16 @@ const content: Record<Locale, {
         endsIn: '終了まで約{days}日',
         endedAgo: '終了から約{days}日',
         source: '出典',
+        sourcePlatform: '情報源',
+        lastVerifiedAt: '最終確認',
+        format: '形式',
+        venue: '会場',
+        address: '住所',
+        ticket: 'チケット',
+        ticketLink: 'チケット / 申込',
+        mapLink: '地図',
+        verified: '確認済み',
+        tags: 'タグ',
         location: '開催場所',
         visitLink: 'イベントを見る',
         description: '詳細',
@@ -166,6 +215,9 @@ export default async function OfflineEventDetailPage({ params }: PageProps) {
     }
 
     const getEventStatus = () => {
+        const overrideLabel = getEventStatusOverrideLabel(event.statusOverride, locale as Locale)
+        if (overrideLabel) return { label: overrideLabel, color: 'default' as const }
+
         const now = new Date()
         const start = new Date(event.startTime)
         const end = new Date(event.endTime)
@@ -188,6 +240,13 @@ export default async function OfflineEventDetailPage({ params }: PageProps) {
         return t.endedAgo.replace('{days}', String(Math.max(1, Math.ceil((now.getTime() - end.getTime()) / dayMs))))
     }
     const sourceHost = getSourceHost(event.link)
+    const formatLabel = getEventFormatLabel(event.eventFormat, locale as Locale)
+    const displayPlace = getEventDisplayPlace(event, 'offline')
+    const priceLabel = formatEventPrice(event, locale as Locale)
+    const sourcePlatformLabel = getEventSourcePlatformLabel(event.sourcePlatform, locale as Locale)
+    const verifiedAt = event.lastVerifiedAt ? formatDate(event.lastVerifiedAt) : ''
+    const tags = splitEventTags(event.tags)
+    const sourceDisplayHost = getEventSourceHost(event) || sourceHost
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -225,8 +284,21 @@ export default async function OfflineEventDetailPage({ params }: PageProps) {
                                         <User className="h-4 w-4 text-muted-foreground" />
                                         <span className="text-muted-foreground">{t.organizer}:</span>
                                         <span>{event.organizer}</span>
+                                        {event.organizerVerified ? (
+                                            <span className="inline-flex items-center gap-1 text-primary">
+                                                <CheckCircle className="h-3.5 w-3.5" />
+                                                {t.verified}
+                                            </span>
+                                        ) : null}
                                     </div>
                                 )}
+                                {formatLabel ? (
+                                    <div className="flex items-center gap-2">
+                                        <Tag className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-muted-foreground">{t.format}:</span>
+                                        <span>{formatLabel}</span>
+                                    </div>
+                                ) : null}
                                 <div className="flex items-center gap-2">
                                     <Calendar className="h-4 w-4 text-muted-foreground" />
                                     <span className="text-muted-foreground">{t.eventPeriod}:</span>
@@ -237,31 +309,79 @@ export default async function OfflineEventDetailPage({ params }: PageProps) {
                                     <span className="text-muted-foreground">{t.timeNote}:</span>
                                     <span>{formatDayDistance()}</span>
                                 </div>
-                                {event.location && (
+                                {displayPlace && (
                                     <div className="flex items-center gap-2 md:col-span-2">
                                         <MapPin className="h-4 w-4 text-muted-foreground" />
                                         <span className="text-muted-foreground">{t.location}:</span>
-                                        <span>{event.location}</span>
+                                        <span>{displayPlace}</span>
                                     </div>
                                 )}
-                                {sourceHost ? (
+                                {event.address ? (
+                                    <div className="flex items-center gap-2 md:col-span-2">
+                                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-muted-foreground">{t.address}:</span>
+                                        <span>{event.address}</span>
+                                    </div>
+                                ) : null}
+                                {priceLabel ? (
+                                    <div className="flex items-center gap-2">
+                                        <Ticket className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-muted-foreground">{t.ticket}:</span>
+                                        <span>{priceLabel}</span>
+                                    </div>
+                                ) : null}
+                                {sourcePlatformLabel || sourceDisplayHost ? (
                                     <div className="flex items-center gap-2 md:col-span-2">
                                         <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-muted-foreground">{t.source}:</span>
-                                        <span>{sourceHost}</span>
+                                        <span className="text-muted-foreground">{sourcePlatformLabel ? t.sourcePlatform : t.source}:</span>
+                                        <span>{[sourcePlatformLabel, sourceDisplayHost].filter(Boolean).join(' / ')}</span>
+                                    </div>
+                                ) : null}
+                                {verifiedAt ? (
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-muted-foreground">{t.lastVerifiedAt}:</span>
+                                        <span>{verifiedAt}</span>
                                     </div>
                                 ) : null}
                             </div>
                         </div>
 
-                        {event.link && (
-                            <div className="mb-8">
-                                <Button asChild size="lg" className="w-full md:w-auto">
-                                    <a href={event.link} target="_blank" rel="noopener noreferrer">
-                                        <ExternalLink className="mr-2 h-4 w-4" />
-                                        {t.visitLink}
-                                    </a>
-                                </Button>
+                        {tags.length > 0 ? (
+                            <div className="mb-8 flex flex-wrap gap-2">
+                                <span className="text-sm text-muted-foreground">{t.tags}:</span>
+                                {tags.map((tag) => (
+                                    <Badge key={tag} variant="secondary">{tag}</Badge>
+                                ))}
+                            </div>
+                        ) : null}
+
+                        {(event.ticketUrl || event.mapUrl || event.link) && (
+                            <div className="mb-8 flex flex-wrap gap-3">
+                                {event.ticketUrl ? (
+                                    <Button asChild size="lg" className="w-full md:w-auto">
+                                        <a href={event.ticketUrl} target="_blank" rel="noopener noreferrer">
+                                            <Ticket className="mr-2 h-4 w-4" />
+                                            {t.ticketLink}
+                                        </a>
+                                    </Button>
+                                ) : null}
+                                {event.mapUrl ? (
+                                    <Button asChild size="lg" variant="outline" className="w-full md:w-auto">
+                                        <a href={event.mapUrl} target="_blank" rel="noopener noreferrer">
+                                            <MapPin className="mr-2 h-4 w-4" />
+                                            {t.mapLink}
+                                        </a>
+                                    </Button>
+                                ) : null}
+                                {event.link ? (
+                                    <Button asChild size="lg" className="w-full md:w-auto">
+                                        <a href={event.link} target="_blank" rel="noopener noreferrer">
+                                            <ExternalLink className="mr-2 h-4 w-4" />
+                                            {t.visitLink}
+                                        </a>
+                                    </Button>
+                                ) : null}
                             </div>
                         )}
 
