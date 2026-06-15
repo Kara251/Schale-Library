@@ -35,6 +35,62 @@ function createCollectionQuery(params: Record<string, string | number | boolean 
   return searchParams.toString();
 }
 
+function getFallbackLocales(locale: string = 'zh-Hans') {
+  const primaryLocale = toStrapiLocale(locale);
+  return primaryLocale === 'zh-Hans' ? [primaryLocale] : [primaryLocale, 'zh-Hans'];
+}
+
+async function fetchLocalizedSingleBySlug<T>(
+  collection: string,
+  slug: string,
+  locale: string,
+  params: Record<string, string | number | boolean | undefined> = {}
+) {
+  for (const candidateLocale of getFallbackLocales(locale)) {
+    const response = await fetchAPI<StrapiResponse<T[]>>(
+      `/${collection}?${createCollectionQuery({
+        locale: candidateLocale,
+        'filters[slug][$eq]': slug,
+        ...params,
+      })}`
+    );
+    if (response.data?.[0]) {
+      return {
+        data: response.data[0],
+        meta: {},
+      } as StrapiSingleResponse<T | null>;
+    }
+  }
+
+  return {
+    data: null,
+    meta: {},
+  } as StrapiSingleResponse<T | null>;
+}
+
+async function fetchLocalizedCollectionWithFallback<T>(
+  collection: string,
+  locale: string,
+  params: Record<string, string | number | boolean | undefined> = {}
+) {
+  let lastResponse: StrapiResponse<T[]> | null = null;
+
+  for (const candidateLocale of getFallbackLocales(locale)) {
+    const response = await fetchAPI<StrapiResponse<T[]>>(
+      `/${collection}?${createCollectionQuery({
+        locale: candidateLocale,
+        ...params,
+      })}`
+    );
+    lastResponse = response;
+    if ((response.data?.length || 0) > 0) {
+      return response;
+    }
+  }
+
+  return lastResponse || { data: [], meta: { pagination: { page: 1, pageSize: 0, pageCount: 0, total: 0 } } };
+}
+
 export function getContentEntryPathId(entry: { documentId?: string; id: number }) {
   return entry.documentId || String(entry.id);
 }
@@ -1645,27 +1701,16 @@ export async function getResearchCurator(locale: string = 'zh-Hans') {
 }
 
 export async function getResearchThemeBySlug(slug: string, locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
-  const response = await fetchAPI<StrapiResponse<ResearchTheme[]>>(
-    `/research-themes?${createCollectionQuery({
-      locale: strapiLocale,
-      'filters[slug][$eq]': slug,
-    })}`
-  );
-  return { data: response.data?.[0] || null };
+  return fetchLocalizedSingleBySlug<ResearchTheme>('research-themes', slug, locale);
 }
 
 export async function getResearchEntriesByThemeSlug(themeSlug: string, locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<ResearchEntry[]>>(
-    `/research-entries?${createCollectionQuery({
-      locale: strapiLocale,
+  return fetchLocalizedCollectionWithFallback<ResearchEntry>('research-entries', locale, {
       'filters[themes][slug][$eq]': themeSlug,
       sort: 'updatedAt:desc',
       'pagination[pageSize]': 100,
       ...RESEARCH_ENTRY_LIST_POPULATE,
-    })}`
-  );
+    });
 }
 
 export async function getRecentResearchEntries(locale: string = 'zh-Hans', limit = 3) {
@@ -1695,32 +1740,19 @@ export async function getResearchSubjects(locale: string = 'zh-Hans') {
 }
 
 export async function getResearchSubjectBySlug(slug: string, locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
-  const response = await fetchAPI<StrapiResponse<ResearchSubject[]>>(
-    `/research-subjects?${createCollectionQuery({
-      locale: strapiLocale,
-      'filters[slug][$eq]': slug,
-      'populate[cover]': true,
-      'populate[students][populate][avatar]': true,
-    })}`
-  );
-  return {
-    data: response.data?.[0] || null,
-    meta: {},
-  } as StrapiSingleResponse<ResearchSubject | null>;
+  return fetchLocalizedSingleBySlug<ResearchSubject>('research-subjects', slug, locale, {
+    'populate[cover]': true,
+    'populate[students][populate][avatar]': true,
+  });
 }
 
 export async function getResearchEntriesBySubjectSlug(subjectSlug: string, locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<ResearchEntry[]>>(
-    `/research-entries?${createCollectionQuery({
-      locale: strapiLocale,
+  return fetchLocalizedCollectionWithFallback<ResearchEntry>('research-entries', locale, {
       'filters[subjects][slug][$eq]': subjectSlug,
       sort: 'updatedAt:desc',
       'pagination[pageSize]': 100,
       ...RESEARCH_ENTRY_LIST_POPULATE,
-    })}`
-  );
+    });
 }
 
 /** 学生详情页用：找出关联了该学生的考据对象（及其条目数所需的最小字段） */
@@ -1764,18 +1796,9 @@ export async function getResearchPaths(locale: string = 'zh-Hans') {
 }
 
 export async function getResearchPathBySlug(slug: string, locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
-  const response = await fetchAPI<StrapiResponse<ResearchPath[]>>(
-    `/research-paths?${createCollectionQuery({
-      locale: strapiLocale,
-      'filters[slug][$eq]': slug,
-      ...RESEARCH_PATH_POPULATE,
-    })}`
-  );
-  return {
-    data: response.data?.[0] || null,
-    meta: {},
-  } as StrapiSingleResponse<ResearchPath | null>;
+  return fetchLocalizedSingleBySlug<ResearchPath>('research-paths', slug, locale, {
+    ...RESEARCH_PATH_POPULATE,
+  });
 }
 
 /** 条目详情页用：找出包含该条目的所有阅读路径（用于上一篇/下一篇导航） */

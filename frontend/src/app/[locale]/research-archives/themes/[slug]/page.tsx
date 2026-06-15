@@ -16,10 +16,12 @@ export const revalidate = 60
 
 export async function generateMetadata({ params }: ResearchThemePageProps) {
   const { slug, locale } = await params
+  const t = translations[locale as Locale] || translations['zh-Hans']
   const res = await getResearchThemeBySlug(slug, locale).catch(() => ({ data: null }))
-  if (!res?.data) return { title: 'Research Archives – Schale Library' }
+  const sectionTitle = t['research.title'] as string
+  if (!res?.data) return { title: `${sectionTitle} – Schale Library` }
   return {
-    title: `${res.data.name} – 考据档案 – Schale Library`,
+    title: `${res.data.name} – ${sectionTitle} – Schale Library`,
   }
 }
 
