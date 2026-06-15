@@ -1,5 +1,6 @@
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
+import { LocaleLink } from '@/components/locale-link'
 import { ResearchFilter } from '@/components/research-filter'
 import { ResearchEditorSidebar } from '@/components/research-editor-sidebar'
 import {
@@ -32,6 +33,12 @@ export default async function ResearchArchivesPage({ params }: ResearchArchivesP
   const themes = themesRes.data || []
   const curator = curatorRes.data || null
   const recentEntries = recentRes.data || []
+  const navLinks = [
+    { href: '/research-archives/themes', label: t['research.nav.themes'] as string },
+    { href: '/research-archives/subjects', label: t['research.nav.subjects'] as string },
+    { href: '/research-archives/paths', label: t['research.nav.paths'] as string },
+    { href: '/research-archives/graph', label: t['research.nav.graph'] as string },
+  ]
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -47,6 +54,18 @@ export default async function ResearchArchivesPage({ params }: ResearchArchivesP
               {t['research.description'] as string}
             </p>
           </div>
+
+          <nav className="mb-8 flex flex-wrap gap-2 text-sm">
+            {navLinks.map((link) => (
+              <LocaleLink
+                key={link.href}
+                href={link.href}
+                className="rounded bg-secondary/70 px-3 py-1.5 text-secondary-foreground transition-colors hover:text-primary"
+              >
+                {link.label}
+              </LocaleLink>
+            ))}
+          </nav>
 
           <div className="grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-6">
             <div>
