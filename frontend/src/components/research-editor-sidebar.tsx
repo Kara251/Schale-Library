@@ -1,9 +1,7 @@
 import { LocaleLink } from '@/components/locale-link'
 import {
-  researchPathDifficultyLabels,
   type ResearchCuratorData,
   type ResearchEntry,
-  type ResearchPath,
 } from '@/lib/api'
 import { translations, type Locale } from '@/lib/i18n'
 import { format } from 'date-fns'
@@ -12,16 +10,14 @@ import { zhCN, enUS, ja } from 'date-fns/locale'
 interface ResearchEditorSidebarProps {
   curator: ResearchCuratorData | null
   recentEntries: ResearchEntry[]
-  paths?: ResearchPath[]
   locale: Locale
 }
 
 const dateLocales = { 'zh-Hans': zhCN, 'en': enUS, 'ja': ja } as const
 
-export function ResearchEditorSidebar({ curator, recentEntries, paths = [], locale }: ResearchEditorSidebarProps) {
+export function ResearchEditorSidebar({ curator, recentEntries, locale }: ResearchEditorSidebarProps) {
   const t = translations[locale] || translations['zh-Hans']
   const dateLocale = dateLocales[locale] || zhCN
-  const diffLabels = researchPathDifficultyLabels[locale] || researchPathDifficultyLabels['zh-Hans']
 
   const formatDate = (dateString: string) => {
     try {
@@ -86,36 +82,6 @@ export function ResearchEditorSidebar({ curator, recentEntries, paths = [], loca
               </li>
             ))}
           </ol>
-        </section>
-      )}
-
-      {/* Reading paths */}
-      {paths.length > 0 && (
-        <section className="rounded-lg border bg-card p-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-            {t['research.paths.title'] as string}
-          </h2>
-          <ul className="space-y-2.5">
-            {paths.slice(0, 5).map((path) => {
-              const stepCount = (path.steps || []).filter((step) => step.entry).length
-              return (
-                <li key={path.id}>
-                  <LocaleLink
-                    href={`/research-archives/paths/${path.slug}`}
-                    className="group block text-sm"
-                  >
-                    <span className="block leading-snug text-foreground group-hover:text-primary transition-colors">
-                      {path.title}
-                    </span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {path.difficulty ? `${diffLabels[path.difficulty]} · ` : ''}
-                      {(t['research.paths.steps'] as string).replace('{count}', String(stepCount))}
-                    </span>
-                  </LocaleLink>
-                </li>
-              )
-            })}
-          </ul>
         </section>
       )}
 
