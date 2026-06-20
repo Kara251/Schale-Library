@@ -1,5 +1,19 @@
 import type { Locale } from '@/lib/i18n'
 import type { EventLocationLevel } from '@/lib/utils/event-location'
+// 考据档案分类法选项统一来自单一事实来源
+import {
+  stanceOptions,
+  mediaTypeOptions,
+  sourceTypeOptions,
+  confidenceOptions,
+  difficultyOptions,
+  relationTypeOptions,
+  revisionTypeOptions,
+  subjectTypeOptions,
+} from '@/lib/research-taxonomy'
+
+// 兼容既有引用：从单一来源转出（历史上这些 options 定义在本文件）
+export { relationTypeOptions, revisionTypeOptions, subjectTypeOptions } from '@/lib/research-taxonomy'
 
 export type AdminCollectionKey =
   | 'announcements'
@@ -122,32 +136,6 @@ const ticketStatusOptions: AdminFieldOption[] = [
   { value: 'lottery', label: { 'zh-Hans': '抽选 / 抽票', en: 'Lottery', ja: '抽選' } },
   { value: 'sold_out', label: { 'zh-Hans': '已售罄', en: 'Sold out', ja: '完売' } },
   { value: 'closed', label: { 'zh-Hans': '已截止', en: 'Closed', ja: '終了' } },
-]
-
-export const relationTypeOptions: AdminFieldOption[] = [
-  { value: 'related', label: { 'zh-Hans': '相关', en: 'Related', ja: '関連' } },
-  { value: 'prototype', label: { 'zh-Hans': '原型', en: 'Prototype of', ja: '原型・モチーフ' } },
-  { value: 'echoes', label: { 'zh-Hans': '呼应', en: 'Echoes', ja: '呼応' } },
-  { value: 'extends', label: { 'zh-Hans': '补充', en: 'Builds on', ja: '補足' } },
-  { value: 'contradicts', label: { 'zh-Hans': '相左', en: 'Contradicts', ja: '対立' } },
-  { value: 'prerequisite', label: { 'zh-Hans': '前置阅读', en: 'Read first', ja: '前提知識' } },
-]
-
-export const revisionTypeOptions: AdminFieldOption[] = [
-  { value: 'created', label: { 'zh-Hans': '建立', en: 'Created', ja: '作成' } },
-  { value: 'updated', label: { 'zh-Hans': '更新', en: 'Updated', ja: '更新' } },
-  { value: 'confirmed', label: { 'zh-Hans': '获官方证实', en: 'Confirmed by canon', ja: '公式で確定' } },
-  { value: 'refuted', label: { 'zh-Hans': '被官方推翻', en: 'Refuted by canon', ja: '公式で否定' } },
-]
-
-export const subjectTypeOptions: AdminFieldOption[] = [
-  { value: 'school', label: { 'zh-Hans': '学院', en: 'School', ja: '学園' } },
-  { value: 'organization', label: { 'zh-Hans': '组织', en: 'Organization', ja: '組織' } },
-  { value: 'club', label: { 'zh-Hans': '社团', en: 'Club', ja: '部活' } },
-  { value: 'character', label: { 'zh-Hans': '人物', en: 'Character', ja: '人物' } },
-  { value: 'location', label: { 'zh-Hans': '地点', en: 'Location', ja: '場所' } },
-  { value: 'concept', label: { 'zh-Hans': '概念', en: 'Concept', ja: '概念' } },
-  { value: 'item', label: { 'zh-Hans': '物品', en: 'Item', ja: 'アイテム' } },
 ]
 
 const sourcePlatformOptions: AdminFieldOption[] = [
@@ -580,18 +568,8 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
     fields: [
       { name: 'title', type: 'text', label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
       { name: 'slug', type: 'text', label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' } },
-      { name: 'stance', type: 'select', label: { 'zh-Hans': '立场', en: 'Stance', ja: 'スタンス' }, options: [
-        { value: 'official', label: { 'zh-Hans': '官方确认', en: 'Official basis', ja: '公式根拠' } },
-        { value: 'personal', label: { 'zh-Hans': '个人考察', en: 'Personal analysis', ja: '個人考察' } },
-        { value: 'speculative', label: { 'zh-Hans': '推测性', en: 'Speculative', ja: '推測的' } },
-      ] },
-      { name: 'media_type', type: 'select', label: { 'zh-Hans': '媒介类型', en: 'Media type', ja: 'メディアタイプ' }, options: [
-        { value: 'character', label: { 'zh-Hans': '角色', en: 'Character', ja: 'キャラクター' } },
-        { value: 'story', label: { 'zh-Hans': '剧情', en: 'Story', ja: 'ストーリー' } },
-        { value: 'concept', label: { 'zh-Hans': '概念', en: 'Concept', ja: '概念' } },
-        { value: 'setting', label: { 'zh-Hans': '世界观', en: 'Setting', ja: '設定' } },
-        { value: 'organization', label: { 'zh-Hans': '组织', en: 'Organization', ja: '組織' } },
-      ] },
+      { name: 'stance', type: 'select', label: { 'zh-Hans': '立场', en: 'Stance', ja: 'スタンス' }, options: stanceOptions },
+      { name: 'media_type', type: 'select', label: { 'zh-Hans': '媒介类型', en: 'Media type', ja: 'メディアタイプ' }, options: mediaTypeOptions },
       { name: 'subjects', type: 'relation-multiselect', label: { 'zh-Hans': '考据对象', en: 'Subjects', ja: '考察対象' }, relationKey: 'research-subjects' },
       { name: 'themes', type: 'relation-multiselect', label: { 'zh-Hans': '关联主题', en: 'Related themes', ja: '関連テーマ' }, relationKey: 'research-themes' },
       { name: 'citations', type: 'relation-multiselect', label: { 'zh-Hans': '关联引证', en: 'Related citations', ja: '関連引証' }, relationKey: 'research-citations' },
@@ -684,11 +662,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       { name: 'title', type: 'text', label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
       { name: 'slug', type: 'text', label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' } },
       { name: 'description', type: 'textarea', label: { 'zh-Hans': '路径简介', en: 'Description', ja: '説明' } },
-      { name: 'difficulty', type: 'select', label: { 'zh-Hans': '难度', en: 'Difficulty', ja: '難易度' }, options: [
-        { value: 'intro', label: { 'zh-Hans': '入门', en: 'Intro', ja: '入門' } },
-        { value: 'deep', label: { 'zh-Hans': '深入', en: 'Deep dive', ja: '深掘り' } },
-        { value: 'expert', label: { 'zh-Hans': '硬核', en: 'Expert', ja: 'エキスパート' } },
-      ] },
+      { name: 'difficulty', type: 'select', label: { 'zh-Hans': '难度', en: 'Difficulty', ja: '難易度' }, options: difficultyOptions },
       { name: 'order', type: 'number', label: { 'zh-Hans': '排序', en: 'Order', ja: '並び順' } },
       {
         name: 'steps', type: 'component-rows', label: { 'zh-Hans': '路径步骤', en: 'Path steps', ja: 'パスステップ' },
@@ -757,20 +731,11 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
     },
     fields: [
       { name: 'claim_short', type: 'text', label: { 'zh-Hans': '论点摘要', en: 'Claim summary', ja: '論点要約' } },
-      { name: 'source_type', type: 'select', label: { 'zh-Hans': '来源类型', en: 'Source type', ja: 'ソースタイプ' }, options: [
-        { value: 'game_line', label: { 'zh-Hans': '游戏台词', en: 'Game line', ja: 'ゲーム台詞' } },
-        { value: 'interview', label: { 'zh-Hans': '采访/发帖', en: 'Interview / post', ja: 'インタビュー/投稿' } },
-        { value: 'visual', label: { 'zh-Hans': '画面截图', en: 'Visual evidence', ja: 'ビジュアル証拠' } },
-        { value: 'external', label: { 'zh-Hans': '外部资料', en: 'External source', ja: '外部ソース' } },
-      ] },
+      { name: 'source_type', type: 'select', label: { 'zh-Hans': '来源类型', en: 'Source type', ja: 'ソースタイプ' }, options: sourceTypeOptions },
       { name: 'source_ref', type: 'text', label: { 'zh-Hans': '出处标注', en: 'Source reference', ja: '出典注記' } },
       { name: 'source_image', type: 'media', label: { 'zh-Hans': '截图', en: 'Source image', ja: 'スクリーンショット' } },
       { name: 'source_quote', type: 'textarea', label: { 'zh-Hans': '引文', en: 'Source quote', ja: '引用文' } },
-      { name: 'confidence', type: 'select', label: { 'zh-Hans': '置信度', en: 'Confidence', ja: '信頼度' }, options: [
-        { value: 'official', label: { 'zh-Hans': '官方确认', en: 'Official', ja: '公式' } },
-        { value: 'derived', label: { 'zh-Hans': '推导', en: 'Derived', ja: '推導' } },
-        { value: 'conjecture', label: { 'zh-Hans': '推测', en: 'Conjecture', ja: '推測' } },
-      ] },
+      { name: 'confidence', type: 'select', label: { 'zh-Hans': '置信度', en: 'Confidence', ja: '信頼度' }, options: confidenceOptions },
       { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
     ],
   },

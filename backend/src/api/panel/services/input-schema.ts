@@ -2,6 +2,7 @@ import { errors } from '@strapi/utils'
 
 import { COLLECTIONS, mapLocale, type PanelCollectionKey } from './collection-config'
 import { toNumber } from './query-utils'
+import { RELATED_LINK_TYPE_SET, REVISION_TYPE_SET } from './research-constants'
 
 const { ApplicationError } = errors
 
@@ -68,8 +69,6 @@ const FIELD_SCHEMAS: Record<string, FieldSchema> = {
   publishedAt: { kind: 'published-at' },
 }
 
-const RELATED_LINK_TYPES = new Set(['related', 'prototype', 'echoes', 'extends', 'contradicts', 'prerequisite'])
-const REVISION_TYPES = new Set(['created', 'updated', 'confirmed', 'refuted'])
 
 export function normalizeRichValue(value: unknown) {
   if (typeof value === 'string') {
@@ -144,7 +143,7 @@ function normalizeRelatedLinks(value: unknown) {
       const record = item as Record<string, unknown>
       const target = normalizeSingleRelation(record.target_entry)
       if (!target) return null
-      const relationType = typeof record.relation_type === 'string' && RELATED_LINK_TYPES.has(record.relation_type)
+      const relationType = typeof record.relation_type === 'string' && RELATED_LINK_TYPE_SET.has(record.relation_type)
         ? record.relation_type
         : 'related'
       return {
@@ -165,7 +164,7 @@ function normalizeRevisions(value: unknown) {
       const record = item as Record<string, unknown>
       const date = typeof record.date === 'string' ? record.date.slice(0, 10) : ''
       if (!date || Number.isNaN(new Date(date).getTime())) return null
-      const revisionType = typeof record.revision_type === 'string' && REVISION_TYPES.has(record.revision_type)
+      const revisionType = typeof record.revision_type === 'string' && REVISION_TYPE_SET.has(record.revision_type)
         ? record.revision_type
         : 'updated'
       return {

@@ -1457,17 +1457,43 @@ export const schoolNames: Record<SchoolType, string> = {
 
 // ─── Research Archives ───────────────────────────────────────────────────────
 
-export type ResearchStance = 'official' | 'personal' | 'speculative';
-export type ResearchMediaType = 'character' | 'story' | 'concept' | 'setting' | 'organization';
+// 分类法的值类型与三语标签统一来自 research-taxonomy.ts（单一事实来源）
+export type {
+  ResearchStance,
+  ResearchMediaType,
+  CitationSourceType,
+  CitationConfidence,
+  ResearchRelationType,
+  ResearchSubjectType,
+  ResearchRevisionType,
+  ResearchPathDifficulty,
+} from './research-taxonomy';
+export {
+  researchStanceLabels,
+  researchMediaTypeLabels,
+  researchSourceTypeLabels,
+  researchConfidenceLabels,
+  researchRelationTypeLabels,
+  researchSubjectTypeLabels,
+  researchRevisionTypeLabels,
+  researchPathDifficultyLabels,
+  RESEARCH_MEDIA_TYPES,
+} from './research-taxonomy';
+import type {
+  ResearchStance,
+  ResearchMediaType,
+  CitationSourceType,
+  CitationConfidence,
+  ResearchRelationType,
+  ResearchSubjectType,
+  ResearchRevisionType,
+  ResearchPathDifficulty,
+} from './research-taxonomy';
+
+// affiliations 为已废弃字段（Phase 1 清理），暂保留类型以兼容现有声明
 export type ResearchAffiliation =
   | 'millennium' | 'trinity' | 'gehenna' | 'hyakkiyako' | 'shanhaijing'
   | 'redwinter' | 'abydos' | 'schale' | 'extra' | 'mainline' | 'other';
-export type CitationSourceType = 'game_line' | 'interview' | 'visual' | 'external';
-export type CitationConfidence = 'official' | 'derived' | 'conjecture';
-export type ResearchRelationType = 'related' | 'prototype' | 'echoes' | 'extends' | 'contradicts' | 'prerequisite';
-export type ResearchSubjectType = 'school' | 'organization' | 'club' | 'character' | 'location' | 'concept' | 'item';
-export type ResearchRevisionType = 'created' | 'updated' | 'confirmed' | 'refuted';
-export type ResearchPathDifficulty = 'intro' | 'deep' | 'expert';
 
 export interface ResearchTheme {
   id: number;
@@ -1575,64 +1601,6 @@ export interface ResearchCuratorData {
   path_description?: string;
   path_steps?: ResearchPathStep[];
 }
-
-export const RESEARCH_MEDIA_TYPES: ResearchMediaType[] = [
-  'character', 'story', 'concept', 'setting', 'organization',
-];
-
-export const researchMediaTypeLabels: Record<string, Record<ResearchMediaType, string>> = {
-  'zh-Hans': {
-    character: '角色', story: '剧情', concept: '概念', setting: '设定', organization: '组织',
-  },
-  'en': {
-    character: 'Character', story: 'Story', concept: 'Concept', setting: 'Setting', organization: 'Organization',
-  },
-  'ja': {
-    character: 'キャラクター', story: 'ストーリー', concept: '概念', setting: '設定', organization: '組織',
-  },
-};
-
-export const researchStanceLabels: Record<string, Record<ResearchStance, string>> = {
-  'zh-Hans': { official: '官方依据', personal: '个人推论', speculative: '推测性' },
-  'en': { official: 'Official basis', personal: 'Personal analysis', speculative: 'Speculative' },
-  'ja': { official: '公式根拠', personal: '個人考察', speculative: '推測的' },
-};
-
-export const researchConfidenceLabels: Record<string, Record<CitationConfidence, string>> = {
-  'zh-Hans': { official: '官方', derived: '推导', conjecture: '推测' },
-  'en': { official: 'Official', derived: 'Derived', conjecture: 'Conjecture' },
-  'ja': { official: '公式', derived: '推導', conjecture: '推測' },
-};
-
-export const researchSourceTypeLabels: Record<string, Record<CitationSourceType, string>> = {
-  'zh-Hans': { game_line: '游戏台词', interview: '官方访谈', visual: '视觉证据', external: '外部来源' },
-  'en': { game_line: 'Game line', interview: 'Interview', visual: 'Visual evidence', external: 'External source' },
-  'ja': { game_line: 'ゲーム台詞', interview: '公式インタビュー', visual: 'ビジュアル証拠', external: '外部ソース' },
-};
-
-export const researchRelationTypeLabels: Record<string, Record<ResearchRelationType, string>> = {
-  'zh-Hans': { related: '相关', prototype: '原型', echoes: '呼应', extends: '补充', contradicts: '相左', prerequisite: '前置阅读' },
-  'en': { related: 'Related', prototype: 'Prototype', echoes: 'Echoes', extends: 'Builds on', contradicts: 'Contradicts', prerequisite: 'Read first' },
-  'ja': { related: '関連', prototype: '原型・モチーフ', echoes: '呼応', extends: '補足', contradicts: '対立', prerequisite: '前提知識' },
-};
-
-export const researchSubjectTypeLabels: Record<string, Record<ResearchSubjectType, string>> = {
-  'zh-Hans': { school: '学院', organization: '组织', club: '社团', character: '人物', location: '地点', concept: '概念', item: '物品' },
-  'en': { school: 'School', organization: 'Organization', club: 'Club', character: 'Character', location: 'Location', concept: 'Concept', item: 'Item' },
-  'ja': { school: '学園', organization: '組織', club: '部活', character: '人物', location: '場所', concept: '概念', item: 'アイテム' },
-};
-
-export const researchRevisionTypeLabels: Record<string, Record<ResearchRevisionType, string>> = {
-  'zh-Hans': { created: '建立', updated: '更新', confirmed: '获官方证实', refuted: '被官方推翻' },
-  'en': { created: 'Created', updated: 'Updated', confirmed: 'Confirmed by canon', refuted: 'Refuted by canon' },
-  'ja': { created: '作成', updated: '更新', confirmed: '公式で確定', refuted: '公式で否定' },
-};
-
-export const researchPathDifficultyLabels: Record<string, Record<ResearchPathDifficulty, string>> = {
-  'zh-Hans': { intro: '入门', deep: '深入', expert: '硬核' },
-  'en': { intro: 'Intro', deep: 'Deep dive', expert: 'Expert' },
-  'ja': { intro: '入門', deep: '深掘り', expert: 'エキスパート' },
-};
 
 const RESEARCH_ENTRY_LIST_POPULATE = {
   'populate[themes]': true,
