@@ -31,6 +31,7 @@ export type AdminCollectionKey =
   | 'research-citations'
   | 'research-subjects'
   | 'research-paths'
+  | 'spoiler-tiers'
 
 export type AdminFieldType =
   | 'text'
@@ -570,6 +571,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       { name: 'slug', type: 'text', label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' } },
       { name: 'stance', type: 'select', label: { 'zh-Hans': '立场', en: 'Stance', ja: 'スタンス' }, options: stanceOptions },
       { name: 'media_type', type: 'select', label: { 'zh-Hans': '媒介类型', en: 'Media type', ja: 'メディアタイプ' }, options: mediaTypeOptions },
+      { name: 'spoiler_tier', type: 'relation-select', label: { 'zh-Hans': '剧透档位', en: 'Spoiler tier', ja: 'ネタバレ段階' }, relationKey: 'spoiler-tiers' },
       { name: 'subjects', type: 'relation-multiselect', label: { 'zh-Hans': '考据对象', en: 'Subjects', ja: '考察対象' }, relationKey: 'research-subjects' },
       { name: 'themes', type: 'relation-multiselect', label: { 'zh-Hans': '关联主题', en: 'Related themes', ja: '関連テーマ' }, relationKey: 'research-themes' },
       { name: 'citations', type: 'relation-multiselect', label: { 'zh-Hans': '关联引证', en: 'Related citations', ja: '関連引証' }, relationKey: 'research-citations' },
@@ -736,6 +738,37 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       { name: 'source_image', type: 'media', label: { 'zh-Hans': '截图', en: 'Source image', ja: 'スクリーンショット' } },
       { name: 'source_quote', type: 'textarea', label: { 'zh-Hans': '引文', en: 'Source quote', ja: '引用文' } },
       { name: 'confidence', type: 'select', label: { 'zh-Hans': '置信度', en: 'Confidence', ja: '信頼度' }, options: confidenceOptions },
+      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+    ],
+  },
+  'spoiler-tiers': {
+    endpoint: 'spoiler-tiers',
+    localized: true,
+    supportsDraft: true,
+    title: {
+      'zh-Hans': '剧透档位',
+      en: 'Spoiler Tiers',
+      ja: 'ネタバレ段階',
+    },
+    description: {
+      'zh-Hans': '维护剧透程度分级，随游戏剧情进度自由增删（如第一部 / 第二部 / 终章）。',
+      en: 'Manage spoiler-level tiers; add or remove freely as the story progresses.',
+      ja: 'ネタバレ段階を管理。ストーリー進行に応じて自由に増減できます。',
+    },
+    createLabel: {
+      'zh-Hans': '新建档位',
+      en: 'New tier',
+      ja: '段階を新規作成',
+    },
+    editLabel: {
+      'zh-Hans': '编辑档位',
+      en: 'Edit tier',
+      ja: '段階を編集',
+    },
+    fields: [
+      { name: 'name', type: 'text', label: { 'zh-Hans': '名称', en: 'Name', ja: '名前' } },
+      { name: 'key', type: 'text', label: { 'zh-Hans': 'Key（稳定标识）', en: 'Key (stable id)', ja: 'キー（識別子）' } },
+      { name: 'order', type: 'number', label: { 'zh-Hans': '排序（剧透由浅到深）', en: 'Order (low to high)', ja: '並び順（浅→深）' } },
       { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
     ],
   },

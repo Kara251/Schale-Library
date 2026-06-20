@@ -1,0 +1,36 @@
+{
+  "kind": "collectionType",
+  "collectionName": "spoiler_tiers",
+  "info": {
+    "singularName": "spoiler-tier",
+    "pluralName": "spoiler-tiers",
+    "displayName": "剧透档位",
+    "description": "可由编辑维护的剧透程度分级（如第一部 / 第二部 / 终章 / 活动剧情），随游戏进度调整"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "key": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true,
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "order": {
+      "type": "integer",
+      "default": 0,
+      "pluginOptions": { "i18n": { "localized": false } }
+    }
+  }
+}

@@ -124,6 +124,8 @@ async function ensurePublicResearchPermissions(strapi: Core.Strapi) {
     'api::research-subject.research-subject.findOne',
     'api::research-path.research-path.find',
     'api::research-path.research-path.findOne',
+    'api::spoiler-tier.spoiler-tier.find',
+    'api::spoiler-tier.spoiler-tier.findOne',
     'api::school.school.find',
     'api::school.school.findOne',
   ];

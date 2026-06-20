@@ -14,6 +14,7 @@ export type PanelCollectionKey =
   | 'research-citations'
   | 'research-subjects'
   | 'research-paths'
+  | 'spoiler-tiers'
 
 export interface CollectionConfig {
   uid: any
@@ -164,6 +165,7 @@ export const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
       themes: true,
       citations: true,
       subjects: true,
+      spoiler_tier: { fields: ['id', 'documentId', 'name', 'key'] },
       related_links: { populate: { target_entry: { fields: ['id', 'documentId', 'title', 'slug'] } } },
       revisions: true,
     },
@@ -171,7 +173,7 @@ export const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
     defaultSort: 'updatedAt:desc',
     supportsDraft: true,
     fields: [
-      'title', 'slug', 'stance', 'media_type',
+      'title', 'slug', 'stance', 'media_type', 'spoiler_tier',
       'themes', 'citations', 'subjects', 'related_links', 'revisions',
       'summary', 'body', 'publishedAt',
     ],
@@ -210,6 +212,14 @@ export const COLLECTIONS: Record<PanelCollectionKey, CollectionConfig> = {
     defaultSort: 'updatedAt:desc',
     supportsDraft: true,
     fields: ['claim_short', 'source_type', 'source_ref', 'source_image', 'source_quote', 'confidence', 'publishedAt'],
+  },
+  'spoiler-tiers': {
+    uid: 'api::spoiler-tier.spoiler-tier',
+    localized: true,
+    searchFields: ['name'],
+    defaultSort: ['order:asc', 'updatedAt:desc'],
+    supportsDraft: true,
+    fields: ['name', 'key', 'order', 'publishedAt'],
   },
 }
 

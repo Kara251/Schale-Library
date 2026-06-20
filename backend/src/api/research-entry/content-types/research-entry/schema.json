@@ -82,14 +82,6 @@
         }
       }
     },
-    "affiliations": {
-      "type": "json",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      }
-    },
     "themes": {
       "type": "relation",
       "relation": "manyToMany",
@@ -113,26 +105,10 @@
       "target": "api::research-subject.research-subject",
       "mappedBy": "entries"
     },
-    "spoiler_scope": {
-      "type": "enumeration",
-      "enum": [
-        "none",
-        "vol1",
-        "vol2",
-        "vol3",
-        "vol4",
-        "vol5",
-        "final",
-        "event",
-        "latest"
-      ],
-      "default": "none",
-      "required": true,
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      }
+    "spoiler_tier": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::spoiler-tier.spoiler-tier"
     },
     "revisions": {
       "type": "component",

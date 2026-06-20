@@ -57,6 +57,7 @@ const FIELD_SCHEMAS: Record<string, FieldSchema> = {
   citations: { kind: 'relation-list' },
   subjects: { kind: 'relation-list' },
   school_ref: { kind: 'relation-one' },
+  spoiler_tier: { kind: 'relation-one' },
   related_links: { kind: 'related-links' },
   revisions: { kind: 'revisions' },
   steps: { kind: 'path-steps' },

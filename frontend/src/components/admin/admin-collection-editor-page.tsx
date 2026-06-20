@@ -91,6 +91,15 @@ const RELATION_SOURCES: Record<string, RelationSourceConfig> = {
       description: typeof entry.subject_type === 'string' ? entry.subject_type : undefined,
     }),
   },
+  'spoiler-tiers': {
+    collection: 'spoiler-tiers',
+    localized: true,
+    toOption: (entry) => ({
+      id: entry.id,
+      label: String(entry.name || `#${entry.id}`),
+      description: typeof entry.key === 'string' ? entry.key : undefined,
+    }),
+  },
 }
 
 async function loadRelationOptions(

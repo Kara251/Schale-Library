@@ -1,5 +1,6 @@
 'use client'
 
+import { EyeOff } from 'lucide-react'
 import { LocaleLink } from '@/components/locale-link'
 import {
   type ResearchEntry,
@@ -42,6 +43,12 @@ export function ResearchEntryCard({ entry, locale }: ResearchEntryCardProps) {
         <span className="inline-block rounded px-2.5 py-1 text-sm font-medium bg-secondary text-secondary-foreground">
           {mediaLabels[entry.media_type]}
         </span>
+        {entry.spoiler_tier?.name && (
+          <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-sm font-medium bg-destructive/10 text-destructive">
+            <EyeOff className="h-3.5 w-3.5" />
+            {entry.spoiler_tier.name}
+          </span>
+        )}
         <span className={`inline-block rounded px-2.5 py-1 text-sm font-medium ${stanceColors[entry.stance] || stanceColors.speculative}`}>
           {stanceLabels[entry.stance]}
         </span>

@@ -1490,11 +1490,6 @@ import type {
   ResearchPathDifficulty,
 } from './research-taxonomy';
 
-// affiliations 为已废弃字段（Phase 1 清理），暂保留类型以兼容现有声明
-export type ResearchAffiliation =
-  | 'millennium' | 'trinity' | 'gehenna' | 'hyakkiyako' | 'shanhaijing'
-  | 'redwinter' | 'abydos' | 'schale' | 'extra' | 'mainline' | 'other';
-
 export interface ResearchTheme {
   id: number;
   documentId: string;
@@ -1567,6 +1562,19 @@ export interface ResearchPath {
   publishedAt: string;
 }
 
+/** 剧透档位：由编辑维护的剧透程度分级，随游戏进度调整（数据驱动，替代旧的写死枚举） */
+export interface SpoilerTier {
+  id: number;
+  documentId: string;
+  name: string;
+  key: string;
+  order: number;
+  locale?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  publishedAt?: string;
+}
+
 export interface ResearchEntry {
   id: number;
   documentId: string;
@@ -1576,8 +1584,7 @@ export interface ResearchEntry {
   summary?: string;
   body?: string;
   media_type: ResearchMediaType;
-  spoiler_scope?: string | null;
-  affiliations?: ResearchAffiliation[];
+  spoiler_tier?: Pick<SpoilerTier, 'id' | 'documentId' | 'name' | 'key'> | null;
   themes?: ResearchTheme[];
   citations?: ResearchCitation[];
   subjects?: Pick<ResearchSubject, 'id' | 'documentId' | 'name' | 'slug' | 'subject_type'>[];
@@ -1605,11 +1612,13 @@ export interface ResearchCuratorData {
 const RESEARCH_ENTRY_LIST_POPULATE = {
   'populate[themes]': true,
   'populate[subjects]': true,
+  'populate[spoiler_tier]': true,
 } as const;
 
 const RESEARCH_ENTRY_DETAIL_POPULATE = {
   'populate[themes]': true,
   'populate[subjects]': true,
+  'populate[spoiler_tier]': true,
   'populate[citations][populate][source_image]': true,
   'populate[related_links][populate][target_entry]': true,
   'populate[revisions]': true,

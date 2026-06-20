@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { LocaleLink } from '@/components/locale-link'
-import { ArrowLeft, ArrowRight, CornerDownLeft, History, Route } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CornerDownLeft, EyeOff, History, Route } from 'lucide-react'
 import {
   getEntriesSharingCitations,
   getResearchBacklinks,
@@ -293,6 +293,12 @@ export default async function ResearchEntryPage({ params }: ResearchEntryPagePro
                   <span className={`inline-block rounded border px-2.5 py-1 text-sm font-medium ${stanceColors[entry.stance] || stanceColors.speculative}`}>
                     {stanceL[entry.stance]}
                   </span>
+                  {entry.spoiler_tier?.name && (
+                    <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-sm font-medium bg-destructive/10 text-destructive">
+                      <EyeOff className="h-3.5 w-3.5" />
+                      {entry.spoiler_tier.name}
+                    </span>
+                  )}
                   {entry.themes?.map((theme) => {
                     const className = 'inline-block rounded px-2.5 py-1 text-sm bg-secondary text-secondary-foreground hover:text-primary transition-colors'
                     return theme.slug ? (
