@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect } from 'react'
-import Link from 'next/link'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
+import { LocaleLink } from '@/components/locale-link'
 import { AlertCircle, Home, RefreshCw } from 'lucide-react'
+import { useLocale } from '@/contexts/locale-context'
+import { translations } from '@/lib/i18n'
 
 export default function Error({
   error,
@@ -14,6 +16,9 @@ export default function Error({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const { locale } = useLocale()
+  const t = translations[locale] || translations['zh-Hans']
+
   useEffect(() => {
     console.error('Error:', error)
   }, [error])
@@ -34,10 +39,8 @@ export default function Error({
 
             {/* 错误信息 */}
             <div className="space-y-2">
-              <h1 className="text-2xl md:text-3xl font-bold">书上空空如也...</h1>
-              <p className="text-muted-foreground">
-                页面加载时发生错误，请稍后重试。
-              </p>
+              <h1 className="text-2xl md:text-3xl font-bold">{t['error.title'] as string}</h1>
+              <p className="text-muted-foreground">{t['error.desc'] as string}</p>
             </div>
 
             {/* 错误详情（开发环境） */}
@@ -53,22 +56,22 @@ export default function Error({
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button onClick={reset} size="lg">
                 <RefreshCw className="mr-2 h-4 w-4" />
-                重试
+                {t['error.retry'] as string}
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link href="/">
+                <LocaleLink href="/">
                   <Home className="mr-2 h-4 w-4" />
-                  返回首页
-                </Link>
+                  {t['common.backHome'] as string}
+                </LocaleLink>
               </Button>
             </div>
 
             {/* 提示信息 */}
             <div className="pt-4 text-sm text-muted-foreground">
-              <p>如果问题持续存在，请</p>
-              <Link href="/contact" className="text-primary hover:underline">
-                联系图书馆
-              </Link>
+              <p>{t['error.hint'] as string}</p>
+              <LocaleLink href="/contact" className="text-primary hover:underline">
+                {t['common.contactLibrary'] as string}
+              </LocaleLink>
             </div>
           </div>
         </div>

@@ -7,7 +7,7 @@ import {
   researchMediaTypeLabels,
   researchStanceLabels,
 } from '@/lib/api'
-import type { Locale } from '@/lib/i18n'
+import { translations, type Locale } from '@/lib/i18n'
 import { format } from 'date-fns'
 import { zhCN, enUS, ja } from 'date-fns/locale'
 
@@ -28,6 +28,8 @@ export function ResearchEntryCard({ entry, locale }: ResearchEntryCardProps) {
   const mediaLabels = researchMediaTypeLabels[locale] || researchMediaTypeLabels['zh-Hans']
   const stanceLabels = researchStanceLabels[locale] || researchStanceLabels['zh-Hans']
   const dateLocale = dateLocales[locale] || zhCN
+  const t = translations[locale] || translations['zh-Hans']
+  const readMoreLabel = t['research.entry.readMore'] as string
 
   const updatedAt = (() => {
     try {
@@ -96,7 +98,7 @@ export function ResearchEntryCard({ entry, locale }: ResearchEntryCardProps) {
           href={`/research-archives/${entry.slug}`}
           className="text-primary hover:underline"
         >
-          {locale === 'zh-Hans' ? '阅读全文' : locale === 'ja' ? '続きを読む' : 'Read more'}
+          {readMoreLabel}
         </LocaleLink>
       </div>
     </article>

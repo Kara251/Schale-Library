@@ -13,49 +13,17 @@ import { LocaleLink, useLocalePath } from "@/components/locale-link"
 import { UserMenu } from "@/components/user-menu"
 import { useAuth } from "@/contexts/auth-context"
 import { useLocale } from "@/contexts/locale-context"
-import { type Locale } from "@/lib/i18n"
+import { translations, type Locale } from "@/lib/i18n"
 
 // 导航项 - 按语言
 const getNavItems = (locale: Locale) => {
-  const labels: Record<Locale, Record<string, string>> = {
-    'zh-Hans': {
-      announcements: '公告',
-      works: '推荐作品',
-      researchArchives: '考据档案',
-      resources: '资源整理',
-      events: '活动',
-      search: '搜索图书馆',
-      login: '登录',
-      menu: '导航菜单',
-    },
-    'en': {
-      announcements: 'Announcements',
-      works: 'Works',
-      researchArchives: 'Research Archives',
-      resources: 'Resources',
-      events: 'Events',
-      search: 'Search library',
-      login: 'Login',
-      menu: 'Navigation menu',
-    },
-    'ja': {
-      announcements: 'お知らせ',
-      works: '作品',
-      researchArchives: '考察アーカイブ',
-      resources: 'リソース',
-      events: 'イベント',
-      search: '図書館を検索',
-      login: 'ログイン',
-      menu: 'ナビゲーションメニュー',
-    },
-  }
-  const t = labels[locale] || labels['zh-Hans']
+  const t = translations[locale] || translations['zh-Hans']
   return [
-    { label: t.works, href: '/works' },
-    { label: t.researchArchives, href: '/research-archives' },
-    { label: t.resources, href: '/resources' },
-    { label: t.events, href: '/events' },
-    { label: t.announcements, href: '/announcements' },
+    { label: t['nav.works'] as string, href: '/works' },
+    { label: t['nav.researchArchives'] as string, href: '/research-archives' },
+    { label: t['nav.resources'] as string, href: '/resources' },
+    { label: t['nav.events'] as string, href: '/events' },
+    { label: t['nav.announcements'] as string, href: '/announcements' },
   ]
 }
 
@@ -75,11 +43,13 @@ export function Header() {
   const getLocalePath = useLocalePath()
 
   const navItems = getNavItems(locale)
+  const t = translations[locale] || translations['zh-Hans']
   const labels = {
-    'zh-Hans': { search: '搜索图书馆', login: '登录', themeLocale: '主题 & 语言', menu: '导航菜单' },
-    'en': { search: 'Search library', login: 'Login', themeLocale: 'Theme & Language', menu: 'Navigation menu' },
-    'ja': { search: '図書館を検索', login: 'ログイン', themeLocale: 'テーマ & 言語', menu: 'ナビゲーションメニュー' },
-  }[locale] || { search: '搜索图书馆', login: '登录', themeLocale: '主题 & 语言', menu: '导航菜单' }
+    search: t['nav.searchLibrary'] as string,
+    login: t['nav.login'] as string,
+    themeLocale: t['nav.themeLocale'] as string,
+    menu: t['nav.menu'] as string,
+  }
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && searchQuery.trim()) {

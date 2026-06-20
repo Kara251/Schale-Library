@@ -49,6 +49,9 @@ export const translations = {
     'nav.announcements': '公告',
     'nav.login': '登录',
     'nav.search': '搜索',
+    'nav.searchLibrary': '搜索图书馆',
+    'nav.menu': '导航菜单',
+    'nav.themeLocale': '主题 & 语言',
     'nav.searchPlaceholder': '搜索活动、资源...',
 
     // 首页
@@ -105,6 +108,17 @@ export const translations = {
     'footer.privacy': '隐私政策',
     'footer.disclaimer': '本站与Nexon及Yostar无关',
 
+    // 错误页 / 404
+    'common.backHome': '返回首页',
+    'common.contactLibrary': '联系图书馆',
+    'notFound.title': '看起来是不存在的书本呢',
+    'notFound.desc': '抱歉，我们没能找到这本书。也许它还没被收入图书馆的藏书中，或者已经被借出去了。',
+    'notFound.errorHint': '如果您认为这是一个错误，请',
+    'error.title': '书上空空如也...',
+    'error.desc': '页面加载时发生错误，请稍后重试。',
+    'error.retry': '重试',
+    'error.hint': '如果问题持续存在，请',
+
     // 考据档案
     'research.title': '考据档案',
     'research.description': '蔚蓝档案原型考据、主题分析与文学性研究',
@@ -125,6 +139,7 @@ export const translations = {
     'research.entry.citations': '引证来源',
     'research.entry.relatedLinks': '延伸阅读',
     'research.entry.noContent': '暂无正文',
+    'research.entry.readMore': '阅读全文',
     'research.citation.confidence.official': '官方',
     'research.citation.confidence.derived': '推导',
     'research.citation.confidence.conjecture': '推测',
@@ -174,6 +189,9 @@ export const translations = {
     'nav.announcements': 'Announcements',
     'nav.login': 'Login',
     'nav.search': 'Search',
+    'nav.searchLibrary': 'Search library',
+    'nav.menu': 'Navigation menu',
+    'nav.themeLocale': 'Theme & language',
     'nav.searchPlaceholder': 'Search events, resources...',
 
     // Home
@@ -230,6 +248,17 @@ export const translations = {
     'footer.privacy': 'Privacy',
     'footer.disclaimer': 'Not affiliated with Nexon or Yostar',
 
+    // Error / 404
+    'common.backHome': 'Back to Home',
+    'common.contactLibrary': 'contact us',
+    'notFound.title': 'Page not found',
+    'notFound.desc': 'Sorry, we could not find this page. It may not exist yet or has been moved.',
+    'notFound.errorHint': 'If you believe this is an error, please',
+    'error.title': 'Something went wrong',
+    'error.desc': 'An error occurred while loading the page. Please try again later.',
+    'error.retry': 'Try again',
+    'error.hint': 'If the problem persists, please',
+
     // Research Archives
     'research.title': 'Research Archives',
     'research.description': 'Blue Archive prototype research, thematic analysis, and literary studies',
@@ -250,6 +279,7 @@ export const translations = {
     'research.entry.citations': 'Citations',
     'research.entry.relatedLinks': 'Further reading',
     'research.entry.noContent': 'No content yet',
+    'research.entry.readMore': 'Read more',
     'research.citation.confidence.official': 'Official',
     'research.citation.confidence.derived': 'Derived',
     'research.citation.confidence.conjecture': 'Conjecture',
@@ -299,6 +329,9 @@ export const translations = {
     'nav.announcements': 'お知らせ',
     'nav.login': 'ログイン',
     'nav.search': '検索',
+    'nav.searchLibrary': '図書館を検索',
+    'nav.menu': 'ナビゲーションメニュー',
+    'nav.themeLocale': 'テーマ & 言語',
     'nav.searchPlaceholder': 'イベントやリソースを検索...',
 
     // ホーム
@@ -355,6 +388,17 @@ export const translations = {
     'footer.privacy': 'プライバシー',
     'footer.disclaimer': 'NexonやYostarとは関係ありません',
 
+    // エラー / 404
+    'common.backHome': 'ホームに戻る',
+    'common.contactLibrary': 'お問い合わせください',
+    'notFound.title': 'ページが見つかりません',
+    'notFound.desc': '申し訳ありませんが、このページが見つかりませんでした。まだ存在しないか、移動された可能性があります。',
+    'notFound.errorHint': 'これが間違いだと思われる場合は、',
+    'error.title': '本が空っぽです…',
+    'error.desc': 'ページの読み込み中にエラーが発生しました。後でもう一度お試しください。',
+    'error.retry': '再試行',
+    'error.hint': '問題が解決しない場合は、',
+
     // 考察アーカイブ
     'research.title': '考察アーカイブ',
     'research.description': 'ブルーアーカイブの原型考察・テーマ分析・文学的研究',
@@ -375,6 +419,7 @@ export const translations = {
     'research.entry.citations': '引用元',
     'research.entry.relatedLinks': '関連記事',
     'research.entry.noContent': '本文なし',
+    'research.entry.readMore': '続きを読む',
     'research.citation.confidence.official': '公式',
     'research.citation.confidence.derived': '推導',
     'research.citation.confidence.conjecture': '推測',
