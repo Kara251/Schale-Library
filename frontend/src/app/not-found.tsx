@@ -55,7 +55,7 @@ export default function NotFound() {
           <div className="text-center space-y-6 max-w-md">
             {/* 404 大标题 */}
             <div className="space-y-2">
-              <h1 className="text-8xl md:text-9xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <h1 className="text-8xl md:text-9xl font-bold text-primary">
                 404
               </h1>
               <h2 className="text-2xl md:text-3xl font-bold">{t.title}</h2>
