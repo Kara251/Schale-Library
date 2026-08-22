@@ -1,0 +1,21 @@
+name = "schale-server"
+main = "src/index.ts"
+compatibility_date = "2025-01-15"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 绑定：本地开发用 --local 自动建库，staging/prod 用独立 database_id
+[[d1_databases]]
+binding = "DB"
+database_name = "schale_db"
+database_id = "PLACEHOLDER_SET_AT_DEPLOY"
+
+# R2 上传桶
+[[r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "schale-uploads"
+
+[vars]
+ENVIRONMENT = "development"
+
+# 密钥一律 wrangler secret put，不进配置文件：
+# PANEL_INTERNAL_TOKEN, SESSION_SECRET, UPLOAD_MAX_BYTES_OVERRIDE
