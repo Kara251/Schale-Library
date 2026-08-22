@@ -19,6 +19,16 @@ import {
   type AdminRowColumn,
 } from '@/lib/admin-panel'
 import type { AdminStrapiEntry } from '@/lib/server/admin-content'
+import { labels as ADMIN_EDITOR_LABELS } from './admin-editor-labels'
+import {
+  buildInitialValues,
+  getDisplayLabel,
+  getFormStringValue,
+  getLocationSelectOptions,
+  toDateTimeLocal,
+  type ComponentRow,
+  type MediaState,
+} from './admin-value-utils'
 import type { Locale } from '@/lib/i18n'
 import { getMediaUrl } from '@/lib/media'
 import { cn } from '@/lib/utils'
@@ -37,153 +47,7 @@ interface AdminEditorFormProps {
   relationOptions?: Record<string, AdminRelationOption[]>
 }
 
-interface MediaState {
-  id: number | null
-  url: string | null
-  name?: string | null
-}
-
-const labels: Record<Locale, {
-  save: string
-  saving: string
-  cancel: string
-  upload: string
-  uploading: string
-  uploadHint: string
-  removeImage: string
-  saveSuccess: string
-  saveFailed: string
-  requiredError: string
-  emptySelection: string
-  relationSearch: string
-  addRow: string
-  removeRow: string
-  moveUp: string
-  moveDown: string
-  emptyRows: string
-  emptyLocation: string
-}> = {
-  'zh-Hans': {
-    save: '保存',
-    saving: '保存中...',
-    cancel: '返回列表',
-    upload: '上传文件',
-    uploading: '上传中...',
-    uploadHint: '支持直接上传到受保护的维护接口。',
-    removeImage: '移除当前图片',
-    saveSuccess: '保存成功',
-    saveFailed: '保存失败',
-    requiredError: '请至少填写标题或名称',
-    emptySelection: '暂无可选项',
-    relationSearch: '搜索可选项',
-    addRow: '添加一行',
-    removeRow: '删除',
-    moveUp: '上移',
-    moveDown: '下移',
-    emptyRows: '尚未添加内容',
-    emptyLocation: '不填写',
-  },
-  en: {
-    save: 'Save',
-    saving: 'Saving...',
-    cancel: 'Back to list',
-    upload: 'Upload file',
-    uploading: 'Uploading...',
-    uploadHint: 'Files are sent through the protected maintainer endpoint.',
-    removeImage: 'Remove current image',
-    saveSuccess: 'Saved successfully',
-    saveFailed: 'Save failed',
-    requiredError: 'Please provide at least a title or name',
-    emptySelection: 'No available options',
-    relationSearch: 'Search options',
-    addRow: 'Add row',
-    removeRow: 'Remove',
-    moveUp: 'Move up',
-    moveDown: 'Move down',
-    emptyRows: 'Nothing added yet',
-    emptyLocation: 'Leave empty',
-  },
-  ja: {
-    save: '保存',
-    saving: '保存中...',
-    cancel: '一覧へ戻る',
-    upload: 'ファイルをアップロード',
-    uploading: 'アップロード中...',
-    uploadHint: '保護された管理用エンドポイント経由で送信されます。',
-    removeImage: '現在の画像を削除',
-    saveSuccess: '保存しました',
-    saveFailed: '保存に失敗しました',
-    requiredError: 'タイトルまたは名前を入力してください',
-    emptySelection: '選択肢がありません',
-    relationSearch: '選択肢を検索',
-    addRow: '行を追加',
-    removeRow: '削除',
-    moveUp: '上へ',
-    moveDown: '下へ',
-    emptyRows: 'まだ何も追加されていません',
-    emptyLocation: '空欄',
-  },
-}
-
-function toDateTimeLocal(value: string | null | undefined) {
-  if (!value) {
-    return ''
-  }
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return ''
-  }
-
-  const pad = (input: number) => String(input).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
-
-function getInitialMedia(value: unknown): MediaState {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return { id: null, url: null }
-  }
-
-  const media = value as AdminMediaAsset
-  return {
-    id: typeof media.id === 'number' ? media.id : null,
-    url: typeof media.url === 'string' ? media.url : null,
-    name: media.name,
-  }
-}
-
-function getRelationIdValue(value: unknown): number | '' {
-  if (value && typeof value === 'object' && 'id' in (value as Record<string, unknown>)) {
-    const id = Number((value as { id: unknown }).id)
-    return Number.isFinite(id) ? id : ''
-  }
-  const id = Number(value)
-  return Number.isFinite(id) && id > 0 ? id : ''
-}
-
-type ComponentRow = Record<string, unknown>
-
-function getInitialRows(field: AdminEditorField, value: unknown): ComponentRow[] {
-  if (!Array.isArray(value) || !field.columns) {
-    return []
-  }
-
-  return value.map((item) => {
-    const record = item && typeof item === 'object' ? item as Record<string, unknown> : {}
-    const row: ComponentRow = {}
-    for (const column of field.columns || []) {
-      const raw = record[column.name]
-      if (column.kind === 'relation') {
-        row[column.name] = getRelationIdValue(raw)
-      } else if (column.kind === 'date') {
-        row[column.name] = typeof raw === 'string' ? raw.slice(0, 10) : ''
-      } else {
-        row[column.name] = typeof raw === 'string' ? raw : ''
-      }
-    }
-    return row
-  })
-}
+const labels = ADMIN_EDITOR_LABELS
 
 function buildEmptyRow(field: AdminEditorField): ComponentRow {
   const row: ComponentRow = {}
@@ -201,91 +65,6 @@ function buildEmptyRow(field: AdminEditorField): ComponentRow {
   return row
 }
 
-function getInitialFieldValue(field: AdminEditorField, value: unknown): unknown {
-  switch (field.type) {
-    case 'boolean':
-      return Boolean(value)
-    case 'number':
-      return typeof value === 'number' ? String(value) : value ? String(value) : '0'
-    case 'datetime-local':
-      return typeof value === 'string' ? toDateTimeLocal(value) : ''
-    case 'media':
-      return getInitialMedia(value)
-    case 'multiselect':
-    case 'relation-multiselect':
-      return Array.isArray(value)
-        ? value
-            .map((item) => (item && typeof item === 'object' && 'id' in item ? Number((item as { id: number }).id) : Number(item)))
-            .filter((item) => Number.isFinite(item))
-        : []
-    case 'relation-select':
-      return getRelationIdValue(value)
-    case 'component-rows':
-      return getInitialRows(field, value)
-    case 'json-csv':
-      return Array.isArray(value) ? value.join(', ') : typeof value === 'string' ? value : ''
-    default:
-      return typeof value === 'string' ? value : ''
-  }
-}
-
-function buildInitialValues(collection: AdminCollectionKey, initialData?: AdminStrapiEntry | null) {
-  const schema = ADMIN_COLLECTION_META[collection]
-  const values: Record<string, unknown> = {}
-
-  for (const field of schema.fields) {
-    values[field.name] = getInitialFieldValue(field, initialData?.[field.name])
-  }
-
-  return values
-}
-
-function getDisplayLabel(field: AdminEditorField, locale: Locale) {
-  return field.label[locale] || field.label['zh-Hans']
-}
-
-function getLocationLevel(field: AdminEditorField): EventLocationLevel {
-  if (field.locationLevel) {
-    return field.locationLevel
-  }
-  if (field.name === 'city') {
-    return 'city'
-  }
-  if (field.name === 'region') {
-    return 'region'
-  }
-  return 'country'
-}
-
-function getFormStringValue(values: Record<string, unknown>, key: string) {
-  const value = values[key]
-  return typeof value === 'string' ? value : ''
-}
-
-function getLocationSelectOptions(field: AdminEditorField, values: Record<string, unknown>, locale: Locale) {
-  const level = getLocationLevel(field)
-  const options = getEventLocationOptions(level, locale, {
-    country: getFormStringValue(values, 'country'),
-    region: getFormStringValue(values, 'region'),
-  })
-  const currentValue = normalizeEventLocationName(getFormStringValue(values, field.name))
-
-  if (currentValue && !options.some((option) => option.value === currentValue)) {
-    return [
-      {
-        value: currentValue,
-        label: {
-          'zh-Hans': currentValue,
-          en: getEventLocationLabel(currentValue, 'en'),
-          ja: getEventLocationLabel(currentValue, 'ja'),
-        },
-      },
-      ...options,
-    ]
-  }
-
-  return options
-}
 
 export function AdminEditorForm({ collection, locale, returnPath, initialData, relationOptions }: AdminEditorFormProps) {
   const router = useRouter()
