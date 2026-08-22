@@ -24,7 +24,7 @@ function getHtmlLang(locale: string | null) {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: "Schale Library - 夏莱图书馆 | 蔚蓝档案资料站",
-  description: "收集游戏作品《蔚蓝档案》内容，以及游戏外的各种作品、活动等的系统",
+  description: "夏莱图书馆：收录《蔚蓝档案》相关内容与游戏外的作品、活动资讯，提供考据档案与创作者导航",
   keywords: "蔚蓝档案,Blue Archive,Schale Library,夏莱图书馆",
   authors: [{ name: "Kara251" }],
   generator: "Next.js",
