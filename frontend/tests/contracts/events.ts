@@ -1,0 +1,177 @@
+/**
+ * 公共内容 API 契约快照（events 域）
+ *
+ * 纯数据常量：记录每个取数函数的 HTTP 方法、端点、代表性查询参数与消费字段。
+ * 来源：frontend/src/lib/api/events.ts。不引入任何测试框架。
+ */
+
+export const EVENTS_CONTRACT = {
+  getOnlineEvents: {
+    method: 'GET',
+    endpoint: '/online-events',
+    query: {
+      locale: 'zh-Hans',
+      sort: 'startTime:asc | startTime:desc | endTime:desc',
+      'filters[endTime][$gte]': '<now ISO> (relevant 模式)',
+      'pagination[pageSize]': 10,
+      'populate[coverImage]': true,
+    },
+    consume: [
+      'id',
+      'documentId',
+      'title',
+      'nature',
+      'eventFormat',
+      'statusOverride',
+      'startTime',
+      'endTime',
+      'platform',
+      'ticketUrl',
+      'ticketStatus',
+      'ticketPriceText',
+      'priceMin',
+      'priceMax',
+      'currency',
+      'organizer',
+      'tags',
+      'sourceName',
+      'sourceUrl',
+      'country',
+      'region',
+      'coverImage.url',
+    ],
+  },
+  getOfflineEvents: {
+    method: 'GET',
+    endpoint: '/offline-events',
+    query: {
+      locale: 'zh-Hans',
+      sort: 'startTime:asc | startTime:desc | endTime:desc',
+      'filters[endTime][$gte]': '<now ISO> (relevant 模式)',
+      'pagination[pageSize]': 10,
+      'populate[coverImage]': true,
+    },
+    consume: [
+      'id',
+      'documentId',
+      'title',
+      'nature',
+      'eventFormat',
+      'statusOverride',
+      'startTime',
+      'endTime',
+      'location',
+      'venue',
+      'address',
+      'city',
+      'mapUrl',
+      'guests',
+      'ticketPriceText',
+      'sourceName',
+      'country',
+      'region',
+      'coverImage.url',
+    ],
+  },
+  getHomeOnlineEvents: {
+    method: 'GET',
+    endpoint: '/online-events',
+    query: {
+      locale: 'zh-Hans',
+      sort: 'startTime:asc (进行中/未来) + endTime:desc (已结束补齐)',
+      'pagination[limit]': 6,
+    },
+    consume: ['data[]', 'meta.pagination.total'],
+  },
+  getHomeOfflineEvents: {
+    method: 'GET',
+    endpoint: '/offline-events',
+    query: {
+      locale: 'zh-Hans',
+      sort: 'startTime:asc (进行中/未来) + endTime:desc (已结束补齐)',
+      'pagination[limit]': 6,
+    },
+    consume: ['data[]', 'meta.pagination.total'],
+  },
+  getEventLocationRecords: {
+    method: 'GET',
+    endpoint: '/online-events 与 /offline-events',
+    query: {
+      locale: 'zh-Hans',
+      sort: 'startTime:desc',
+      'pagination[pageSize]': 100,
+      'fields[0]': 'country',
+      'fields[1]': 'region',
+      'fields[2]': 'city (仅 offline)',
+    },
+    consume: ['kind', 'country', 'region', 'city'],
+  },
+  getAllEvents: {
+    method: 'GET',
+    endpoint: '/online-events 与 /offline-events（全量翻页后客户端合并排序切片）',
+    query: {
+      locale: 'zh-Hans',
+      sort: 'startTime:desc',
+      'pagination[pageSize]': 100,
+      appendEventFilters: ['query', 'nature', 'kind', 'country', 'region', 'city', 'status 时间窗', 'excludeId'],
+    },
+    consume: ['data[] (EventListItem: event + type)', 'meta.pagination'],
+  },
+  getEventsBundle: {
+    method: 'GET',
+    endpoint: '/online-events 与 /offline-events（一次全量扫描同时产出分页与地区筛选项）',
+    query: {
+      locale: 'zh-Hans',
+      sort: 'startTime:desc',
+      'pagination[pageSize]': 100,
+      limit: 24,
+    },
+    consume: [
+      'response.data[] (EventListItem)',
+      'response.meta.pagination',
+      'locationRecords[] (从同一批 items 派生，去重键 kind|country|region|city)',
+    ],
+  },
+  getOnlineEventById: {
+    method: 'GET',
+    endpoint: '/online-events',
+    query: {
+      locale: 'zh-Hans',
+      'filters[documentId][$eq]': '<id | filters[id][$eq] if numeric>',
+      'populate[coverImage]': true,
+    },
+    consume: ['data[0]'],
+  },
+  getOfflineEventById: {
+    method: 'GET',
+    endpoint: '/offline-events',
+    query: {
+      locale: 'zh-Hans',
+      'filters[documentId][$eq]': '<id | filters[id][$eq] if numeric>',
+      'populate[coverImage]': true,
+    },
+    consume: ['data[0]'],
+  },
+  searchOnlineEvents: {
+    method: 'GET',
+    endpoint: '/online-events',
+    query: {
+      locale: 'zh-Hans',
+      '$or 字段': ['title', 'organizer', 'description', 'country', 'region', 'platform', 'tags', 'ticketPriceText', 'sourceName'],
+      sort: 'startTime:desc',
+      'pagination[limit]': 50,
+    },
+    consume: ['id', 'title', 'startTime', 'platform'],
+  },
+  searchOfflineEvents: {
+    method: 'GET',
+    endpoint: '/offline-events',
+    query: {
+      locale: 'zh-Hans',
+      '$or 字段': ['title', 'organizer', 'location', 'guests', 'description', 'country', 'region', 'city', 'venue', 'address', 'tags', 'ticketPriceText', 'sourceName'],
+      sort: 'startTime:desc',
+      'pagination[limit]': 50,
+    },
+    consume: ['id', 'title', 'startTime', 'location'],
+  },
+} as const;
