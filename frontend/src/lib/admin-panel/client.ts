@@ -1,5 +1,3 @@
-'use server'
-
 import 'server-only'
 
 import type { AdminSession } from '@/lib/server/admin-auth'
