@@ -3,41 +3,37 @@
 import Image from 'next/image'
 import { LocaleLink } from "@/components/locale-link"
 import { useLocale } from "@/contexts/locale-context"
-import type { Locale } from "@/lib/i18n"
+import { translations, type Locale } from "@/lib/i18n"
 
 const content: Record<Locale, {
   subtitle: string
   about: string
   contact: string
   privacy: string
-  disclaimer: string
 }> = {
   'zh-Hans': {
     subtitle: '蔚蓝档案资源收集站',
     about: '关于图书馆',
     contact: '联系图书馆',
     privacy: '隐私政策',
-    disclaimer: '本站与 Nexon 及 Yostar 无关',
   },
   'en': {
     subtitle: 'Blue Archive Resource Collection',
     about: 'About',
     contact: 'Contact',
     privacy: 'Privacy Policy',
-    disclaimer: 'Not affiliated with Nexon or Yostar',
   },
   'ja': {
     subtitle: 'ブルーアーカイブ資料収集サイト',
     about: '図書館について',
     contact: 'お問い合わせ',
     privacy: 'プライバシーポリシー',
-    disclaimer: 'Nexon および Yostar とは関係ありません',
   },
 }
 
 export function Footer() {
   const { locale } = useLocale()
-  const t = content[locale] || content['zh-Hans']
+  const t = { ...content[locale], disclaimer: translations[locale]?.['footer.disclaimer'] || translations['zh-Hans']['footer.disclaimer'] }
 
   return (
     <footer className="bg-card border-t border-border py-8">

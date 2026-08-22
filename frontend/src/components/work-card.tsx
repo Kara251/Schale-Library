@@ -33,7 +33,7 @@ const labels: Record<Locale, {
 }> = {
     'zh-Hans': {
         video: '视频',
-        image: '图画',
+        image: '图片',
         text: '文字',
         other: '其他',
         official: '官方',

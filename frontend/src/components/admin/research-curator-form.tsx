@@ -38,7 +38,7 @@ const labels: Record<Locale, {
 }> = {
   'zh-Hans': {
     title: '考据策展配置',
-    description: '配置侧边栏"主编精选"与"推荐游走路径"的文字说明。路径步骤请前往 Strapi 原生后台编辑。',
+    description: '配置侧边栏"主编精选"与"推荐阅读路径"的文字说明。路径步骤请前往 Strapi 原生后台编辑。',
     featuredEntry: '主编精选条目',
     featuredEntryHint: '将在侧边栏"主编精选"区域展示',
     noEntry: '（不选择）',

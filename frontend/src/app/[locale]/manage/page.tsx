@@ -27,7 +27,7 @@ const labels: Record<Locale, {
     view: '进入列表',
     configTitle: '配置项',
     curatorTitle: '策展配置',
-    curatorBody: '编辑考据档案的主编精选与推荐游走路径。',
+    curatorBody: '编辑考据档案的主编精选与推荐阅读路径。',
     securityTitle: '安全说明',
     securityBody: '当前自研后台通过同源接口与 HttpOnly Cookie 会话访问 Strapi，避免在浏览器中暴露维护者令牌。写操作、上传和同步动作会记录到审计日志。',
   },

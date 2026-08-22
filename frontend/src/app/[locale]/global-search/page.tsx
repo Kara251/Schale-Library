@@ -66,7 +66,7 @@ const content: Record<Locale, {
         official: '官方',
         fanmade: '同人',
         video: '视频',
-        image: '图画',
+        image: '图片',
         text: '文字',
         other: '其他',
         partialError: '部分搜索结果暂时不可用，请稍后重试。',

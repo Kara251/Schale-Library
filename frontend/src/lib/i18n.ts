@@ -56,7 +56,7 @@ export const translations = {
 
     // 首页
     'home.title': '欢迎来到夏莱图书馆',
-    'home.latestEvents': '正在进行 / 即将开始',
+    'home.latestEvents': '进行中 / 即将开始',
     'home.latestWorks': '最新推荐作品',
     'home.featuredWorks': '精选推荐作品',
     'home.noEvents': '暂无活动',
@@ -109,7 +109,7 @@ export const translations = {
     'footer.about': '关于我们',
     'footer.contact': '联系方式',
     'footer.privacy': '隐私政策',
-    'footer.disclaimer': '本站与Nexon及Yostar无关',
+    'footer.disclaimer': '本站与 Nexon 及 Yostar 无关',
 
     // 错误页 / 404
     'common.backHome': '返回首页',
@@ -133,9 +133,9 @@ export const translations = {
     'research.filter.empty': '暂无符合条件的条目',
     'research.stance.official': '官方依据',
     'research.stance.personal': '个人推论',
-    'research.stance.speculative': '推测性',
+    'research.stance.speculative': '推测性观点',
     'research.sidebar.featured': '主编精选',
-    'research.sidebar.recommendedPath': '推荐游走路径',
+    'research.sidebar.recommendedPath': '推荐阅读路径',
     'research.sidebar.recent': '最近更新',
     'research.sidebar.empty': '暂无策展内容',
     'research.entry.back': '返回考据档案',
@@ -421,7 +421,7 @@ export const translations = {
     'research.stance.personal': '個人考察',
     'research.stance.speculative': '推測的',
     'research.sidebar.featured': '編集部おすすめ',
-    'research.sidebar.recommendedPath': 'おすすめ読み順',
+    'research.sidebar.recommendedPath': 'おすすめ読書パス',
     'research.sidebar.recent': '最近の更新',
     'research.sidebar.empty': 'キュレーションコンテンツなし',
     'research.entry.back': '考察アーカイブに戻る',
@@ -430,7 +430,7 @@ export const translations = {
     'research.entry.noContent': '本文なし',
     'research.entry.readMore': '続きを読む',
     'research.citation.confidence.official': '公式',
-    'research.citation.confidence.derived': '推導',
+    'research.citation.confidence.derived': '推論',
     'research.citation.confidence.conjecture': '推測',
     'research.citation.source.game_line': 'ゲーム台詞',
     'research.citation.source.interview': '公式インタビュー',

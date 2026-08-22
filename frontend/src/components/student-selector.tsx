@@ -39,7 +39,7 @@ const labels: Record<Locale, {
         title: '选择出场学生',
         selected: '已选择 {count} 个学生',
         searchPlaceholder: '搜索学生名字...',
-        school: '学校',
+        school: '学院',
         organization: '组织',
         all: '全部',
         clearFilters: '清除筛选',

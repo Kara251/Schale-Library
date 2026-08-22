@@ -51,7 +51,7 @@ function toValues<V extends string>(terms: readonly TaxonomyTerm<V>[]): V[] {
 export const STANCE_TERMS = [
   { value: 'official', labels: { 'zh-Hans': '官方依据', en: 'Official basis', ja: '公式根拠' } },
   { value: 'personal', labels: { 'zh-Hans': '个人推论', en: 'Personal analysis', ja: '個人考察' } },
-  { value: 'speculative', labels: { 'zh-Hans': '推测性', en: 'Speculative', ja: '推測的' } },
+  { value: 'speculative', labels: { 'zh-Hans': '推测性观点', en: 'Speculative', ja: '推測的' } },
 ] as const satisfies readonly TaxonomyTerm[]
 
 export const MEDIA_TYPE_TERMS = [
@@ -71,7 +71,7 @@ export const SOURCE_TYPE_TERMS = [
 
 export const CONFIDENCE_TERMS = [
   { value: 'official', labels: { 'zh-Hans': '官方', en: 'Official', ja: '公式' } },
-  { value: 'derived', labels: { 'zh-Hans': '推导', en: 'Derived', ja: '推導' } },
+  { value: 'derived', labels: { 'zh-Hans': '推论', en: 'Derived', ja: '推論' } },
   { value: 'conjecture', labels: { 'zh-Hans': '推测', en: 'Conjecture', ja: '推測' } },
 ] as const satisfies readonly TaxonomyTerm[]
 
