@@ -256,7 +256,7 @@ export const translations = {
 
     // Error / 404
     'common.backHome': 'Back to Home',
-    'common.contactLibrary': 'contact us',
+    'common.contactLibrary': 'Contact Us',
     'notFound.title': 'Page not found',
     'notFound.desc': 'Sorry, we could not find this page. It may not exist yet or has been moved.',
     'notFound.errorHint': 'If you believe this is an error, please',

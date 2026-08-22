@@ -130,7 +130,7 @@ export default function LoginPage() {
                                 <Input
                                     id="identifier"
                                     type="text"
-                                    placeholder="your@email.com"
+                                    placeholder="your@email.com 或用户名"
                                     value={identifier}
                                     onChange={(e) => setIdentifier(e.target.value)}
                                     required
