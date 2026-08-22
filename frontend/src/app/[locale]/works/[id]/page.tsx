@@ -157,6 +157,16 @@ export default async function WorkDetailPage({ params }: PageProps) {
     }
 
     const work = workRes.data
+    // S1：仅渲染 http(s) 绝对链接，阻断 javascript:/data: 等 scheme 的存储型 XSS
+    let safeWorkLink = ''
+    if (work.link) {
+        try {
+            const parsedLink = new URL(work.link)
+            safeWorkLink = parsedLink.protocol === 'http:' || parsedLink.protocol === 'https:' ? work.link : ''
+        } catch {
+            // 非法 URL 不渲染外链
+        }
+    }
     const [sameAuthorRes, sameStudentRes] = await Promise.all([
         work.author ? getWorksByAuthor(work.author, work.id, 4, locale).catch((error) => {
             console.error('Failed to load same author works:', error)
@@ -266,10 +276,10 @@ export default async function WorkDetailPage({ params }: PageProps) {
                             </div>
                         ) : null}
 
-                        {work.link && (
+                        {safeWorkLink && (
                             <div className="mb-8">
                                 <Button asChild size="lg" className="w-full md:w-auto">
-                                    <a href={work.link} target="_blank" rel="noopener noreferrer">
+                                    <a href={safeWorkLink} target="_blank" rel="noopener noreferrer">
                                         {t.viewOriginal} <ExternalLink className="ml-2 h-4 w-4" />
                                     </a>
                                 </Button>

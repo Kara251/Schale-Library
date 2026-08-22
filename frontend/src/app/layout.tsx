@@ -47,19 +47,9 @@ export default async function RootLayout({
   return (
     <html lang={htmlLang} suppressHydrationWarning>
       <head>
-        {/* 字体 - 使用 loli.net 国内 CDN 镜像（全球可用） */}
+        {/* 字体：字体栈实际只用 BlueakaBeta2GBK（自托管）+ Noto Sans JP；
+            Nunito / Noto Sans SC 为死重已移除。W6 迁移 OpenNext 后构建环境可重试 next/font。 */}
         <link rel="preconnect" href="https://fonts.loli.net" crossOrigin="anonymous" />
-        {/* Nunito - 英文圆润字体 */}
-        <link
-          href="https://fonts.loli.net/css2?family=Nunito:wght@400;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-        {/* Noto Sans SC - 中文思源黑体 */}
-        <link
-          href="https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap"
-          rel="stylesheet"
-        />
-        {/* Noto Sans JP - 日文思源黑体 */}
         <link
           href="https://fonts.loli.net/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap"
           rel="stylesheet"

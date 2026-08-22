@@ -11,7 +11,6 @@ const AUTO_PUBLISH_KEYWORDS = [
     '碧蓝档案',
     '蔚蓝档案',
     'Blue Archive',
-    'BA',
     'ブルーアーカイブ',
     'ブルアカ',
     '블루 아카이브',
@@ -441,9 +440,19 @@ export default factories.createCoreService('api::bilibili-subscription.bilibili-
             .map((item) => {
                 const rawDescription = normalizeXmlText(item.description || item.summary || item.content);
                 const linkValue = Array.isArray(item.link) ? item.link[0] : item.link;
-                const link = typeof linkValue === 'object'
+                const rawLink = typeof linkValue === 'object'
                     ? normalizeXmlText(linkValue?.['@_href'])
                     : normalizeXmlText(linkValue);
+                // S1：仅接受 http(s) 绝对地址入库，阻断 javascript:/data: 等危险 scheme
+                let link = '';
+                try {
+                    const parsedLink = new URL(rawLink);
+                    if (parsedLink.protocol === 'https:' || parsedLink.protocol === 'http:') {
+                        link = parsedLink.toString();
+                    }
+                } catch {
+                    // 非法 URL 置空，由下方 filter 剔除
+                }
 
                 return {
                     title: normalizeXmlText(item.title),

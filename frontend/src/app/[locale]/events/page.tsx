@@ -1,7 +1,7 @@
 import { Footer } from '@/components/footer'
 import { Header } from '@/components/header'
 import { EventsWithFilters, type EventSortMode } from '@/components/events-with-filters'
-import { getAllEvents, getEventLocationRecords, type EventKindFilter, type EventNatureFilter, type EventStatusFilter } from '@/lib/api'
+import { getEventsBundle, type EventKindFilter, type EventNatureFilter, type EventStatusFilter } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 import { normalizeEventLocationName } from '@/lib/utils/event-location'
 
@@ -50,31 +50,28 @@ export default async function EventsPage({ params, searchParams }: EventsPagePro
   const region = normalizeEventLocationName(filters.region)
   const city = kind === 'online' ? '' : normalizeEventLocationName(filters.city)
 
-  const [eventsResult, locationRecords] = await Promise.all([
-    getAllEvents(24, locale, {
-      query: filters.q,
-      kind,
-      nature,
-      status,
-      country,
-      region,
-      city,
-      sort,
-      page,
-      pageSize: 24,
-    }).then((response) => ({ response, hasError: false })).catch((error) => {
-      console.error('Failed to load events:', error)
-      return {
-        response: { data: [], meta: { pagination: { page, pageSize: 24, pageCount: 1, total: 0 } } },
-        hasError: true,
-      }
-    }),
-    getEventLocationRecords(locale, 'all').catch((error) => {
-      console.error('Failed to load event location filters:', error)
-      return []
-    }),
-  ])
-  const eventsRes = eventsResult.response
+  const bundle = await getEventsBundle(locale, {
+    query: filters.q,
+    kind,
+    nature,
+    status,
+    country,
+    region,
+    city,
+    sort,
+    page,
+    limit: 24,
+    pageSize: 24,
+  }).then((result) => ({ ...result, hasError: false })).catch((error) => {
+    console.error('Failed to load events:', error)
+    return {
+      response: { data: [], meta: { pagination: { page, pageSize: 24, pageCount: 1, total: 0 } } },
+      locationRecords: [],
+      hasError: true,
+    }
+  })
+  const eventsRes = bundle.response
+  const locationRecords = bundle.locationRecords
   const events = eventsRes.data || []
   const pagination = eventsRes.meta?.pagination || { page, pageCount: 1, total: events.length }
 
@@ -100,7 +97,7 @@ export default async function EventsPage({ params, searchParams }: EventsPagePro
             total={pagination.total}
             page={pagination.page}
             pageCount={pagination.pageCount}
-            hasError={eventsResult.hasError}
+            hasError={bundle.hasError}
           />
         </div>
       </main>

@@ -46,26 +46,30 @@ async function fetchLocalizedSingleBySlug<T>(
   locale: string,
   params: Record<string, string | number | boolean | undefined> = {}
 ) {
-  for (const candidateLocale of getFallbackLocales(locale)) {
-    const response = await fetchAPI<StrapiResponse<T[]>>(
-      `/${collection}?${createCollectionQuery({
-        locale: candidateLocale,
-        'filters[slug][$eq]': slug,
-        ...params,
-      })}`
-    );
-    if (response.data?.[0]) {
-      return {
-        data: response.data[0],
-        meta: {},
-      } as StrapiSingleResponse<T | null>;
+  // 性能：候选 locale 并发请求后按优先级择优（原串行最坏 2 次往返）。
+  // 语义保持：任一请求抛错则整体抛错（与原串行行为一致）；全部为空返回 null。
+  const results = await Promise.allSettled(
+    getFallbackLocales(locale).map((candidateLocale) =>
+      fetchAPI<StrapiResponse<T[]>>(
+        `/${collection}?${createCollectionQuery({
+          locale: candidateLocale,
+          'filters[slug][$eq]': slug,
+          ...params,
+        })}`
+      )
+    )
+  );
+
+  for (const result of results) {
+    if (result.status === 'fulfilled' && result.value.data?.[0]) {
+      return { data: result.value.data[0], meta: {} } as StrapiSingleResponse<T | null>;
     }
   }
-
-  return {
-    data: null,
-    meta: {},
-  } as StrapiSingleResponse<T | null>;
+  const firstRejected = results.find((result) => result.status === 'rejected');
+  if (firstRejected && firstRejected.status === 'rejected') {
+    throw firstRejected.reason;
+  }
+  return { data: null, meta: {} } as StrapiSingleResponse<T | null>;
 }
 
 async function fetchLocalizedCollectionWithFallback<T>(
@@ -73,24 +77,33 @@ async function fetchLocalizedCollectionWithFallback<T>(
   locale: string,
   params: Record<string, string | number | boolean | undefined> = {}
 ) {
-  let lastResponse: StrapiResponse<T[]> | null = null;
+  // 性能：同上，候选 locale 并发；全部为空时回退最后一个成功响应（zh-Hans）。
+  const results = await Promise.allSettled(
+    getFallbackLocales(locale).map((candidateLocale) =>
+      fetchAPI<StrapiResponse<T[]>>(
+        `/${collection}?${createCollectionQuery({
+          locale: candidateLocale,
+          ...params,
+        })}`
+      )
+    )
+  );
 
-  for (const candidateLocale of getFallbackLocales(locale)) {
-    const response = await fetchAPI<StrapiResponse<T[]>>(
-      `/${collection}?${createCollectionQuery({
-        locale: candidateLocale,
-        ...params,
-      })}`
-    );
-    lastResponse = response;
-    if ((response.data?.length || 0) > 0) {
-      return response;
+  let lastResponse: StrapiResponse<T[]> | null = null;
+  for (const result of results) {
+    if (result.status === 'fulfilled') {
+      lastResponse = result.value;
+      if ((result.value.data?.length || 0) > 0) {
+        return result.value;
+      }
     }
   }
-
+  const firstRejected = results.find((result) => result.status === 'rejected');
+  if (firstRejected && firstRejected.status === 'rejected') {
+    throw firstRejected.reason;
+  }
   return lastResponse || { data: [], meta: { pagination: { page: 1, pageSize: 0, pageCount: 0, total: 0 } } };
 }
-
 export function getContentEntryPathId(entry: { documentId?: string; id: number }) {
   return entry.documentId || String(entry.id);
 }
@@ -184,12 +197,10 @@ export async function getHomeAnnouncements(locale: string = 'zh-Hans', limit: nu
 
 export async function getFriendLinks(locale: string = 'zh-Hans', limit: number = 12) {
   const strapiLocale = toStrapiLocale(locale);
+  // 性能：友链为全站页脚静态内容，缓存分层至 1 小时（其余集合维持 60s）。
   return fetchAPI<StrapiResponse<FriendLink[]>>(
     `/friend-links?${createCollectionQuery({
       locale: strapiLocale,
-      'filters[isActive][$eq]': true,
-      'sort[0]': 'priority:desc',
-      'sort[1]': 'publishedAt:desc',
       'pagination[pageSize]': limit,
       'populate[icon]': true,
     })}`
@@ -657,6 +668,77 @@ export async function getAllEvents(
   return {
     data: merged.slice(start, start + pageSize),
     meta: eventPageMeta(page, pageSize, total),
+  };
+}
+
+// 性能：从已拉全的活动列表直接派生地区筛选项，替代对同一集合的第二次全量扫描。
+function collectEventLocationRecords(
+  items: Array<{ country?: string | null; region?: string | null; city?: string | null }>,
+  kind: EventKind,
+  seen: Set<string>,
+  records: EventLocationRecord[]
+) {
+  for (const event of items) {
+    const record = {
+      kind,
+      country: normalizeEventLocationName(event.country),
+      region: normalizeEventLocationName(event.region),
+      city: kind === 'offline' ? normalizeEventLocationName(event.city) : '',
+    };
+    if (!record.country && !record.region && !record.city) {
+      continue;
+    }
+    const key = `${record.kind}|${record.country}|${record.region}|${record.city}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      records.push(record);
+    }
+  }
+}
+
+/**
+ * 活动页合并取数：一次全量扫描同时产出列表分页与地区筛选项，
+ * 替代原先 getAllEvents + getEventLocationRecords 的双重全量扫描。
+ */
+export async function getEventsBundle(
+  locale: string = 'zh-Hans',
+  options: EventListOptions & { limit?: number } = {}
+): Promise<{ response: StrapiResponse<EventListItem[]>; locationRecords: EventLocationRecord[] }> {
+  const limit = Math.max(1, options.limit || 24);
+  const page = Math.max(1, options.page || 1);
+  const pageSize = Math.max(1, options.pageSize || limit);
+  const nowIso = new Date().toISOString();
+  const seen = new Set<string>();
+  const locationRecords: EventLocationRecord[] = [];
+
+  const [online, offline] = await Promise.all([
+    options.kind === 'offline'
+      ? Promise.resolve([] as OnlineEvent[])
+      : fetchAllEventsForCollection<OnlineEvent>('online-events', 'online', locale, options, nowIso).then((items) => {
+          collectEventLocationRecords(items, 'online', seen, locationRecords);
+          return items;
+        }),
+    options.kind === 'online'
+      ? Promise.resolve([] as OfflineEvent[])
+      : fetchAllEventsForCollection<OfflineEvent>('offline-events', 'offline', locale, options, nowIso).then((items) => {
+          collectEventLocationRecords(items, 'offline', seen, locationRecords);
+          return items;
+        }),
+  ]);
+
+  const merged = [
+    ...online.map((event) => ({ event, type: 'online' as const })),
+    ...offline.map((event) => ({ event, type: 'offline' as const })),
+  ].sort((a, b) => compareEventsForDisplay(a, b, options.sort || 'relevant'));
+  const start = (page - 1) * pageSize;
+  const total = merged.length;
+
+  return {
+    response: {
+      data: merged.slice(start, start + pageSize),
+      meta: eventPageMeta(page, pageSize, total),
+    },
+    locationRecords,
   };
 }
 
