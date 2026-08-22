@@ -3,6 +3,7 @@ import { ResearchCuratorForm } from '@/components/admin/research-curator-form'
 import type { Locale } from '@/lib/i18n'
 import { getCuratorAdmin, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
+import { STRAPI_API_URL } from '@/lib/config'
 
 interface ResearchCuratorManagePageProps {
   params: Promise<{ locale: string }>
@@ -24,7 +25,7 @@ const labels: Record<Locale, { title: string; description: string }> = {
 }
 
 function getResearchCuratorAdminUrl() {
-  const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083').replace(/\/+$/, '')
+  const apiUrl = STRAPI_API_URL
   const configured = process.env.STRAPI_ADMIN_URL || process.env.NEXT_PUBLIC_STRAPI_ADMIN_URL
 
   if (configured) {

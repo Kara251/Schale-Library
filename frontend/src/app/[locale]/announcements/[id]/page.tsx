@@ -11,6 +11,7 @@ import { zhCN, enUS, ja } from 'date-fns/locale'
 import { LocaleLink } from '@/components/locale-link'
 import type { Locale } from '@/lib/i18n'
 import { getMediaUrl } from '@/lib/media'
+import { SITE_URL } from '@/lib/config'
 
 export const revalidate = 60;
 
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: PageProps) {
     }
 
     const announcement = announcementRes.data
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const siteUrl = SITE_URL
     const imageUrl = announcement.coverImage?.url ? new URL(getMediaUrl(announcement.coverImage.url), siteUrl).toString() : undefined
     const description = announcement.content?.replace(/<[^>]*>/g, '').slice(0, 150) || ''
 

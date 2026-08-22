@@ -10,8 +10,9 @@ import {
   type Work,
 } from '@/lib/api'
 import { locales } from '@/lib/i18n'
+import { SITE_URL } from '@/lib/config'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/+$/, '')
+const siteUrl = SITE_URL
 const staticRoutes = ['', '/works', '/research-archives', '/events', '/online-events', '/offline-events', '/announcements', '/resources', '/about', '/contact', '/privacy']
 const SITEMAP_PAGE_SIZE = 100
 

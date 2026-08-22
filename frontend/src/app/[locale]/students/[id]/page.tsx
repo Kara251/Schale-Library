@@ -16,6 +16,7 @@ import {
   resolveStudentSchoolName,
 } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
+import { SITE_URL } from '@/lib/config'
 
 export const revalidate = 60
 
@@ -74,7 +75,7 @@ export async function generateMetadata({ params }: PageProps) {
   }
 
   const student = studentRes.data
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const siteUrl = SITE_URL
   const imageUrl = student.avatar?.url ? new URL(getMediaUrl(student.avatar.url), siteUrl).toString() : undefined
 
   return {

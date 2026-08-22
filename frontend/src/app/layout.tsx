@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/auth-context"
 import { LocaleProvider } from "@/contexts/locale-context"
 import { ToastProvider } from "@/contexts/toast-context"
 import { GoogleAnalytics, Clarity } from "@/components/third-party-analytics"
+import { SITE_URL } from "@/lib/config"
 import "./globals.css"
 
 type Locale = 'zh-Hans' | 'en' | 'ja'
@@ -22,7 +23,7 @@ function getHtmlLang(locale: string | null) {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(SITE_URL),
   title: "Schale Library - 夏莱图书馆 | 蔚蓝档案资料站",
   description: "夏莱图书馆：收录《蔚蓝档案》相关内容与游戏外的作品、活动资讯，提供考据档案与创作者导航",
   keywords: "蔚蓝档案,Blue Archive,Schale Library,夏莱图书馆",
