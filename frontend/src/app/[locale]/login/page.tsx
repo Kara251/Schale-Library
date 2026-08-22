@@ -22,6 +22,8 @@ const content: Record<Locale, {
     loggingIn: string
     noRegister: string
     errorDefault: string
+    errorRateLimited: string
+    errorNoAccess: string
 }> = {
     'zh-Hans': {
         title: '登录',
@@ -32,6 +34,8 @@ const content: Record<Locale, {
         loggingIn: '登录中...',
         noRegister: '暂不开放注册，如需账号请联系管理员',
         errorDefault: '登录失败，请检查邮箱和密码',
+        errorRateLimited: '登录尝试过于频繁，请稍后再试',
+        errorNoAccess: '当前账号没有后台面板访问权限',
     },
     'en': {
         title: 'Login',
@@ -42,6 +46,8 @@ const content: Record<Locale, {
         loggingIn: 'Signing in...',
         noRegister: 'Registration is not open. Contact admin for an account.',
         errorDefault: 'Login failed. Please check your email and password.',
+        errorRateLimited: 'Too many login attempts. Please try again later.',
+        errorNoAccess: 'This account does not have dashboard access.',
     },
     'ja': {
         title: 'ログイン',
@@ -52,6 +58,8 @@ const content: Record<Locale, {
         loggingIn: 'ログイン中...',
         noRegister: '新規登録は現在受け付けていません。アカウントが必要な場合は管理者にお問い合わせください。',
         errorDefault: 'ログインに失敗しました。メールアドレスとパスワードを確認してください。',
+        errorRateLimited: 'ログイン試行が多すぎます。しばらくしてから再度お試しください。',
+        errorNoAccess: 'このアカウントには管理パネルへのアクセス権がありません。',
     },
 }
 
@@ -82,7 +90,12 @@ export default function LoginPage() {
             router.push(safeNextPath)
             router.refresh()
         } catch (err) {
-            setError(err instanceof Error ? err.message : t.errorDefault)
+            const code = err instanceof Error ? err.message : ''
+            setError(
+                code === 'rate_limited' ? t.errorRateLimited
+                : code === 'no_access' ? t.errorNoAccess
+                : t.errorDefault
+            )
         } finally {
             setIsLoading(false)
         }

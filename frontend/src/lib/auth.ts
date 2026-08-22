@@ -41,8 +41,9 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || '登录失败');
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    // 错误码由 UI 层按 locale 映射为文案（见 login 页）
+    throw new Error(payload?.error || 'invalid_credentials');
   }
 
   return response.json();
@@ -60,9 +61,8 @@ export async function fetchSession(): Promise<User | null> {
   if (response.status === 401) {
     return null;
   }
-
   if (!response.ok) {
-    throw new Error('获取会话失败');
+    throw new Error('session_fetch_failed');
   }
 
   const data = (await response.json()) as { user: User | null };

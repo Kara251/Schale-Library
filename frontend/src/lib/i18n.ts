@@ -100,6 +100,9 @@ export const translations = {
 
     // 用户
     'user.logout': '登出',
+    'user.panel': '后台面板',
+    'common.loading': '加载中...',
+    'resources.iframeTitle': '夏莱图书馆资源库',
     'user.settings': '设置',
 
     // 页脚
@@ -240,6 +243,9 @@ export const translations = {
 
     // User
     'user.logout': 'Logout',
+    'user.panel': 'Dashboard',
+    'common.loading': 'Loading...',
+    'resources.iframeTitle': 'Schale Library Drive',
     'user.settings': 'Settings',
 
     // Footer
@@ -380,6 +386,9 @@ export const translations = {
 
     // ユーザー
     'user.logout': 'ログアウト',
+    'user.panel': '管理パネル',
+    'common.loading': '読み込み中...',
+    'resources.iframeTitle': 'シャーレ図書館リソース',
     'user.settings': '設定',
 
     // フッター

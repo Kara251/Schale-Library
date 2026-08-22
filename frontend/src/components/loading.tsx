@@ -1,4 +1,8 @@
+'use client'
+
 import { Loader2 } from 'lucide-react'
+import { translations, type Locale } from '@/lib/i18n'
+import { useLocale } from '@/contexts/locale-context'
 
 interface LoadingProps {
   text?: string
@@ -6,15 +10,18 @@ interface LoadingProps {
 }
 
 /**
- * 加载指示器组件
+ * 加载指示器组件（默认文案随语言）
  */
-export function Loading({ text = '加载中...', fullScreen = false }: LoadingProps) {
+export function Loading({ text, fullScreen = false }: LoadingProps) {
+  const { locale } = useLocale()
+  const t = translations[locale as Locale] || translations['zh-Hans']
+  const label = text || t['common.loading']
   if (fullScreen) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-          <p className="text-muted-foreground">{text}</p>
+          <p className="text-muted-foreground">{label}</p>
         </div>
       </div>
     )
@@ -24,7 +31,7 @@ export function Loading({ text = '加载中...', fullScreen = false }: LoadingPr
     <div className="flex items-center justify-center py-12">
       <div className="text-center space-y-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-        <p className="text-sm text-muted-foreground">{text}</p>
+        <p className="text-sm text-muted-foreground">{label}</p>
       </div>
     </div>
   )

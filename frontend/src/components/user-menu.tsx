@@ -1,6 +1,8 @@
 'use client'
 
 import { useLocalePath } from '@/components/locale-link'
+import { translations, type Locale } from '@/lib/i18n'
+import { useLocale } from '@/contexts/locale-context'
 import Link from 'next/link'
 import { User, LogOut, Settings, LayoutDashboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -20,6 +22,8 @@ import { useAuth } from '@/contexts/auth-context'
 export function UserMenu() {
   const { user, logout } = useAuth()
   const getLocalePath = useLocalePath()
+  const { locale } = useLocale()
+  const t = translations[locale as Locale] || translations['zh-Hans']
 
   if (!user) return null
 
@@ -43,18 +47,18 @@ export function UserMenu() {
         <DropdownMenuItem asChild>
           <Link href={getLocalePath('/manage')}>
             <LayoutDashboard className="mr-2 h-4 w-4" />
-            <span>后台面板</span>
+            <span>{t['user.panel']}</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled>
           <Settings className="mr-2 h-4 w-4" />
-          <span>设置</span>
+          <span>{t['user.settings']}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">
           <LogOut className="mr-2 h-4 w-4" />
-          <span>登出</span>
+          <span>{t['user.logout']}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

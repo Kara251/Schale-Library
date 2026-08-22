@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     failClosed: true,
   })
   if (!ipAllowed) {
-    return NextResponse.json({ error: '登录尝试过于频繁，请稍后再试' }, { status: 429 })
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 
   let body: unknown
@@ -36,11 +36,11 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: '请求体无效' }, { status: 400 })
+    return NextResponse.json({ error: 'invalid_request' }, { status: 400 })
   }
 
   if (typeof body !== 'object' || body === null) {
-    return NextResponse.json({ error: '请求体无效' }, { status: 400 })
+    return NextResponse.json({ error: 'invalid_request' }, { status: 400 })
   }
 
   const identifier = typeof (body as { identifier?: unknown }).identifier === 'string'
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     : ''
 
   if (!identifier || !password) {
-    return NextResponse.json({ error: '账号和密码不能为空' }, { status: 400 })
+    return NextResponse.json({ error: 'invalid_request' }, { status: 400 })
   }
 
   const accountAllowed = await checkServerRateLimit({
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     failClosed: true,
   })
   if (!accountAllowed) {
-    return NextResponse.json({ error: '登录尝试过于频繁，请稍后再试' }, { status: 429 })
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 
   const loginResponse = await fetch(`${STRAPI_URL}/api/auth/local`, {
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 
   if (!loginResponse.ok || !loginPayload?.jwt) {
     return NextResponse.json(
-      { error: '登录失败，请检查账号或密码' },
+      { error: 'invalid_credentials' },
       { status: loginResponse.status || 401, headers: { 'Cache-Control': 'no-store' } }
     )
   }
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
   const user = await fetchStrapiCurrentUser(loginPayload.jwt)
   if (!user) {
     return NextResponse.json(
-      { error: '当前账号没有后台面板访问权限' },
+      { error: 'no_access' },
       { status: 403, headers: { 'Cache-Control': 'no-store' } }
     )
   }
