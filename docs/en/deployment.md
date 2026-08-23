@@ -88,7 +88,8 @@ Transition period before the migration completes: the frontend can stay on Verce
 ## Security baseline (inherited from audit remediation)
 
 - Session cookies: httpOnly + Secure + SameSite=Strict, 8h TTL, immediate revocation via table lookup
-- Passwords: PBKDF2-SHA256 with 210k iterations
+- Passwords: PBKDF2-SHA256 with 100k iterations (100000 is the Workers WebCrypto ceiling; higher throws NotSupportedError)
+- Sessions: the sessions table stores the SHA-256 digest of the token, never the token itself
 - Login rate limiting: CF-Connecting-IP, 30 attempts per 10 minutes
 - Uploads: magic-number sniffing (jpeg/png/webp/gif), SVG disabled, tiered 4/8/12MB limits
 - CSV export: formula injection neutralized

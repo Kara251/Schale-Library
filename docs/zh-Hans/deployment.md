@@ -99,12 +99,14 @@ Cloudflare API 会返回 409。需要在 Dashboard 上确认覆盖一次
 | BOOTSTRAP_ADMIN_USERNAME/PASSWORD | 临时 secret | 首个维护者，建完即删 |
 | ADMIN_PANEL_ALLOWED_ROLES | Worker vars + 前端 vars | 面板角色准入。**生产环境缺省拒绝全部登录**，两侧都必须显式列出 |
 | NEXT_PUBLIC_API_URL | 前端 env | 内容 API 基址 |
-| NEXT_PUBLIC_SITE_URL | 前端 env | 站点 URL（sitemap/OG） |
+| NEXT_PUBLIC_SITE_URL | 前端 env | 站点 URL（sitemap/OG，也是 apex→www 跳转的目标） |
+| NEXT_PUBLIC_CF_BEACON_TOKEN | 前端 env | 可选，CF Web Analytics；未配置则不输出统计脚本 |
 
 ## 安全基线（继承自审计整改）
 
 - 会话 cookie：httpOnly + Secure + SameSite=Strict，8h TTL，查表即时吊销
 - 密码：PBKDF2-SHA256 100k 迭代（100000 是 Workers WebCrypto 的迭代上限，超过抛 NotSupportedError）
+- 会话：sessions 表存 token 的 SHA-256 摘要，不存 token 本身
 - 登录限流：CF-Connecting-IP，10min/30 次
 - 上传：魔数嗅探（jpeg/png/webp/gif），SVG 禁用，4/8/12MB 分级
 - CSV 导出：公式注入中和

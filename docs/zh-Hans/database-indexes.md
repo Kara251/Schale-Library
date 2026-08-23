@@ -16,6 +16,17 @@
 | sessions | idx_sessions_expires(expires_at) | 过期会话清理 |
 | works | idx_works_published / idx_works_featured / idx_works_author | works 服役期查询（W5 后随表退役） |
 
+每张表的 `document_id` / `slug` 都有 UNIQUE 约束带来的自动索引（`sqlite_autoindex_*`），
+详情查询已覆盖，不必再手工建。
+
+## 尚未建立的索引（有意为之）
+
+students / schools / friend_links / spoiler_tiers / research_* 的**列表查询**
+（`published_at` 过滤 + 排序列）没有覆盖索引。当前数据量下全表扫描成本可忽略，
+而索引有写放大与存储成本。
+
+**触发点**：单表超过约 1 万行，或 D1 用量面板的 `rows_read` 明显上升时再补。
+
 ## 设计原则（继承性能审计结论）
 
 - 清理类查询（created_at / reset_at / expires_at）必须有单列索引支撑

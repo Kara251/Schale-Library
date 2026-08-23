@@ -8,8 +8,10 @@ The security surface has been consolidated from "the Strapi platform plus a cust
 
 | Control | Implementation |
 |--------|------|
-| Authentication | users table + PBKDF2-SHA256 (210k iterations, WebCrypto); sessions revoked immediately via D1 table lookup |
+| Authentication | users table + PBKDF2-SHA256 (100k iterations, WebCrypto — 100000 is the Workers iteration ceiling; anything higher throws NotSupportedError); sessions revoked immediately via D1 table lookup |
 | Session cookie | httpOnly + Secure (production) + SameSite=Strict, 8h TTL |
+| Session storage | The sessions table stores the SHA-256 digest of the token, never the token itself; a database content leak cannot be replayed |
+| Session transport | Authorization: Bearer first, cookie as fallback; same opaque token either way |
 | Panel authorization | All /panel write routes fail-closed session validation + role allowlist |
 | Login rate limiting | CF-Connecting-IP (edge-trusted header), counted in D1, 30 attempts per 10 minutes |
 | Input validation | Dual enforcement of collection allowlist + field allowlist; unregistered fields rejected with 400 |

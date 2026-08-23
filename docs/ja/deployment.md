@@ -88,7 +88,8 @@ pnpm deploy
 ## セキュリティ基準ライン（監査対応の結果を引き継ぎ）
 
 - セッション cookie: httpOnly + Secure + SameSite=Strict、TTL 8h、テーブル照会による即時失効
-- パスワード: PBKDF2-SHA256 21 万回反復
+- パスワード: PBKDF2-SHA256 10 万回反復（100000 は Workers WebCrypto の反復上限で、超えると NotSupportedError）
+- セッション: sessions テーブルにはトークンの SHA-256 ダイジェストのみを保存する
 - ログイン レート制限: CF-Connecting-IP、10 分あたり 30 回
 - アップロード: マジックナンバー スニッフィング（jpeg/png/webp/gif）、SVG 無効、4/8/12MB の段階制限
 - CSV エクスポート: 数式インジェクションの無効化
