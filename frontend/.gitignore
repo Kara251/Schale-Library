@@ -48,3 +48,8 @@ next-env.d.ts
 
 
 .vercel
+
+# opennext / cloudflare workers
+/.open-next/
+/.wrangler/
+cloudflare-env.d.ts

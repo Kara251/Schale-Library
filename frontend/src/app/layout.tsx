@@ -63,6 +63,11 @@ export default async function RootLayout({
             <ToastProvider>
               {children}
               <BackToTop />
+              {/* TODO(W6): 迁移至 Cloudflare Workers 后，用 CF Web Analytics 替换 Vercel Analytics。
+                  接入方式：在 <head> 加
+                  <script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+                    data-cf-beacon='{"token": "<CF_WEB_ANALYTICS_TOKEN>"}' />
+                  token 由 Cloudflare Dashboard -> Analytics & Logs -> Web Analytics 签发。 */}
               <Analytics />
               <GoogleAnalytics />
               <Clarity />
