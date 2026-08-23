@@ -67,9 +67,8 @@ export function Header() {
               src="/img/ShcaleLibraryLogo.png"
               alt="Schale Library"
               width={128}
-              height={128}
-              className="rounded"
-              style={{ width: 'auto', height: 'auto' }}
+              height={42}
+              className="rounded h-auto w-32"
               priority
             />
           </LocaleLink>

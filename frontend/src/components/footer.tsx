@@ -45,9 +45,8 @@ export function Footer() {
               src="/img/ShcaleLibraryLogo.png"
               alt="Schale Library"
               width={160}
-              height={160}
-              className="rounded"
-              style={{ width: 'auto', height: 'auto' }}
+              height={52}
+              className="rounded h-auto w-40"
             />
           </div>
 
