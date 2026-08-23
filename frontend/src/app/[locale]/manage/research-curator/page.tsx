@@ -31,7 +31,7 @@ export default async function ResearchCuratorManagePage({ params }: ResearchCura
 
   const [curatorRes, entriesRes] = await Promise.all([
     getCuratorAdmin(session, locale).catch(() => ({ data: null })),
-    listAdminCollection<{ id: number; title: string }>(session, 'research-entries', {
+    listAdminCollection<{ id: string; title: string }>(session, 'research-entries', {
       locale,
       pageSize: 200,
       status: 'published',

@@ -64,11 +64,19 @@ function normalizeMedia(value: unknown): string | null {
   return value
 }
 
-function normalizeRelationOne(value: unknown): number | null {
+/**
+ * 关联值一律按 documentId 收下，真正的数字外键在 crud.ts 落库前解析。
+ * 兼容数字入参（旧数据/直接传内部 id 的场景），原样透传。
+ */
+function normalizeRelationOne(value: unknown): string | number | null {
   if (value === null || value === undefined || value === '') return null
-  const n = Number(value)
-  if (!Number.isInteger(n) || n <= 0) throw new FieldValidationError('关联 ID 无效')
-  return n
+  if (typeof value === 'number') {
+    if (!Number.isInteger(value) || value <= 0) throw new FieldValidationError('关联 ID 无效')
+    return value
+  }
+  const text = String(value).trim()
+  if (!text) return null
+  return text
 }
 
 function normalizeDatetime(value: unknown): number | null {

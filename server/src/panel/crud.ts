@@ -45,6 +45,9 @@ function serializeRow(
     const raw = row[field.column]
     if (field.localized) {
       out[fieldName] = typeof raw === 'string' ? pickLocale(raw, locale) : ''
+    } else if (field.relationTable) {
+      // JOIN 出来的 documentId；关联为空时是 null
+      out[fieldName] = row[relationDocAlias(field.column)] ?? null
     } else {
       out[fieldName] = raw ?? null
     }
@@ -52,18 +55,95 @@ function serializeRow(
   return out
 }
 
-/** 主表 SELECT（副表存在时 LEFT JOIN 拉平；副表列名与主表不重名）。 */
+/** 关联字段列表（带目标表的 relation-*）。 */
+function relationFields(def: CollectionDef): Array<[string, string, string]> {
+  return Object.entries(def.fields)
+    .filter(([, f]) => Boolean(f.relationTable))
+    .map(([name, f], index) => [name, f.column, `r${index}`] as [string, string, string])
+}
+
+/** 有任何 JOIN 时主表必须起别名 t，否则列名有歧义。 */
+function needsAlias(def: CollectionDef): boolean {
+  return Boolean(def.sideTable) || relationFields(def).length > 0
+}
+
+/** 关联字段解析出的 documentId 在结果集里的列名。 */
+function relationDocAlias(column: string): string {
+  return `${column}__doc`
+}
+
+/**
+ * 主表 SELECT。副表 LEFT JOIN 拉平（列名与主表不重名）；
+ * 关联字段再 LEFT JOIN 一次目标表，把数字外键还原成 documentId ——
+ * 面板对外只认 documentId，直接把外键数字丢出去的话，编辑器里的关联选择器
+ * 匹配不到任何选项，等于每次编辑都清空关联。
+ */
 function selectFrom(def: CollectionDef): string {
-  if (!def.sideTable) return `SELECT * FROM ${def.table}`
-  const cols = Object.values(def.sideTable.fields).map((f) => `s.${f.column}`).join(', ')
-  return `SELECT t.*, ${cols} FROM ${def.table} t LEFT JOIN ${def.sideTable.table} s ON s.${def.sideTable.fk} = t.id`
+  if (!needsAlias(def)) return `SELECT * FROM ${def.table}`
+
+  const cols = ['t.*']
+  const joins: string[] = []
+
+  if (def.sideTable) {
+    cols.push(...Object.values(def.sideTable.fields).map((f) => `s.${f.column}`))
+    joins.push(`LEFT JOIN ${def.sideTable.table} s ON s.${def.sideTable.fk} = t.id`)
+  }
+
+  for (const [fieldName, column, alias] of relationFields(def)) {
+    const target = def.fields[fieldName]!.relationTable!
+    cols.push(`${alias}.document_id AS ${relationDocAlias(column)}`)
+    joins.push(`LEFT JOIN ${target} ${alias} ON ${alias}.id = t.${column}`)
+  }
+
+  return `SELECT ${cols.join(', ')} FROM ${def.table} t ${joins.join(' ')}`
 }
 
 /** 固定过滤器的 WHERE 子句；无过滤器返回 null。列名在 selectFrom 有 JOIN 时需带 t. 前缀。 */
 function fixedWhere(def: CollectionDef, qualified: boolean): { sql: string; value: string } | null {
   if (!def.fixedFilter) return null
-  const col = qualified && def.sideTable ? `t.${def.fixedFilter.column}` : def.fixedFilter.column
+  const col = qualified && needsAlias(def) ? `t.${def.fixedFilter.column}` : def.fixedFilter.column
   return { sql: col, value: def.fixedFilter.value }
+}
+
+/**
+ * slug 转写：仅保留 ASCII 字母数字，其余折叠为连字符。
+ * 纯中文等转写后为空的情况由调用方回退到 documentId（本身就唯一）。
+ */
+function slugify(value: unknown): string {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+}
+
+/**
+ * 按 autoSlug 配置补齐 slug 列。已显式提供值时不覆盖。
+ * 重名时接 documentId 前 8 位，保证唯一而不必重试。
+ */
+async function fillAutoSlug(
+  db: D1Database,
+  def: CollectionDef,
+  values: Record<string, string | number | null>,
+  payload: Record<string, unknown>,
+  documentId: string
+): Promise<void> {
+  const config = def.autoSlug
+  if (!config) return
+
+  const existingValue = values[config.column]
+  if (typeof existingValue === 'string' && existingValue.trim()) return
+
+  const base = slugify(payload[config.from])
+  let slug = base || documentId
+
+  const taken = await db
+    .prepare(`SELECT 1 AS hit FROM ${def.table} WHERE ${config.column} = ?1`)
+    .bind(slug)
+    .first<{ hit: number }>()
+  if (taken) slug = `${slug}-${documentId.slice(0, 8)}`
+
+  values[config.column] = slug
 }
 
 /** 随机 documentId，对齐 Strapi 24 位十六进制格式。 */
@@ -75,7 +155,7 @@ function generateDocumentId(): string {
  * documentId 查单条。固定过滤器一并生效 —— 否则 online-events 能读写到 offline 的行。
  */
 async function findByDocumentId(db: D1Database, def: CollectionDef, documentId: string): Promise<RowRecord | null> {
-  const docCol = def.sideTable ? 't.document_id' : 'document_id'
+  const docCol = needsAlias(def) ? 't.document_id' : 'document_id'
   const fixed = fixedWhere(def, true)
   const where = fixed ? `${docCol} = ?1 AND ${fixed.sql} = ?2` : `${docCol} = ?1`
   const binds = fixed ? [documentId, fixed.value] : [documentId]
@@ -96,7 +176,7 @@ export function registerCrudRoutes(panel: HonoPanel): void {
     const where: string[] = []
     const binds: unknown[] = []
     // 有 JOIN 时主表列必须带 t. 前缀，否则与副表列产生歧义
-    const q = (col: string) => (def.sideTable ? `t.${col}` : col)
+    const q = (col: string) => (needsAlias(def) ? `t.${col}` : col)
 
     const fixed = fixedWhere(def, true)
     if (fixed) {
@@ -117,7 +197,7 @@ export function registerCrudRoutes(panel: HonoPanel): void {
 
     const whereSql = where.length > 0 ? `WHERE ${where.join(' AND ')}` : ''
     const orderSql = def.defaultSort.map(([col, dir]) => `${q(col)} ${dir.toUpperCase()}`).join(', ')
-    const countFrom = def.sideTable ? `${def.table} t` : def.table
+    const countFrom = needsAlias(def) ? `${def.table} t` : def.table
     const totalRow = await c.env.DB.prepare(`SELECT COUNT(*) AS n FROM ${countFrom} ${whereSql}`)
       .bind(...binds)
       .first<{ n: number }>()
@@ -162,9 +242,12 @@ export function registerCrudRoutes(panel: HonoPanel): void {
     try {
       const now = Date.now()
       const { values, sideValues } = pickAllowedFields(key, payload, localeQuery)
+      await resolveRelationColumns(c.env.DB, def, values)
+      const documentId = generateDocumentId()
+      await fillAutoSlug(c.env.DB, def, values, payload, documentId)
       const columns = ['document_id', 'created_at', 'updated_at']
       const placeholders = ['?1', '?2', '?3']
-      const binds: unknown[] = [generateDocumentId(), now, now]
+      const binds: unknown[] = [documentId, now, now]
       // 视图集合：判别列由服务端落值，不接受客户端指定
       if (def.fixedFilter) {
         columns.push(def.fixedFilter.column)
@@ -226,6 +309,7 @@ export function registerCrudRoutes(panel: HonoPanel): void {
 
     try {
       const { values, sideValues } = pickAllowedFields(key, payload, localeQuery)
+      await resolveRelationColumns(c.env.DB, def, values)
       const sets = ['updated_at = ?1']
       const binds: unknown[] = [Date.now()]
       for (const [column, value] of Object.entries(values)) {
@@ -273,6 +357,33 @@ export function registerCrudRoutes(panel: HonoPanel): void {
     await recordAuditLog(c, { action: 'delete', targetCollection: key, targetDocumentId: documentId })
     return ok({ success: true })
   })
+}
+
+/**
+ * 关联字段：把 documentId 解析成目标表的数字外键。
+ * 面板对外只有 documentId 一种 ID，而外键指向的是数字主键。
+ * 已经是数字的原样保留（直接传内部 id 的调用方仍可用）。
+ * 目标行不存在 → 抛 FieldValidationError，落成 400 而不是 FK 约束错。
+ */
+async function resolveRelationColumns(
+  db: D1Database,
+  def: CollectionDef,
+  values: Record<string, string | number | null>
+): Promise<void> {
+  for (const [fieldName, field] of Object.entries(def.fields)) {
+    if (!field.relationTable) continue
+    const raw = values[field.column]
+    if (raw === null || raw === undefined || typeof raw === 'number') continue
+
+    const row = await db
+      .prepare(`SELECT id FROM ${field.relationTable} WHERE document_id = ?1`)
+      .bind(raw)
+      .first<{ id: number }>()
+    if (!row) {
+      throw new FieldValidationError(`关联对象不存在: ${raw}`, fieldName)
+    }
+    values[field.column] = row.id
+  }
 }
 
 /** 1:1 副表 upsert；没有副表或本次没有副表字段时是 no-op。 */

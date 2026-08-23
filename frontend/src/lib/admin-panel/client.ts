@@ -29,8 +29,31 @@ export interface AdminListQuery {
   stage?: string
 }
 
+/** 携带后端状态码与错误码的请求失败，供路由层原样透传。 */
+export class AdminApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string
+  ) {
+    super(message)
+    this.name = 'AdminApiError'
+  }
+}
+
+/** 后端错误体形如 {"error":"not_found"}；取不出来就算了，只保留状态码。 */
+function parseErrorCode(text: string): string | undefined {
+  try {
+    const parsed = JSON.parse(text) as { error?: unknown }
+    return typeof parsed.error === 'string' ? parsed.error : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export interface AdminStrapiEntry {
-  id: number
+  /** 对外 ID：后端返回的是 documentId（24 位十六进制字符串），不是数字主键 */
+  id: string
   documentId?: string
   publishedAt?: string | null
   updatedAt?: string
@@ -163,7 +186,9 @@ async function adminFetchJson<T>(session: AdminSession, pathname: string, option
 
   if (!response.ok) {
     const errorText = await response.text()
-    throw new Error(errorText || '后台数据请求失败')
+    // 保留后端状态码与错误码：路由层此前一律回 500，
+    // 「内容不存在」「字段非法」在界面上和真正的服务端故障无从区分
+    throw new AdminApiError(errorText || '后台数据请求失败', response.status, parseErrorCode(errorText))
   }
 
   return response.json() as Promise<T>
@@ -218,7 +243,7 @@ export async function runBulkAction(
 export async function getAdminCollectionItem<T extends AdminStrapiEntry>(
   session: AdminSession,
   key: AdminCollectionKey,
-  id: number,
+  documentId: string,
   locale?: string
 ): Promise<T> {
   const config = ADMIN_COLLECTION_CONFIG[key]
@@ -228,7 +253,7 @@ export async function getAdminCollectionItem<T extends AdminStrapiEntry>(
   }
   const data = await adminFetchJson<{ data: T }>(
     session,
-    `/api/panel/${config.endpoint}/${id}${searchParams.size ? `?${searchParams.toString()}` : ''}`
+    `/api/panel/${config.endpoint}/${encodeURIComponent(documentId)}${searchParams.size ? `?${searchParams.toString()}` : ''}`
   )
   return data.data
 }
@@ -250,12 +275,12 @@ export async function createAdminCollectionItem<T extends AdminStrapiEntry>(
 export async function updateAdminCollectionItem<T extends AdminStrapiEntry>(
   session: AdminSession,
   key: AdminCollectionKey,
-  id: number,
+  documentId: string,
   payload: Record<string, unknown>,
   locale?: string
 ): Promise<T> {
   const config = ADMIN_COLLECTION_CONFIG[key]
-  const data = await adminFetchJson<{ data: T }>(session, `/api/panel/${config.endpoint}/${id}`, {
+  const data = await adminFetchJson<{ data: T }>(session, `/api/panel/${config.endpoint}/${encodeURIComponent(documentId)}`, {
     method: 'PUT',
     body: { data: payload, locale },
   })
@@ -265,7 +290,7 @@ export async function updateAdminCollectionItem<T extends AdminStrapiEntry>(
 export async function deleteAdminCollectionItem(
   session: AdminSession,
   key: AdminCollectionKey,
-  id: number,
+  documentId: string,
   locale?: string
 ): Promise<{ success: boolean }> {
   const config = ADMIN_COLLECTION_CONFIG[key]
@@ -275,7 +300,7 @@ export async function deleteAdminCollectionItem(
   }
   return adminFetchJson<{ success: boolean }>(
     session,
-    `/api/panel/${config.endpoint}/${id}${searchParams.size ? `?${searchParams.toString()}` : ''}`,
+    `/api/panel/${config.endpoint}/${encodeURIComponent(documentId)}${searchParams.size ? `?${searchParams.toString()}` : ''}`,
     { method: 'DELETE' }
   )
 }
@@ -315,7 +340,7 @@ async function getCollectionTotal(session: AdminSession, key: AdminCollectionKey
 
 export interface CuratorAdminData {
   id?: number
-  featured_entry?: { id: number; title: string; slug: string } | null
+  featured_entry?: { id: string; title: string; slug: string } | null
   pick_note?: string | null
   path_description?: string | null
 }

@@ -17,6 +17,7 @@ import { parseContentQuery } from './query'
 import { cond, andAll, orAny, limitOffset, camelToSnake } from './sql'
 import type { SqlCond } from './sql'
 import type { ParsedContentQuery } from './query'
+import { buildOrderBy } from '../lib/sort'
 
 type Row = Record<string, unknown>
 
@@ -130,11 +131,7 @@ const WORK_SORT_COLUMNS: Record<string, string> = {
 }
 
 function orderByOf(sorts: Array<{ field: string; dir: 'asc' | 'desc' }>): string {
-  const parts = sorts.map((s) => {
-    const col = WORK_SORT_COLUMNS[s.field]
-    return col ? `${col} ${s.dir.toUpperCase()}` : null
-  }).filter((p): p is string => p !== null)
-  return parts.length > 0 ? parts.join(', ') : 'w.published_at DESC'
+  return buildOrderBy(WORK_SORT_COLUMNS, sorts, 'w.published_at DESC')
 }
 
 function buildWhere(q: ParsedContentQuery): SqlCond {

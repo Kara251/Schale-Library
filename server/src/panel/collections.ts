@@ -19,7 +19,18 @@ export interface FieldDef {
   kind: FieldKind
   /** localized: true → 值包装为 i18n JSON 存储，读取时按 locale 解包 */
   localized?: boolean
+  /**
+   * relation-* 字段的目标表。对外一律用 documentId，写入时在此表上解析成数字外键
+   * —— 面板列表返回的 id 就是 documentId，没有别的 ID 可用。
+   */
+  relationTable?: string
 }
+
+const rel = (column: string, relationTable: string): FieldDef => ({
+  column,
+  kind: 'relation-one',
+  relationTable,
+})
 
 export interface CollectionDef {
   table: string
@@ -37,6 +48,11 @@ export interface CollectionDef {
    * 副表字段与主表字段在面板契约里是平的，读取 LEFT JOIN，写入 upsert。
    */
   sideTable?: { table: string; fk: string; fields: Record<string, FieldDef> }
+  /**
+   * 自动生成 slug：表上 slug 为 NOT NULL、但面板不暴露该字段时使用。
+   * from 是字段白名单里的字段名，取其值转写；转写为空（如纯中文）时回退 documentId。
+   */
+  autoSlug?: { column: string; from: string }
   searchColumns: string[]
   defaultSort: Array<[string, 'asc' | 'desc']>
   labelColumn: string
@@ -71,6 +87,8 @@ export const COLLECTIONS: Record<string, CollectionDef> = {
     table: 'students',
     localized: true,
     supportsDraft: true,
+    // students.slug 是 NOT NULL，而前后端表单都不暴露它 —— 不自动生成的话新建必然失败
+    autoSlug: { column: 'slug', from: 'name' },
     searchColumns: ['name', 'organization'],
     defaultSort: [['updated_at', 'desc']],
     labelColumn: 'name',
@@ -79,7 +97,7 @@ export const COLLECTIONS: Record<string, CollectionDef> = {
       organization: f('organization', 'text'),
       wikiUrl: f('wiki_url', 'text'),
       avatar: f('avatar_url', 'media'),
-      school: f('school_id', 'relation-one'),
+      school: rel('school_id', 'schools'),
       publishedAt: f('published_at', 'published-at'),
     },
   },
@@ -101,7 +119,6 @@ export const COLLECTIONS: Record<string, CollectionDef> = {
       color: f('color', 'text'),
       logo: f('logo_url', 'media'),
       order: f('sort_order', 'number'),
-      publishedAt: f('published_at', 'published-at'),
     },
   },
   events: {
@@ -293,7 +310,7 @@ export const COLLECTIONS: Record<string, CollectionDef> = {
       body: f('body_json', 'text', true),
       stance: f('stance', 'text'),
       mediaType: f('media_type', 'text'),
-      spoilerTier: f('spoiler_tier_id', 'relation-one'),
+      spoilerTier: rel('spoiler_tier_id', 'spoiler_tiers'),
       publishedAt: f('published_at', 'published-at'),
     },
   },

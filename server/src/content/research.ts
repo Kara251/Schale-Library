@@ -342,16 +342,18 @@ async function attachRelatedLinks(db: D1Database, entry: EntryJson) {
     }>()
   const targets = [...new Set((links.results ?? []).map((l) => l.target_document_id))]
   const targetByDoc = new Map<string, { id: number; documentId: string; title: string; slug: string; locale: string }>()
-  for (const doc of targets) {
-    const row = await db
+  // 一次 IN 查询取回全部目标条目，避免按 documentId 逐条查
+  if (targets.length > 0) {
+    const targetRows = await db
       .prepare(
         `SELECT id, document_id, slug, title_json FROM research_entries
-         WHERE document_id = ?1 AND ${PUBLISHED}`
+         WHERE document_id IN (${targets.map(() => '?').join(',')}) AND ${PUBLISHED}`
       )
-      .bind(doc)
-      .first<EntryRow>()
-    if (row) {
-      targetByDoc.set(doc, {
+      .bind(...targets)
+      .all<EntryRow>()
+
+    for (const row of targetRows.results ?? []) {
+      targetByDoc.set(row.document_id, {
         id: row.id,
         documentId: row.document_id,
         title: pickLocale(row.title_json, 'zh-Hans'),
@@ -536,19 +538,28 @@ researchRoutes.get('/research-entries/:documentId/backlinks', async (c) => {
   const data = (rows.results ?? [])
     .map((r) => ({ ...entryJson(r, params.locale), body: undefined }))
   // 契约 consume 只取 id/title/slug；related_links 目标 slug 一并给出供前端分组
-  for (const item of data) {
+  // 一次 IN 查询取回全部关联，避免按行 N+1（此处 N 最大 50）
+  const entryIds = data.map((item) => item.id)
+  const linksByEntry = new Map<number, Array<{ target_entry: { slug: string }; order: number }>>()
+  if (entryIds.length > 0) {
     const linkRows = await db
       .prepare(
-        `SELECT rl.sort_order, te.slug FROM entry_related_links rl
+        `SELECT rl.entry_id, rl.sort_order, te.slug FROM entry_related_links rl
          JOIN research_entries te ON te.document_id = rl.target_document_id AND te.${PUBLISHED}
-         WHERE rl.entry_id = ?1 ORDER BY rl.sort_order`
+         WHERE rl.entry_id IN (${entryIds.map(() => '?').join(',')})
+         ORDER BY rl.entry_id, rl.sort_order`
       )
-      .bind(item.id)
-      .all<{ sort_order: number; slug: string }>()
-    ;(item as Record<string, unknown>).related_links = (linkRows.results ?? []).map((l) => ({
-      target_entry: { slug: l.slug },
-      order: l.sort_order,
-    }))
+      .bind(...entryIds)
+      .all<{ entry_id: number; sort_order: number; slug: string }>()
+
+    for (const link of linkRows.results ?? []) {
+      const list = linksByEntry.get(link.entry_id) ?? []
+      list.push({ target_entry: { slug: link.slug }, order: link.sort_order })
+      linksByEntry.set(link.entry_id, list)
+    }
+  }
+  for (const item of data) {
+    ;(item as Record<string, unknown>).related_links = linksByEntry.get(item.id) ?? []
   }
   return okPaginated(data, paginationOf(1, 50, data.length))
 })
@@ -579,12 +590,27 @@ researchRoutes.get('/research-citations/:documentId/also-cited', async (c) => {
 
   const data = (rows.results ?? []).map((r) => entryJson(r, params.locale))
   // populate[citations][fields][0]=id：仅回 citations 的 id 列表（最小字段），供调用方按引证分组
+  // 同样一次 IN 查询取回，避免按行 N+1
+  const entryIds = data.map((item) => item.id)
+  const citationsByEntry = new Map<number, Array<{ id: number }>>()
+  if (entryIds.length > 0) {
+    const ownRows = await db
+      .prepare(
+        `SELECT entry_id, citation_id FROM entry_citations
+         WHERE entry_id IN (${entryIds.map(() => '?').join(',')})
+         ORDER BY entry_id, citation_id`
+      )
+      .bind(...entryIds)
+      .all<{ entry_id: number; citation_id: number }>()
+
+    for (const row of ownRows.results ?? []) {
+      const list = citationsByEntry.get(row.entry_id) ?? []
+      list.push({ id: row.citation_id })
+      citationsByEntry.set(row.entry_id, list)
+    }
+  }
   for (const item of data) {
-    const own = await db
-      .prepare(`SELECT citation_id FROM entry_citations WHERE entry_id = ?1 ORDER BY citation_id`)
-      .bind(item.id)
-      .all<{ citation_id: number }>()
-    item.citations = (own.results ?? []).map((r) => ({ id: r.citation_id }))
+    item.citations = citationsByEntry.get(item.id) ?? []
   }
   return okPaginated(data, paginationOf(1, 50, data.length))
 })

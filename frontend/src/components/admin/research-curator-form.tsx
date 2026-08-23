@@ -9,7 +9,7 @@ import type { CuratorAdminData } from '@/lib/server/admin-content'
 import type { Locale } from '@/lib/i18n'
 
 interface EntryOption {
-  id: number
+  id: string
   title: string
 }
 

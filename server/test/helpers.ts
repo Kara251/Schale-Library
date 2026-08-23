@@ -37,6 +37,7 @@ const BASELINE_STATEMENTS = splitSqlStatements(baselineSql as string).map((state
 
 // 追加迁移（0002_works.sql）：同样以 ?raw 内联；新迁移文件加入此处
 import worksMigrationSql from '../migrations/0002_works.sql?raw'
+import spoilerTiersMigrationSql from '../migrations/0003_spoiler_tiers_timestamps.sql?raw'
 
 export async function applyBaseline(db: D1Database): Promise<void> {
   for (const statement of BASELINE_STATEMENTS) {
@@ -46,6 +47,7 @@ export async function applyBaseline(db: D1Database): Promise<void> {
 const MIGRATIONS: Record<string, string> = {
   'migrations/0001_baseline.sql': baselineSql as string,
   'migrations/0002_works.sql': worksMigrationSql as string,
+  'migrations/0003_spoiler_tiers_timestamps.sql': spoilerTiersMigrationSql as string,
 }
 
 /** 与 BASELINE_STATEMENTS 相同的幂等化：多 spec 共享 D1 存储时防 "table already exists" */
@@ -60,7 +62,14 @@ export async function applyMigration(db: D1Database, relativePath: string): Prom
   const sql = MIGRATIONS[relativePath]
   if (sql === undefined) throw new Error(`未内联的迁移文件：${relativePath}`)
   for (const statement of splitSqlStatements(sql)) {
-    await db.prepare(idempotent(statement)).run()
+    try {
+      await db.prepare(idempotent(statement)).run()
+    } catch (error) {
+      // ALTER TABLE ADD COLUMN 无 IF NOT EXISTS 写法；多 spec 共享 D1 存储时
+      // 同一迁移会被重复应用，重复加列按已生效处理，其余错误照常抛出。
+      const message = (error as Error).message ?? ''
+      if (!/duplicate column name/i.test(message)) throw error
+    }
   }
 }
 

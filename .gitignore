@@ -77,3 +77,7 @@ test-results/
 # 工作文档（不对外）
 # ----------------------
 docs/working/
+
+# Cloudflare Workers 本地状态（miniflare 的 D1/R2/缓存落盘），不入库
+.wrangler/
+.open-next/

@@ -17,6 +17,7 @@ import { cond, andAll, orAny, limitOffset, camelToSnake } from './sql'
 import type { SqlCond } from './sql'
 import { parseContentQuery } from './query'
 import type { ParsedContentQuery } from './query'
+import { buildOrderBy } from '../lib/sort'
 
 type Row = Record<string, unknown>
 
@@ -119,17 +120,13 @@ const EVENT_SORT_COLUMNS: Record<string, string> = {
   created_at: 'e.created_at',
 }
 
-/** 解析后的排序键 → SQL ORDER BY 片段；未知字段回退 start_time DESC */
+/**
+ * 解析后的排序键 → SQL ORDER BY 片段；未知字段回退 start_time DESC。
+ * 此前对"含点"的字段名原样透传进 ORDER BY（本意是支持 e.xxx 这类限定列名），
+ * 等于把用户输入直接拼进 SQL。一律改走白名单。
+ */
 function orderByOf(sorts: Array<{ field: string; dir: 'asc' | 'desc' }>): string {
-  if (sorts.length === 0) return 'e.start_time DESC'
-  const parts = sorts
-    .map((s) => {
-      const col = EVENT_SORT_COLUMNS[s.field] ?? (s.field.startsWith('e.') || s.field.includes('.') ? s.field : null)
-      if (!col) return null
-      return `${col} ${s.dir.toUpperCase()}`
-    })
-    .filter((p): p is string => p !== null)
-  return parts.length > 0 ? parts.join(', ') : 'e.start_time DESC'
+  return buildOrderBy(EVENT_SORT_COLUMNS, sorts, 'e.start_time DESC')
 }
 
 /**

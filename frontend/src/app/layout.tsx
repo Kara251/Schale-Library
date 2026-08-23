@@ -51,6 +51,8 @@ export default async function RootLayout({
         {/* 字体：字体栈实际只用 BlueakaBeta2GBK（自托管）+ Noto Sans JP；
             Nunito / Noto Sans SC 为死重已移除。W6 迁移 OpenNext 后构建环境可重试 next/font。 */}
         <link rel="preconnect" href="https://fonts.loli.net" crossOrigin="anonymous" />
+        {/* 字体文件在 gstatic.loli.net，与 CSS 不同域 */}
+        <link rel="preconnect" href="https://gstatic.loli.net" crossOrigin="anonymous" />
         <link
           href="https://fonts.loli.net/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap"
           rel="stylesheet"

@@ -6,11 +6,29 @@ import {
   listAdminCollection,
 } from '@/lib/server/admin-content'
 import type { AdminCollectionKey } from '@/lib/admin-panel'
+import { AdminApiError } from '@/lib/admin-panel/client'
 import { getAdminSession } from '@/lib/server/admin-auth'
 import { createForbiddenOriginResponse, verifyTrustedOrigin } from '@/lib/server/request-security'
 
 function isAdminCollectionKey(value: string): value is AdminCollectionKey {
   return value in ADMIN_COLLECTION_CONFIG
+}
+
+/**
+ * 后端错误原样透传：保留状态码与错误码。
+ * 此前一律回 500，「内容不存在」「字段非法」在界面上和服务端故障无从区分。
+ */
+function toErrorResponse(error: unknown, fallbackMessage: string) {
+  if (error instanceof AdminApiError) {
+    return NextResponse.json(
+      { error: error.code || error.message, status: error.status },
+      { status: error.status }
+    )
+  }
+  return NextResponse.json(
+    { error: error instanceof Error ? error.message : fallbackMessage },
+    { status: 500 }
+  )
 }
 
 export async function GET(
@@ -52,10 +70,7 @@ export async function GET(
       },
     })
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : '内容读取失败' },
-      { status: 500 }
-    )
+    return toErrorResponse(error, '内容读取失败')
   }
 }
 
@@ -90,9 +105,6 @@ export async function POST(
 
     return NextResponse.json({ data }, { status: 201 })
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : '内容创建失败' },
-      { status: 500 }
-    )
+    return toErrorResponse(error, '内容创建失败')
   }
 }

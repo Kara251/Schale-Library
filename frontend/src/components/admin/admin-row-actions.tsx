@@ -11,7 +11,8 @@ import type { AdminCollectionKey } from '@/lib/admin-panel'
 interface AdminRowActionsProps {
   locale: string
   collection: AdminCollectionKey
-  id: number
+  /** documentId 字符串，非数字主键 */
+  id: string
   labels: {
     edit: string
     delete: string
@@ -38,7 +39,7 @@ export function AdminRowActions({ locale, collection, id, labels }: AdminRowActi
 
     setIsDeleting(true)
     try {
-      const response = await fetch(`/api/admin/content/${collection}/${id}?locale=${encodeURIComponent(locale)}`, {
+      const response = await fetch(`/api/admin/content/${collection}/${encodeURIComponent(id)}?locale=${encodeURIComponent(locale)}`, {
         method: 'DELETE',
         credentials: 'same-origin',
       })

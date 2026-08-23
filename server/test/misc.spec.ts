@@ -145,19 +145,38 @@ describe('GET /spoiler-tiers', () => {
   beforeAll(async () => {
     await applyBaseline(env.DB)
     await applyMigration(env.DB, 'migrations/0002_works.sql')
+    await applyMigration(env.DB, 'migrations/0003_spoiler_tiers_timestamps.sql')
   })
   beforeEach(resetContentTables)
 
+  async function seedTier(key: string, order: number, published = true): Promise<void> {
+    const now = Date.now()
+    await env.DB.prepare(
+      'INSERT INTO spoiler_tiers (document_id, key, title_json, sort_order, created_at, updated_at, published_at) VALUES (?,?,?,?,?,?,?)'
+    )
+      .bind(`sp-${key}`, key, JSON.stringify({ 'zh-Hans': `档位${order}` }), order, now, now, published ? now : null)
+      .run()
+  }
+
   it('全量按 sort_order 升序返回', async () => {
     for (const [key, order] of [['final', 2], ['none', 0], ['vol3', 1]] as Array<[string, number]>) {
-      await env.DB.prepare('INSERT INTO spoiler_tiers (document_id, key, title_json, sort_order) VALUES (?,?,?,?)')
-        .bind(`sp-${key}`, key, JSON.stringify({ 'zh-Hans': `档位${order}` }), order)
-        .run()
+      await seedTier(key, order)
     }
 
     const r = await app.request('/api/spoiler-tiers', {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as { data: Array<{ key: string; name: string }> }
     expect(body.data.map((d) => d.key)).toEqual(['none', 'vol3', 'final'])
+  })
+
+  it('草稿不出现在公开 API', async () => {
+    await seedTier('published-tier', 0)
+    await seedTier('draft-tier', 1, false)
+
+    const r = await app.request('/api/spoiler-tiers', {}, env)
+    const body = (await r.json()) as { data: Array<{ key: string }>; meta: { pagination: { total: number } } }
+    expect(body.data.map((d) => d.key)).toEqual(['published-tier'])
+    // total 取全表计数而非当前页行数
+    expect(body.meta.pagination.total).toBe(1)
   })
 })

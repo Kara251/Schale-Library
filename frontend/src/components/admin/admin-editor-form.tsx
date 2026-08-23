@@ -345,7 +345,8 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
                                       type="checkbox"
                                       checked={selected}
                                       onChange={(event) => {
-                                        const current = Array.isArray(value) ? value.map(Number) : []
+                                        // 关联值是 documentId 字符串，不能 map(Number)
+                                        const current = Array.isArray(value) ? value.map(String) : []
                                         updateField(
                                           field.name,
                                           event.target.checked

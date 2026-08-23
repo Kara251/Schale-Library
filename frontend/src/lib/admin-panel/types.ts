@@ -87,7 +87,8 @@ export interface AdminMediaAsset {
 }
 
 export interface AdminRelationOption {
-  id: number
+  /** 关联写入值：documentId 字符串（后端据此解析成外键） */
+  id: string
   label: string
   imageUrl?: string
   description?: string

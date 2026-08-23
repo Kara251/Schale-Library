@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-function getApiUploadPattern() {
+function getApiUploadPatterns() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083';
 
   try {
@@ -9,18 +9,28 @@ function getApiUploadPattern() {
       return null;
     }
 
-    return {
-      protocol: parsed.protocol.replace(':', '') as 'http' | 'https',
-      hostname: parsed.hostname,
-      port: parsed.port,
-      pathname: '/uploads/**',
-    };
+    // Worker 从 R2 提供图片的路径是 /media/**（server/src/content/media.ts）；
+    // /uploads/** 是 Strapi 时代的路径，保留以兼容存量地址。
+    return [
+      {
+        protocol: parsed.protocol.replace(':', '') as 'http' | 'https',
+        hostname: parsed.hostname,
+        port: parsed.port,
+        pathname: '/media/**',
+      },
+      {
+        protocol: parsed.protocol.replace(':', '') as 'http' | 'https',
+        hostname: parsed.hostname,
+        port: parsed.port,
+        pathname: '/uploads/**',
+      },
+    ];
   } catch {
     return null;
   }
 }
 
-const apiUploadPattern = getApiUploadPattern();
+const apiUploadPatterns = getApiUploadPatterns();
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083';
 
 function getSecurityHeaders() {
@@ -43,7 +53,9 @@ function getSecurityHeaders() {
     "style-src 'self' 'unsafe-inline' https://fonts.loli.net",
     `img-src 'self' data: blob: ${apiOrigin} http://localhost:8083 https://res.cloudinary.com https://i0.hdslb.com https://i1.hdslb.com https://i2.hdslb.com`,
     `connect-src 'self' ${apiOrigin} https://vitals.vercel-insights.com https://www.google-analytics.com https://region1.google-analytics.com https://www.clarity.ms https://*.clarity.ms`,
-    "font-src 'self' data: https://fonts.gstatic.com https://fonts.loli.net",
+    // fonts.loli.net 只提供 CSS，字体文件实际托管在 gstatic.loli.net；
+    // 漏掉后者会让日文字体在浏览器里被 CSP 全部拦下
+    "font-src 'self' data: https://fonts.gstatic.com https://fonts.loli.net https://gstatic.loli.net",
   ].join('; ');
 
   const headers = [
@@ -84,7 +96,7 @@ const nextConfig: NextConfig = {
   images: {
     // 远程图片域名（仅允许可信来源）
     remotePatterns: [
-      ...(apiUploadPattern ? [apiUploadPattern] : []),
+      ...(apiUploadPatterns ?? []),
       {
         protocol: 'http',
         hostname: 'localhost',

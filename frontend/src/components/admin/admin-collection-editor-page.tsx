@@ -133,7 +133,8 @@ export async function AdminCollectionEditorPage({ collection, locale, id }: Admi
   const returnPath = `/${locale}/manage/${collection}`
   const t = labels[locale] || labels['zh-Hans']
 
-  const initialData = id ? await getAdminCollectionItem(session, collection, Number(id), locale) : null
+  // id 即 documentId（24 位十六进制），不能转数字
+  const initialData = id ? await getAdminCollectionItem(session, collection, id, locale) : null
 
   const relationKeys = Array.from(new Set(
     meta.fields.flatMap((field) => [

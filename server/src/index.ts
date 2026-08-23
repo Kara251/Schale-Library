@@ -43,4 +43,9 @@ import { researchRoutes } from './content/research'
 
 app.route('/api', researchRoutes)
 
+// 媒体读取：挂在根而非 /api —— 上传返回的 URL 就是 /media/<key>
+import { mediaRoutes } from './content/media'
+
+app.route('/', mediaRoutes)
+
 export default app

@@ -18,6 +18,7 @@ import { parseContentQuery } from './query'
 import type { ParsedContentQuery } from './query'
 import { cond, andAll, orAny, limitOffset } from './sql'
 import type { SqlCond } from './sql'
+import { buildOrderBy } from '../lib/sort'
 
 type Row = Record<string, unknown>
 
@@ -68,13 +69,7 @@ const ANNOUNCEMENT_SORT_COLUMNS: Record<string, string> = {
 }
 
 function orderByOf(sorts: Array<{ field: string; dir: 'asc' | 'desc' }>, fallback: string): string {
-  const parts = sorts
-    .map((s) => {
-      const col = ANNOUNCEMENT_SORT_COLUMNS[s.field]
-      return col ? `${col} ${s.dir.toUpperCase()}` : null
-    })
-    .filter((p): p is string => p !== null)
-  return parts.length > 0 ? parts.join(', ') : fallback
+  return buildOrderBy(ANNOUNCEMENT_SORT_COLUMNS, sorts, fallback)
 }
 
 export const miscRoutes = new Hono<{ Bindings: Env }>()
@@ -149,6 +144,9 @@ interface FriendLinkRow {
 miscRoutes.get('/friend-links', async (c) => {
   const q = parseContentQuery(new URL(c.req.url))
   const whereSql = andAll([{ sql: 'is_active = 1', params: [] }, { sql: 'published_at IS NOT NULL', params: [] }])
+  const totalRow = await c.env.DB.prepare(`SELECT COUNT(*) AS n FROM friend_links WHERE ${whereSql.sql}`)
+    .bind(...whereSql.params)
+    .first<{ n: number }>()
   const out = await c.env.DB.prepare(`SELECT * FROM friend_links WHERE ${whereSql.sql} ORDER BY priority DESC, created_at ASC LIMIT ? OFFSET ?`)
     .bind(...whereSql.params, q.pageSize, (q.page - 1) * q.pageSize)
     .all<FriendLinkRow>()
@@ -166,7 +164,8 @@ miscRoutes.get('/friend-links', async (c) => {
     publishedAt: toIso(r.published_at),
     locale: q.locale,
   }))
-  return okPaginated(data, paginationOf(q.page, q.pageSize, data.length))
+  // total 必须是全表计数；此前传的是当前页行数，pageCount 永远算成 1
+  return okPaginated(data, paginationOf(q.page, q.pageSize, totalRow?.n ?? 0))
 })
 
 // ── schools ──
@@ -187,6 +186,9 @@ interface SchoolRow {
 miscRoutes.get('/schools', async (c) => {
   const q = parseContentQuery(new URL(c.req.url))
   const whereSql = andAll([{ sql: 'published_at IS NOT NULL', params: [] }])
+  const totalRow = await c.env.DB.prepare(`SELECT COUNT(*) AS n FROM schools WHERE ${whereSql.sql}`)
+    .bind(...whereSql.params)
+    .first<{ n: number }>()
   const out = await c.env.DB.prepare(`SELECT * FROM schools WHERE ${whereSql.sql} ORDER BY ${orderByOf(q.sorts, 'sort_order ASC')} LIMIT ? OFFSET ?`)
     .bind(...whereSql.params, q.pageSize, (q.page - 1) * q.pageSize)
     .all<SchoolRow>()
@@ -201,7 +203,8 @@ miscRoutes.get('/schools', async (c) => {
     logo: r.logo_url ? { url: r.logo_url } : undefined,
     locale: q.locale,
   }))
-  return okPaginated(data, paginationOf(q.page, q.pageSize, data.length))
+  // total 必须是全表计数；此前传的是当前页行数，pageCount 永远算成 1
+  return okPaginated(data, paginationOf(q.page, q.pageSize, totalRow?.n ?? 0))
 })
 
 // ── spoiler-tiers ──
@@ -216,7 +219,13 @@ interface SpoilerTierRow {
 
 miscRoutes.get('/spoiler-tiers', async (c) => {
   const q = parseContentQuery(new URL(c.req.url))
-  const out = await c.env.DB.prepare('SELECT * FROM spoiler_tiers ORDER BY sort_order ASC LIMIT ? OFFSET ?')
+  // 草稿不进公开 API：面板可以取消发布，此前这里从不过滤，取消发布等于无效
+  const totalRow = await c.env.DB.prepare(
+    'SELECT COUNT(*) AS n FROM spoiler_tiers WHERE published_at IS NOT NULL'
+  ).first<{ n: number }>()
+  const out = await c.env.DB.prepare(
+    'SELECT * FROM spoiler_tiers WHERE published_at IS NOT NULL ORDER BY sort_order ASC LIMIT ? OFFSET ?'
+  )
     .bind(q.pageSize, (q.page - 1) * q.pageSize)
     .all<SpoilerTierRow>()
   const data = (out.results ?? []).map((r) => ({
@@ -227,5 +236,6 @@ miscRoutes.get('/spoiler-tiers', async (c) => {
     order: r.sort_order,
     locale: q.locale,
   }))
-  return okPaginated(data, paginationOf(q.page, q.pageSize, data.length))
+  // total 必须是全表计数；此前传的是当前页行数，pageCount 永远算成 1
+  return okPaginated(data, paginationOf(q.page, q.pageSize, totalRow?.n ?? 0))
 })

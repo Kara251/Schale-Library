@@ -7,13 +7,13 @@ interface AdminTableColumn<T> {
   render: (item: T) => ReactNode
 }
 
-interface AdminTableProps<T extends { id: number }> {
+interface AdminTableProps<T extends { id: string | number }> {
   columns: AdminTableColumn<T>[]
   items: T[]
   emptyText: string
 }
 
-export function AdminTable<T extends { id: number }>({ columns, items, emptyText }: AdminTableProps<T>) {
+export function AdminTable<T extends { id: string | number }>({ columns, items, emptyText }: AdminTableProps<T>) {
   if (items.length === 0) {
     return (
       <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">

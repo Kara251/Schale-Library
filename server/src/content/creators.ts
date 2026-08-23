@@ -19,6 +19,7 @@ import { parseContentQuery } from './query'
 import type { ParsedContentQuery } from './query'
 import { studentToJson } from './students'
 import type { StudentRow } from './students'
+import { buildOrderBy } from '../lib/sort'
 
 type Row = Record<string, unknown>
 
@@ -93,14 +94,9 @@ const CREATOR_SORT_COLUMNS: Record<string, string> = {
 
 /** 解析后的排序键 → SQL ORDER BY 片段；默认 featured 置顶（isFeatured desc → featuredPriority desc） */
 function orderByOf(sorts: Array<{ field: string; dir: 'asc' | 'desc' }>): string {
-  const parts = sorts
-    .map((s) => {
-      const col = CREATOR_SORT_COLUMNS[camelToSnake(s.field)]
-      return col ? `${col} ${s.dir.toUpperCase()}` : null
-    })
-    .filter((p): p is string => p !== null)
+  const normalized = sorts.map((s) => ({ field: camelToSnake(s.field), dir: s.dir }))
   // 中立收录站：默认最新收录优先（无推荐/精选语义）；显式 sort 参数仍可按 featured 列排序
-  return parts.length > 0 ? parts.join(', ') : 'cr.created_at DESC'
+  return buildOrderBy(CREATOR_SORT_COLUMNS, normalized, 'cr.created_at DESC')
 }
 
 /**
