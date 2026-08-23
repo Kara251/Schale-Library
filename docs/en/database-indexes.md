@@ -1,40 +1,28 @@
-# PostgreSQL Index Recommendations
+# 数据库索引说明
 
-[简体中文](../zh-Hans/database-indexes.md) | [日本語](../ja/database-indexes.md)
+## D1（SQLite）索引现状
 
-These indexes are intended for PostgreSQL/Supabase after staging or production content grows. Run them first on a temporary database and inspect query plans before applying them during a quiet production window. After Strapi migrations or upgrades, confirm that actual column names still match the SQL.
+索引随迁移定义在 `server/migrations/0001_baseline.sql`：
 
-```sql
--- Works listing, featured recommendations, RSS deduplication
-CREATE INDEX CONCURRENTLY IF NOT EXISTS works_locale_published_idx
-  ON works (locale, published_at DESC);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS works_featured_idx
-  ON works (is_featured, featured_until, featured_priority DESC, published_at DESC);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS works_filters_idx
-  ON works (nature, work_type, source_platform, is_active, published_at DESC);
-CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS works_source_unique_idx
-  ON works (source_platform, source_id)
-  WHERE source_id IS NOT NULL;
+| 表 | 索引 | 用途 |
+|----|------|------|
+| creators | idx_creators_featured(is_featured, featured_priority) | 首页精选/列表排序 |
+| events | idx_events_start(kind, start_time DESC) | 活动列表排序 |
+| events | idx_events_published_start(published_at, start_time DESC) | 发布过滤+排序 |
+| announcements | idx_announcements_created(created_at DESC) | 公告列表 |
+| research_entries | idx_research_entries_slug(slug) | slug 详情查询 |
+| admin_audit_logs | idx_audit_created(created_at) | cron/手动清理 |
+| rate_limit_records | idx_rate_limit_reset(reset_at)、idx_rate_limit_scope_key(scope, identifier, key) | 限流窗口查询+清理 |
+| sessions | idx_sessions_expires(expires_at) | 过期会话清理 |
+| works | idx_works_published / idx_works_featured / idx_works_author | works 服役期查询（W5 后随表退役） |
 
--- Event discovery
-CREATE INDEX CONCURRENTLY IF NOT EXISTS online_events_discovery_idx
-  ON online_events (locale, nature, end_time DESC, start_time ASC, published_at DESC);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS offline_events_discovery_idx
-  ON offline_events (locale, nature, end_time DESC, start_time ASC, published_at DESC);
+## 设计原则（继承性能审计结论）
 
--- Admin audit, sync logs, quality scans
-CREATE INDEX CONCURRENTLY IF NOT EXISTS admin_audit_logs_filters_idx
-  ON admin_audit_logs (created_at DESC, action, status, target_collection, actor_id);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS sync_logs_retry_idx
-  ON sync_logs (stage, status, created_at DESC);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS content_quality_open_idx
-  ON content_quality_issues (status, severity, collection, detected_at DESC);
+- 清理类查询（created_at / reset_at / expires_at）必须有单列索引支撑
+- 列表查询浅加载、详情深加载分离（populate 由路由显式控制）
+- 无 FTS：搜索用 LIKE containsi（内容量级下足够，CJK 分词无收益）
 
--- Internal rate limits and cron locks
-CREATE INDEX CONCURRENTLY IF NOT EXISTS rate_limit_records_scope_reset_idx
-  ON rate_limit_records (scope, reset_at);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS job_locks_until_idx
-  ON job_locks (locked_until);
-```
+## 备份与恢复
 
-If Supabase does not allow `CONCURRENTLY` inside a transaction, run each statement separately in the SQL editor.
+- time travel：30 天时点恢复（CF Dashboard）
+- 冷备：`wrangler d1 export schale_db --remote --output backup.sql`

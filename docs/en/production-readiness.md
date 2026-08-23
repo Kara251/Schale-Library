@@ -1,29 +1,29 @@
-# Production Readiness
+# 生产上线验收
 
-[简体中文](../zh-Hans/production-readiness.md) | [日本語](../ja/production-readiness.md)
+[English](../en/production-readiness.md) | [日本語](../ja/production-readiness.md)
 
-## Automated Checks
+## 自动检查
 
-The project now has two pre-deployment checks:
+本项目现在有两层上线前检查：
 
 ```bash
 pnpm verify:deploy
 pnpm audit:prod
 ```
 
-`verify:deploy` checks production environment variables, PostgreSQL, non-default Strapi Admin path, HTTPS CORS, Cloudinary, and deployment-layer WAF confirmation.
+`verify:deploy` 检查生产环境变量、PostgreSQL、非默认 Strapi Admin 路径、HTTPS CORS、Cloudinary 和部署层 WAF 确认。
 
-`audit:prod` runs `pnpm audit --prod --json` and allows only the currently documented upstream Strapi transitive advisories. New advisories, path changes, or severity changes fail the gate. If `STRAPI_ADMIN_PUBLIC=true` is set, any high advisory fails the gate, so Strapi Admin should not currently be exposed publicly.
+`audit:prod` 运行 `pnpm audit --prod --json`，只允许当前已记录的 Strapi 上游传递性 advisory。新出现的 advisory、路径变化、严重级别变化都会失败。若设置 `STRAPI_ADMIN_PUBLIC=true`，任何 high advisory 都会失败，因此当前不应公网开放 Strapi Admin。
 
-## Staging Acceptance
+## Staging 验收
 
-Before formal production launch, run this against a temporary Supabase database and staging domains:
+正式上线前，用 Supabase 临时库和 staging 域名运行：
 
 ```bash
 NODE_ENV=production pnpm verify:staging
 ```
 
-In addition to the `verify:deploy` requirements, explicitly confirm:
+除了 `verify:deploy` 的要求外，必须显式确认：
 
 ```env
 STAGING_STRAPI_ADMIN_LOGIN_VERIFIED=true
@@ -37,11 +37,11 @@ STAGING_ADMIN_RECOVERY_VERIFIED=true
 STAGING_CRON_SINGLE_INSTANCE_VERIFIED=true
 ```
 
-These variables are not security bypasses; they turn manual acceptance into a failing deployment gate. Use `STAGING_ALLOW_LOCAL_URLS=true` only for local dry runs.
+这些变量不是安全绕过，而是把人工验收结果变成可失败的部署 gate。只有本地干跑时才设置 `STAGING_ALLOW_LOCAL_URLS=true`。
 
-## Current Launch Judgment
+## 当前上线判断
 
-- The frontend and custom panel are suitable for demo deployment.
-- Formal production must use PostgreSQL/Supabase, not SQLite.
-- Missing Cloudinary variables should disqualify formal production.
-- While `pnpm audit:prod` still contains the upstream lodash high advisory, Strapi Admin should not be exposed publicly.
+- 前端和自研后台可以作为演示站上线。
+- 正式生产必须使用 PostgreSQL/Supabase，不使用 SQLite。
+- Cloudinary 三项缺失时，不应视为正式生产。
+- `pnpm audit:prod` 仍包含上游 lodash high advisory 时，Strapi Admin 不应公网开放。

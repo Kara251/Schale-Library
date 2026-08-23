@@ -1,34 +1,31 @@
-# バックアップと復元
+# 备份与恢复
 
-[简体中文](../zh-Hans/backup-restore.md) | [English](../en/backup-restore.md)
+## D1 备份
 
-## PostgreSQL/Supabase バックアップ
+### 时点恢复（首选）
 
-本番環境では Supabase の自動バックアップを優先します。手動バックアップでは schema と data をまとめて出力します。
+Cloudflare D1 内置 time travel：任意 30 天内时点恢复。
 
-```bash
-pg_dump "$DATABASE_URL" --format=custom --file=schale-library.dump
+```
+CF Dashboard → Storage & Databases → D1 → schale_db → Time Travel
+# 或 CLI：
+wrangler d1 time-travel restore schale_db --remote --timestamp="2026-08-22T12:00:00Z"
 ```
 
-本番へ戻す前に、一度一時データベースへ復元して確認します。
+### 冷备（周备建议）
 
 ```bash
-pg_restore --clean --if-exists --no-owner --dbname "$RESTORE_DATABASE_URL" schale-library.dump
+wrangler d1 export schale_db --remote --output backup-$(date +%F).sql
+# 恢复：
+wrangler d1 execute schale_db --remote --file=backup-2026-08-22.sql
 ```
 
-## 復元後チェック
+## R2 媒体备份
 
-- Strapi が起動し、`pnpm verify:deploy` が通ることを確認します。
-- `/{locale}/manage` にログインし、管理ユーザーが `ADMIN_PANEL_ALLOWED_ROLES` のロールを持つことを確認します。
-- 作品、生徒、お知らせ、オンラインイベント、オフラインイベントの件数を確認します。
-- Cloudinary またはアップロード済みメディア URL が表示できることを確認します。
+上传对象在 `schale-uploads` 桶。开启 R2 版本控制或定期 `rclone sync` 到第二桶。
 
-## 基本シードデータ
+## 恢复演练清单
 
-空のデモ DB には、少量の生徒データを投入できます。
-
-```bash
-SEED_STRAPI_URL=https://api.example.com SEED_API_TOKEN=... pnpm seed:basics
-```
-
-このスクリプトは生徒名で冪等に作成し、既存コンテンツを上書きしません。
+1. `wrangler d1 execute schale_db --remote --file=<backup>.sql`（先对 staging 库演练）
+2. 抽查：creators/students/research_entries 行数、redirect_map 完整性
+3. 前端冒烟：首页/creators/考据档案/搜索各一页

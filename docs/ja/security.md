@@ -1,35 +1,30 @@
-# セキュリティメモ
+# 安全说明
 
-[简体中文](../zh-Hans/security.md) | [English](../en/security.md)
+## 当前架构（2026-08 迁移后）
 
-## 依存関係監査の状態
+安全面从「Strapi 平台 + 自研层」收敛为「全自研 Worker」，Strapi 链依赖（axios/ajv 补丁、admin 面板暴露面、poweredBy 指纹）已随退役消失。
 
-`pnpm audit --prod` の axios high advisory は、最小限の pnpm override で対応済みです。現在の監査では、Strapi の依存関係を経由した以下の推移的 advisory が残っています。
+## 已落实的控制
 
-- `lodash`: `@strapi/plugin-users-permissions > @strapi/design-system` 経由。
-- `vite`: `@strapi/strapi` 経由。
-- `uuid`: `@strapi/plugin-users-permissions > grant > request-oauth` 経由。
-- `elliptic`: `@strapi/plugin-users-permissions > jwk-to-pem` 経由。
+| 控制点 | 实现 |
+|--------|------|
+| 认证 | users 表 + PBKDF2-SHA256（210k 迭代，WebCrypto）；会话 D1 查表即时吊销 |
+| 会话 cookie | httpOnly + Secure(生产) + SameSite=Strict，8h TTL |
+| 面板鉴权 | 全部 /panel 写路由 fail-closed 会话校验 + 角色白名单 |
+| 登录限流 | CF-Connecting-IP（边缘受信头），D1 计数，10min/30 次 |
+| 输入校验 | 集合白名单 + 字段白名单双重收口，未登记字段 400 拒绝 |
+| 上传 | 魔数嗅探（jpeg/png/webp/gif），SVG 禁用，4/8/12MB 分级限额 |
+| CSV 导出 | `= + - @` 开头单元格 `'` 前缀中和 |
+| 富文本 | 前端 DOMPurify 白名单消毒（继承保留） |
+| 外链 | http(s) scheme 白名单（入库与渲染双层） |
+| 审计 | 全部写操作落 admin_audit_logs，导出支持分页过滤 |
+| 启动断言 | 密钥缺失/占位直接抛错（继承 fail-fast 精神） |
 
-適用済みの override:
+## 已知残留（低风险，接受）
 
-- `@strapi/admin > axios` を `1.16.0` に固定しています。
-- `@strapi/cloud-cli > axios` を `1.16.0` に固定しています。
+- 前端 CSP 仍含 unsafe-inline/unsafe-eval（OpenNext 迁移后由自持中间件做 nonce 收紧，见计划书 S3）
+- image-proxy 白名单域名未限端口（B站 CDN 固定域，攻击面极窄）
 
-監査データベースが示す一部の修正版は、この依存ツリーでは現時点で安全に解決できません: `lodash >=4.18.0`、`vite 6.4.2`、`uuid >=14.0.0`。`elliptic` も上流の依存関係に制約されています。`vite@7.2.7` はビルド可能ですが新しい Vite high advisory を発生させ、`vite@7.3.2` は現在解決できないため、Vite override は保持していません。Strapi が対応し、Strapi Admin、フロントエンド、バックエンドのビルドがすべて通るまでは、強制的な override は行わないでください。
+## 依赖审计
 
-正式な本番環境では、high advisory が残っている間は Strapi Admin を公開しないでください。上流修正を待つか、安全な override を確認するか、Strapi Admin をネットワークアクセス制御で保護された内部入口に降格してください。
-
-## 補償的コントロール
-
-- 独自管理パネルは、本番環境で `ADMIN_PANEL_ALLOWED_ROLES` が設定されていない場合 fail-closed になります。
-- 内部レート制限エンドポイントは、本番環境で `PANEL_INTERNAL_TOKEN` を必須とします。
-- 公開画像プロキシは HTTPS の Bilibili 画像 CDN host、画像 Content-Type、サイズ上限、リクエストタイムアウトに制限されています。
-- 独自管理パネル API では、同期ログと監査ログは読み取り専用です。
-- RSSHub 同期は制限付き並行処理と parser ベースの RSS 処理を使用します。
-- Strapi Admin を公開する場合は、デフォルトではない `ADMIN_PATH` を使用し、デプロイ層の WAF / rate limit を設定したうえで `STRAPI_ADMIN_WAF_CONFIRMED=true` にします。
-- 本番 CORS は `STRAPI_CORS_ORIGINS` で明示的に制御し、開放的なデフォルト値は使用しません。
-
-Strapi をアップグレードするたびに、これらの advisory を再確認してください。
-
-CI と公開前チェックでは `pnpm audit:prod` を使用してください。通常の `pnpm audit --prod` は既知の上流 advisory でも非ゼロ終了しますが、`audit:prod` は記録済みの上流項目だけを許可し、新しい advisory、依存パスの変化、深刻度の変化、または `STRAPI_ADMIN_PUBLIC=true` かつ high advisory が残っている場合に失敗します。
+Strapi 链 advisory 随退役消失；`pnpm audit` 常规跑即可，无需 allowlist 脚本。

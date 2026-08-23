@@ -1,29 +1,29 @@
-# 本番リリース準備
+# 生产上线验收
 
-[简体中文](../zh-Hans/production-readiness.md) | [English](../en/production-readiness.md)
+[English](../en/production-readiness.md) | [日本語](../ja/production-readiness.md)
 
-## 自動チェック
+## 自动检查
 
-本プロジェクトには、デプロイ前のチェックが 2 つあります。
+本项目现在有两层上线前检查：
 
 ```bash
 pnpm verify:deploy
 pnpm audit:prod
 ```
 
-`verify:deploy` は、本番環境変数、PostgreSQL、デフォルトではない Strapi Admin パス、HTTPS CORS、Cloudinary、デプロイ層の WAF 確認を検査します。
+`verify:deploy` 检查生产环境变量、PostgreSQL、非默认 Strapi Admin 路径、HTTPS CORS、Cloudinary 和部署层 WAF 确认。
 
-`audit:prod` は `pnpm audit --prod --json` を実行し、現在記録済みの Strapi 上流の推移的 advisory だけを許可します。新しい advisory、依存パスの変化、深刻度の変化は gate で失敗します。`STRAPI_ADMIN_PUBLIC=true` を設定した場合、high advisory が 1 つでも残ると失敗するため、現時点では Strapi Admin を公開しないでください。
+`audit:prod` 运行 `pnpm audit --prod --json`，只允许当前已记录的 Strapi 上游传递性 advisory。新出现的 advisory、路径变化、严重级别变化都会失败。若设置 `STRAPI_ADMIN_PUBLIC=true`，任何 high advisory 都会失败，因此当前不应公网开放 Strapi Admin。
 
-## Staging 受け入れ確認
+## Staging 验收
 
-正式な本番公開前に、一時的な Supabase データベースと staging ドメインで実行します。
+正式上线前，用 Supabase 临时库和 staging 域名运行：
 
 ```bash
 NODE_ENV=production pnpm verify:staging
 ```
 
-`verify:deploy` の要件に加えて、以下を明示的に確認します。
+除了 `verify:deploy` 的要求外，必须显式确认：
 
 ```env
 STAGING_STRAPI_ADMIN_LOGIN_VERIFIED=true
@@ -37,11 +37,11 @@ STAGING_ADMIN_RECOVERY_VERIFIED=true
 STAGING_CRON_SINGLE_INSTANCE_VERIFIED=true
 ```
 
-これらの変数はセキュリティ回避ではなく、手動確認を失敗可能なデプロイ gate にするためのものです。ローカルの dry run の場合のみ `STAGING_ALLOW_LOCAL_URLS=true` を使用してください。
+这些变量不是安全绕过，而是把人工验收结果变成可失败的部署 gate。只有本地干跑时才设置 `STAGING_ALLOW_LOCAL_URLS=true`。
 
-## 現時点の公開判断
+## 当前上线判断
 
-- フロントエンドと独自管理パネルはデモ環境として公開できます。
-- 正式な本番環境では SQLite ではなく PostgreSQL/Supabase を使用します。
-- Cloudinary 変数が欠けている場合は正式本番として扱いません。
-- `pnpm audit:prod` に上流 lodash high advisory が残っている間、Strapi Admin は公開しないでください。
+- 前端和自研后台可以作为演示站上线。
+- 正式生产必须使用 PostgreSQL/Supabase，不使用 SQLite。
+- Cloudinary 三项缺失时，不应视为正式生产。
+- `pnpm audit:prod` 仍包含上游 lodash high advisory 时，Strapi Admin 不应公网开放。

@@ -1,129 +1,94 @@
-# Deployment Notes
+# 部署说明
 
-[简体中文](../zh-Hans/deployment.md) | [日本語](../ja/deployment.md)
+## 架构（2026-08 迁移后）
 
-## Backend Runtime
-
-- Run the Strapi backend on a Node.js runtime with PostgreSQL.
-- Deploy the Next.js frontend separately to any compatible platform.
-- Do not deploy the Strapi backend to Cloudflare Workers or D1. Strapi needs a Node.js server runtime and a supported SQL client; D1 is not a Strapi database target for this project.
-- SQLite is intended only for local development and temporary environments. The backend blocks production SQLite unless `ALLOW_PRODUCTION_SQLITE=true` is set explicitly.
-
-## PostgreSQL
-
-Use PostgreSQL for the Strapi backend:
-
-```env
-DATABASE_CLIENT=postgres
-DATABASE_URL=postgres://...
-DATABASE_SSL=true
-DATABASE_SSL_REJECT_UNAUTHORIZED=false
-DATABASE_POOL_MIN=0
-DATABASE_POOL_MAX=5
+```
+bakivo.com (Cloudflare zone)
+├── 前端      Next.js 16（OpenNext on Workers；迁移准备已就绪，见下）
+├── 内容 API  server/ Hono Worker + D1（公开 REST + /panel 面板 API）
+├── 上传      R2 桶 schale-uploads
+├── 资源页    drive.bakivo.com（OpenList，iframe 内嵌）
+└── DNS/CDN   Cloudflare
 ```
 
-Small serverless instances should keep the pool small. If the database provider offers a pooled connection URL, use it and keep `DATABASE_POOL_MIN=0`.
+Strapi / PostgreSQL(Neon) / Cloudinary / Render / Vercel / RSSHub 均已退役。
 
-## Required Production Secrets
+## 首次部署步骤
 
-Production startup fails if any of these variables are missing or still set to placeholders:
-
-```env
-APP_KEYS=
-API_TOKEN_SALT=
-ADMIN_JWT_SECRET=
-TRANSFER_TOKEN_SALT=
-JWT_SECRET=
-ENCRYPTION_KEY=
-ADMIN_PANEL_ALLOWED_ROLES=maintainer,admin
-PANEL_INTERNAL_TOKEN=
-RATE_LIMIT_HASH_SECRET=
-CRON_ENABLED=false
-ADMIN_PATH=/strapi-console-<random>
-STRAPI_CORS_ORIGINS=https://bakivo.com,https://www.bakivo.com
-STRAPI_ADMIN_WAF_CONFIRMED=true
-CLOUDINARY_NAME=
-CLOUDINARY_KEY=
-CLOUDINARY_SECRET=
-```
-
-`PANEL_INTERNAL_TOKEN` must be identical in the backend and frontend environments.
-Production must explicitly set `CRON_ENABLED`. In multi-instance serverless deployments, only one backend instance should normally run cron.
-Formal production must configure all three Cloudinary variables. If they are missing, treat the deployment as a demo site rather than production-ready.
-
-Before deployment, run:
+### 1. 创建 D1 与 R2
 
 ```bash
-NODE_ENV=production pnpm verify:deploy
+cd server
+wrangler d1 create schale_db          # 记下 database_id，写入 wrangler.toml
+wrangler r2 bucket create schale-uploads
+wrangler d1 migrations apply schale_db --remote
 ```
 
-Backup, restore, and empty-database seed notes are in [backup-restore.md](./backup-restore.md).
-
-## Free Hosting Options
-
-Recommended free demo stack:
-
-- Frontend: Vercel Hobby.
-- Backend: either Render Free Web Service or Koyeb Free Instance.
-- Database: Neon Free PostgreSQL. Do not use Render Free Postgres for durable production data.
-- Media: Cloudinary Free.
-- RSSHub: Vercel is acceptable for the current RSSHub deployment.
-- DNS/CDN: Cloudflare.
-
-Render Free and Koyeb Free are suitable for demo deployments, not strict production. Render Free Web Services spin down after roughly 15 minutes of inactivity and need time to wake up; Koyeb Free Instances are smaller and scale to zero after roughly 1 hour without traffic. Do not rely on either platform's local filesystem for uploads, so configure all Cloudinary variables.
-
-For a Render backend, use:
+### 2. 设置密钥
 
 ```bash
-corepack enable && pnpm install --frozen-lockfile && pnpm --dir backend build
-pnpm --dir backend start
+cd server
+wrangler secret put SESSION_SECRET        # 随机 32+ 字节
+wrangler secret put PANEL_INTERNAL_TOKEN  # 前后端共享令牌（如启用内部限流）
 ```
 
-Keep the root directory at the repository root. Use Node.js 20 or 22 and set the production variables from `backend/.env.example`.
+### 3. 部署 Worker
 
-For a more stable fully free deployment, Oracle Cloud Always Free VM is an option. It is a traditional VM rather than a serverless deployment target, so you must maintain Linux, Node.js, pnpm, process management, reverse proxy, TLS, and security updates yourself. Oracle documents Always Free resources as free for the life of the account, but idle Always Free compute instances can be reclaimed, so keep database backups and rebuild steps ready.
-
-## Custom Panel Maintainer Recovery
-
-The custom panel at `/{locale}/manage` uses the Strapi users-permissions user table, not the built-in Strapi admin user table.
-
-To create or restore a maintainer account, temporarily set these variables for one deployment:
-
-```env
-ADMIN_PANEL_BOOTSTRAP_EMAIL=you@example.com
-ADMIN_PANEL_BOOTSTRAP_USERNAME=maintainer
-ADMIN_PANEL_BOOTSTRAP_PASSWORD=use-a-long-random-password
+```bash
+cd server && wrangler deploy
+# 记录 workers.dev 域名，绑定到 bakivo.com/api 子路径或独立子域（路由在 CF Dashboard 配）
 ```
 
-On startup, Strapi will:
+### 4. 首个维护者账号
 
-- ensure the roles from `ADMIN_PANEL_ALLOWED_ROLES` exist;
-- create or update the matching users-permissions user;
-- assign the first allowed role to that user;
-- unblock and confirm the user.
+一次性设置环境变量后触发任意请求（bootstrap 幂等）：
 
-Remove `ADMIN_PANEL_BOOTSTRAP_PASSWORD` after login is confirmed.
+```bash
+wrangler secret put BOOTSTRAP_ADMIN_USERNAME
+wrangler secret put BOOTSTRAP_ADMIN_PASSWORD   # ≥16 位
+# 触发一次 /panel 请求后删除两个 secret
+```
 
-## Built-In Strapi Admin Panel
+### 5. 数据迁移（旧 Strapi → D1）
 
-The built-in Strapi admin panel uses a separate admin user table. Keep `ADMIN_JWT_SECRET`, `TRANSFER_TOKEN_SALT`, and `ENCRYPTION_KEY` stable across deployments. If an empty database is rebuilt, create the first Strapi admin user from the Strapi admin UI again.
+```bash
+# a. 从旧 Neon PG 导出（保留旧栈期间执行）
+# b. 转换 + 生成 301/外跳映射表
+cd server && node --experimental-strip-types scripts/transform.ts <导出目录> /tmp/out
+# c. 载入 D1
+node --experimental-strip-types scripts/load-d1.ts /tmp/out --remote
+```
 
-If Strapi Admin is publicly exposed:
+### 6. 前端
 
-- production must use a non-default `ADMIN_PATH`; `/admin` is not allowed;
-- `STRAPI_CORS_ORIGINS` must list only the production frontend, preview domains, and required custom panel domains;
-- the deployment layer must add WAF / rate limits for Strapi Admin login, `/api/auth/local`, and abnormal static asset requests;
-- set `STRAPI_ADMIN_WAF_CONFIRMED=true` only after those deployment-layer controls are in place;
-- Strapi Admin passwords and custom panel bootstrap passwords should be at least 16 characters, and default or temporary accounts should be removed;
-- if `pnpm audit --prod` still reports a high advisory, do not expose Strapi Admin publicly.
+```bash
+cd frontend
+# OpenNext 迁移有一个已确认阻塞项：proxy.ts 为 Node runtime middleware，
+# OpenNext v1.20 尚不支持。切换 Edge runtime 后执行：
+pnpm deploy
+```
 
-## Cloudflare
+迁移完成前的过渡期：前端可继续部署 Vercel，`NEXT_PUBLIC_API_URL` 指向新 Worker。
 
-Cloudflare is suitable for:
+## 备份
 
-- DNS and CDN;
-- static assets;
-- the Next.js frontend when it does not depend on incompatible Node APIs;
-- lightweight edge route handlers.
+- D1 time travel：30 天时点恢复（CF Dashboard → D1 → Time Travel）
+- 冷备：`wrangler d1 export schale_db --remote --output backup-$(date +%F).sql`，建议 cron 周备
 
-Cloudflare Workers and D1 are not supported targets for the Strapi backend in this project. Keep the Strapi backend on Node.js with PostgreSQL, and use Cloudflare only for the parts that fit its runtime model.
+## 环境变量与密钥清单
+
+| 变量 | 位置 | 说明 |
+|------|------|------|
+| SESSION_SECRET | Worker secret | 会话签名 |
+| PANEL_INTERNAL_TOKEN | Worker secret | 内部限流令牌（可选） |
+| BOOTSTRAP_ADMIN_USERNAME/PASSWORD | 临时 secret | 首个维护者 |
+| NEXT_PUBLIC_API_URL | 前端 env | 内容 API 基址 |
+| NEXT_PUBLIC_SITE_URL | 前端 env | 站点 URL（sitemap/OG） |
+
+## 安全基线（继承自审计整改）
+
+- 会话 cookie：httpOnly + Secure + SameSite=Strict，8h TTL，查表即时吊销
+- 密码：PBKDF2-SHA256 210k 迭代
+- 登录限流：CF-Connecting-IP，10min/30 次
+- 上传：魔数嗅探（jpeg/png/webp/gif），SVG 禁用，4/8/12MB 分级
+- CSV 导出：公式注入中和

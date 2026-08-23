@@ -1,35 +1,30 @@
-# Security Notes
+# 安全说明
 
-[简体中文](../zh-Hans/security.md) | [日本語](../ja/security.md)
+## 当前架构（2026-08 迁移后）
 
-## Dependency Audit Status
+安全面从「Strapi 平台 + 自研层」收敛为「全自研 Worker」，Strapi 链依赖（axios/ajv 补丁、admin 面板暴露面、poweredBy 指纹）已随退役消失。
 
-The axios high advisories from `pnpm audit --prod` are handled by minimal pnpm overrides. The current audit still reports these transitive advisories through Strapi packages:
+## 已落实的控制
 
-- `lodash` via `@strapi/plugin-users-permissions > @strapi/design-system`.
-- `vite` via `@strapi/strapi`.
-- `uuid` via `@strapi/plugin-users-permissions > grant > request-oauth`.
-- `elliptic` via `@strapi/plugin-users-permissions > jwk-to-pem`.
+| 控制点 | 实现 |
+|--------|------|
+| 认证 | users 表 + PBKDF2-SHA256（210k 迭代，WebCrypto）；会话 D1 查表即时吊销 |
+| 会话 cookie | httpOnly + Secure(生产) + SameSite=Strict，8h TTL |
+| 面板鉴权 | 全部 /panel 写路由 fail-closed 会话校验 + 角色白名单 |
+| 登录限流 | CF-Connecting-IP（边缘受信头），D1 计数，10min/30 次 |
+| 输入校验 | 集合白名单 + 字段白名单双重收口，未登记字段 400 拒绝 |
+| 上传 | 魔数嗅探（jpeg/png/webp/gif），SVG 禁用，4/8/12MB 分级限额 |
+| CSV 导出 | `= + - @` 开头单元格 `'` 前缀中和 |
+| 富文本 | 前端 DOMPurify 白名单消毒（继承保留） |
+| 外链 | http(s) scheme 白名单（入库与渲染双层） |
+| 审计 | 全部写操作落 admin_audit_logs，导出支持分页过滤 |
+| 启动断言 | 密钥缺失/占位直接抛错（继承 fail-fast 精神） |
 
-Applied overrides:
+## 已知残留（低风险，接受）
 
-- `@strapi/admin > axios` is pinned to `1.16.0`.
-- `@strapi/cloud-cli > axios` is pinned to `1.16.0`.
+- 前端 CSP 仍含 unsafe-inline/unsafe-eval（OpenNext 迁移后由自持中间件做 nonce 收紧，见计划书 S3）
+- image-proxy 白名单域名未限端口（B站 CDN 固定域，攻击面极窄）
 
-Some patched versions reported by the audit database are not currently resolvable from npm for this dependency tree: `lodash >=4.18.0`, `vite 6.4.2`, and `uuid >=14.0.0`; `elliptic` is still constrained by the upstream chain. `vite@7.2.7` builds but introduces new Vite high advisories, and `vite@7.3.2` is not currently resolvable, so no Vite override is kept. Do not force these overrides unless Strapi supports them and the Strapi Admin, frontend, and backend builds all pass.
+## 依赖审计
 
-For formal production, do not expose Strapi Admin publicly while any high advisory remains. Wait for upstream fixes, confirm a safe override, or downgrade Strapi Admin to an internal endpoint protected by network access controls.
-
-## Compensating Controls
-
-- The custom admin panel fails closed in production unless `ADMIN_PANEL_ALLOWED_ROLES` is configured.
-- Internal rate-limit endpoints require `PANEL_INTERNAL_TOKEN` in production.
-- The public image proxy is restricted to HTTPS Bilibili image CDN hosts, image content types, size limits, and request timeouts.
-- Sync logs and audit logs are read-only through the custom panel API.
-- RSSHub sync uses bounded concurrency and parser-based RSS handling.
-- Public Strapi Admin exposure requires a non-default `ADMIN_PATH`, plus deployment-layer WAF / rate limits before setting `STRAPI_ADMIN_WAF_CONFIRMED=true`.
-- Production CORS is explicitly controlled by `STRAPI_CORS_ORIGINS` instead of an open default.
-
-Review these advisories again after each Strapi upgrade.
-
-Use `pnpm audit:prod` in CI and before launch. Plain `pnpm audit --prod` still exits non-zero for the known upstream advisories, while `audit:prod` allows the documented upstream items and fails on new advisories, path changes, severity changes, or `STRAPI_ADMIN_PUBLIC=true` with any remaining high advisory.
+Strapi 链 advisory 随退役消失；`pnpm audit` 常规跑即可，无需 allowlist 脚本。
