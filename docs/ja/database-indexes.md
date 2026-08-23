@@ -1,28 +1,28 @@
-# 数据库索引说明
+# データベースインデックス解説
 
-## D1（SQLite）索引现状
+## D1（SQLite）インデックスの現状
 
-索引随迁移定义在 `server/migrations/0001_baseline.sql`：
+インデックスはマイグレーション `server/migrations/0001_baseline.sql` で定義:
 
-| 表 | 索引 | 用途 |
-|----|------|------|
-| creators | idx_creators_featured(is_featured, featured_priority) | 首页精选/列表排序 |
-| events | idx_events_start(kind, start_time DESC) | 活动列表排序 |
-| events | idx_events_published_start(published_at, start_time DESC) | 发布过滤+排序 |
-| announcements | idx_announcements_created(created_at DESC) | 公告列表 |
-| research_entries | idx_research_entries_slug(slug) | slug 详情查询 |
-| admin_audit_logs | idx_audit_created(created_at) | cron/手动清理 |
-| rate_limit_records | idx_rate_limit_reset(reset_at)、idx_rate_limit_scope_key(scope, identifier, key) | 限流窗口查询+清理 |
-| sessions | idx_sessions_expires(expires_at) | 过期会话清理 |
-| works | idx_works_published / idx_works_featured / idx_works_author | works 服役期查询（W5 后随表退役） |
+| テーブル | インデックス | 用途 |
+|----------|--------------|------|
+| creators | idx_creators_featured(is_featured, featured_priority) | トップページ特集/一覧の並び替え |
+| events | idx_events_start(kind, start_time DESC) | イベント一覧の並び替え |
+| events | idx_events_published_start(published_at, start_time DESC) | 公開フィルタ + 並び替え |
+| announcements | idx_announcements_created(created_at DESC) | お知らせ一覧 |
+| research_entries | idx_research_entries_slug(slug) | slug 詳細クエリ |
+| admin_audit_logs | idx_audit_created(created_at) | cron/手動クリーンアップ |
+| rate_limit_records | idx_rate_limit_reset(reset_at)、idx_rate_limit_scope_key(scope, identifier, key) | レート制限ウィンドウの照会 + クリーンアップ |
+| sessions | idx_sessions_expires(expires_at) | 期限切れセッションのクリーンアップ |
+| works | idx_works_published / idx_works_featured / idx_works_author | works 稼働中のクエリ（W5 後にテーブルごと廃止） |
 
-## 设计原则（继承性能审计结论）
+## 設計原則（パフォーマンス監査の結論を引き継ぎ）
 
-- 清理类查询（created_at / reset_at / expires_at）必须有单列索引支撑
-- 列表查询浅加载、详情深加载分离（populate 由路由显式控制）
-- 无 FTS：搜索用 LIKE containsi（内容量级下足够，CJK 分词无收益）
+- クリーンアップ系クエリ（created_at / reset_at / expires_at）には単一カラムインデックスが必須
+- 一覧クエリは浅い読み込み、詳細は深い読み込みに分離（populate はルートで明示的に制御）
+- FTS 不使用: 検索は LIKE containsi（このコンテンツ量では十分、CJK の分かち書きには効果なし）
 
-## 备份与恢复
+## バックアップとリストア
 
-- time travel：30 天时点恢复（CF Dashboard）
-- 冷备：`wrangler d1 export schale_db --remote --output backup.sql`
+- time travel: 30 日間の時点復元（CF Dashboard）
+- コールドバックアップ: `wrangler d1 export schale_db --remote --output backup.sql`

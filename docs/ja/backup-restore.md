@@ -1,31 +1,31 @@
-# 备份与恢复
+# バックアップとリストア
 
-## D1 备份
+## D1 バックアップ
 
-### 时点恢复（首选）
+### 時点復元（推奨）
 
-Cloudflare D1 内置 time travel：任意 30 天内时点恢复。
+Cloudflare D1 には time travel が組み込まれており、30 日以内の任意の時点へ復元できる。
 
 ```
 CF Dashboard → Storage & Databases → D1 → schale_db → Time Travel
-# 或 CLI：
+# または CLI:
 wrangler d1 time-travel restore schale_db --remote --timestamp="2026-08-22T12:00:00Z"
 ```
 
-### 冷备（周备建议）
+### コールドバックアップ（週次推奨）
 
 ```bash
 wrangler d1 export schale_db --remote --output backup-$(date +%F).sql
-# 恢复：
+# リストア:
 wrangler d1 execute schale_db --remote --file=backup-2026-08-22.sql
 ```
 
-## R2 媒体备份
+## R2 メディアのバックアップ
 
-上传对象在 `schale-uploads` 桶。开启 R2 版本控制或定期 `rclone sync` 到第二桶。
+アップロード オブジェクトは `schale-uploads` バケットに格納される。R2 のバージョニングを有効にするか、定期的に `rclone sync` で第二バケットへ同期する。
 
-## 恢复演练清单
+## リストア訓練チェックリスト
 
-1. `wrangler d1 execute schale_db --remote --file=<backup>.sql`（先对 staging 库演练）
-2. 抽查：creators/students/research_entries 行数、redirect_map 完整性
-3. 前端冒烟：首页/creators/考据档案/搜索各一页
+1. `wrangler d1 execute schale_db --remote --file=<backup>.sql`（まず staging DB で訓練）
+2. 抜き取り検証: creators/students/research_entries の行数、redirect_map の完全性
+3. フロントエンド スモークテスト: トップページ/クリエイター/考証アーカイブ/検索を各 1 ページずつ

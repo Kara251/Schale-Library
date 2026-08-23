@@ -1,31 +1,31 @@
-# 备份与恢复
+# Backup and Restore
 
-## D1 备份
+## D1 backups
 
-### 时点恢复（首选）
+### Point-in-time recovery (preferred)
 
-Cloudflare D1 内置 time travel：任意 30 天内时点恢复。
+Cloudflare D1 has built-in time travel: point-in-time recovery to any moment within the last 30 days.
 
 ```
 CF Dashboard → Storage & Databases → D1 → schale_db → Time Travel
-# 或 CLI：
+# Or via CLI:
 wrangler d1 time-travel restore schale_db --remote --timestamp="2026-08-22T12:00:00Z"
 ```
 
-### 冷备（周备建议）
+### Cold backups (weekly recommended)
 
 ```bash
 wrangler d1 export schale_db --remote --output backup-$(date +%F).sql
-# 恢复：
+# Restore:
 wrangler d1 execute schale_db --remote --file=backup-2026-08-22.sql
 ```
 
-## R2 媒体备份
+## R2 media backups
 
-上传对象在 `schale-uploads` 桶。开启 R2 版本控制或定期 `rclone sync` 到第二桶。
+Uploaded objects live in the `schale-uploads` bucket. Enable R2 versioning, or periodically `rclone sync` to a second bucket.
 
-## 恢复演练清单
+## Restore drill checklist
 
-1. `wrangler d1 execute schale_db --remote --file=<backup>.sql`（先对 staging 库演练）
-2. 抽查：creators/students/research_entries 行数、redirect_map 完整性
-3. 前端冒烟：首页/creators/考据档案/搜索各一页
+1. `wrangler d1 execute schale_db --remote --file=<backup>.sql` (rehearse against the staging database first)
+2. Spot checks: creators/students/research_entries row counts, redirect_map integrity
+3. Frontend smoke test: one page each for homepage/creators/research archive/search

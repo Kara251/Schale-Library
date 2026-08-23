@@ -1,94 +1,94 @@
-# 部署说明
+# Deployment
 
-## 架构（2026-08 迁移后）
+## Architecture (after the 2026-08 migration)
 
 ```
 bakivo.com (Cloudflare zone)
-├── 前端      Next.js 16（OpenNext on Workers；迁移准备已就绪，见下）
-├── 内容 API  server/ Hono Worker + D1（公开 REST + /panel 面板 API）
-├── 上传      R2 桶 schale-uploads
-├── 资源页    drive.bakivo.com（OpenList，iframe 内嵌）
-└── DNS/CDN   Cloudflare
+├── Frontend      Next.js 16 (OpenNext on Workers; migration prep is ready, see below)
+├── Content API   server/ Hono Worker + D1 (public REST + /panel panel API)
+├── Uploads       R2 bucket schale-uploads
+├── Resource page drive.bakivo.com (OpenList, embedded via iframe)
+└── DNS/CDN       Cloudflare
 ```
 
-Strapi / PostgreSQL(Neon) / Cloudinary / Render / Vercel / RSSHub 均已退役。
+Strapi / PostgreSQL(Neon) / Cloudinary / Render / Vercel / RSSHub are all retired.
 
-## 首次部署步骤
+## First deployment steps
 
-### 1. 创建 D1 与 R2
+### 1. Create D1 and R2
 
 ```bash
 cd server
-wrangler d1 create schale_db          # 记下 database_id，写入 wrangler.toml
+wrangler d1 create schale_db          # note the database_id and write it into wrangler.toml
 wrangler r2 bucket create schale-uploads
 wrangler d1 migrations apply schale_db --remote
 ```
 
-### 2. 设置密钥
+### 2. Set secrets
 
 ```bash
 cd server
-wrangler secret put SESSION_SECRET        # 随机 32+ 字节
-wrangler secret put PANEL_INTERNAL_TOKEN  # 前后端共享令牌（如启用内部限流）
+wrangler secret put SESSION_SECRET        # random 32+ bytes
+wrangler secret put PANEL_INTERNAL_TOKEN  # token shared between frontend and backend (if internal rate limiting is enabled)
 ```
 
-### 3. 部署 Worker
+### 3. Deploy the Worker
 
 ```bash
 cd server && wrangler deploy
-# 记录 workers.dev 域名，绑定到 bakivo.com/api 子路径或独立子域（路由在 CF Dashboard 配）
+# Note the workers.dev domain, bind it to the bakivo.com/api subpath or a dedicated subdomain (route configured in the CF Dashboard)
 ```
 
-### 4. 首个维护者账号
+### 4. The first maintainer account
 
-一次性设置环境变量后触发任意请求（bootstrap 幂等）：
+After setting the environment variables once, trigger any request (bootstrap is idempotent):
 
 ```bash
 wrangler secret put BOOTSTRAP_ADMIN_USERNAME
-wrangler secret put BOOTSTRAP_ADMIN_PASSWORD   # ≥16 位
-# 触发一次 /panel 请求后删除两个 secret
+wrangler secret put BOOTSTRAP_ADMIN_PASSWORD   # ≥16 chars
+# After triggering a single /panel request, delete both secrets
 ```
 
-### 5. 数据迁移（旧 Strapi → D1）
+### 5. Data migration (old Strapi → D1)
 
 ```bash
-# a. 从旧 Neon PG 导出（保留旧栈期间执行）
-# b. 转换 + 生成 301/外跳映射表
-cd server && node --experimental-strip-types scripts/transform.ts <导出目录> /tmp/out
-# c. 载入 D1
+# a. Export from the old Neon PG (do this while the old stack is still running)
+# b. Transform + generate the 301/external-redirect mapping table
+cd server && node --experimental-strip-types scripts/transform.ts <export dir> /tmp/out
+# c. Load into D1
 node --experimental-strip-types scripts/load-d1.ts /tmp/out --remote
 ```
 
-### 6. 前端
+### 6. Frontend
 
 ```bash
 cd frontend
-# OpenNext 迁移有一个已确认阻塞项：proxy.ts 为 Node runtime middleware，
-# OpenNext v1.20 尚不支持。切换 Edge runtime 后执行：
+# The OpenNext migration has one confirmed blocker: proxy.ts is a Node runtime middleware,
+# which OpenNext v1.20 does not yet support. After switching to the Edge runtime:
 pnpm deploy
 ```
 
-迁移完成前的过渡期：前端可继续部署 Vercel，`NEXT_PUBLIC_API_URL` 指向新 Worker。
+Transition period before the migration completes: the frontend can stay on Vercel, with `NEXT_PUBLIC_API_URL` pointing at the new Worker.
 
-## 备份
+## Backups
 
-- D1 time travel：30 天时点恢复（CF Dashboard → D1 → Time Travel）
-- 冷备：`wrangler d1 export schale_db --remote --output backup-$(date +%F).sql`，建议 cron 周备
+- D1 time travel: 30-day point-in-time recovery (CF Dashboard → D1 → Time Travel)
+- Cold backups: `wrangler d1 export schale_db --remote --output backup-$(date +%F).sql`, weekly via cron recommended
 
-## 环境变量与密钥清单
+## Environment variables and secrets inventory
 
-| 变量 | 位置 | 说明 |
+| Variable | Location | Purpose |
 |------|------|------|
-| SESSION_SECRET | Worker secret | 会话签名 |
-| PANEL_INTERNAL_TOKEN | Worker secret | 内部限流令牌（可选） |
-| BOOTSTRAP_ADMIN_USERNAME/PASSWORD | 临时 secret | 首个维护者 |
-| NEXT_PUBLIC_API_URL | 前端 env | 内容 API 基址 |
-| NEXT_PUBLIC_SITE_URL | 前端 env | 站点 URL（sitemap/OG） |
+| SESSION_SECRET | Worker secret | Session signing |
+| PANEL_INTERNAL_TOKEN | Worker secret | Internal rate-limiting token (optional) |
+| BOOTSTRAP_ADMIN_USERNAME/PASSWORD | Temporary secrets | First maintainer |
+| NEXT_PUBLIC_API_URL | Frontend env | Content API base URL |
+| NEXT_PUBLIC_SITE_URL | Frontend env | Site URL (sitemap/OG) |
 
-## 安全基线（继承自审计整改）
+## Security baseline (inherited from audit remediation)
 
-- 会话 cookie：httpOnly + Secure + SameSite=Strict，8h TTL，查表即时吊销
-- 密码：PBKDF2-SHA256 210k 迭代
-- 登录限流：CF-Connecting-IP，10min/30 次
-- 上传：魔数嗅探（jpeg/png/webp/gif），SVG 禁用，4/8/12MB 分级
-- CSV 导出：公式注入中和
+- Session cookies: httpOnly + Secure + SameSite=Strict, 8h TTL, immediate revocation via table lookup
+- Passwords: PBKDF2-SHA256 with 210k iterations
+- Login rate limiting: CF-Connecting-IP, 30 attempts per 10 minutes
+- Uploads: magic-number sniffing (jpeg/png/webp/gif), SVG disabled, tiered 4/8/12MB limits
+- CSV export: formula injection neutralized

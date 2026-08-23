@@ -7,7 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "schale_db"
-database_id = "PLACEHOLDER_SET_AT_DEPLOY"
+database_id = "3a280f37-037e-4dd6-b81a-c0bc5eed01d3"
 
 # R2 上传桶
 [[r2_buckets]]

@@ -1,94 +1,94 @@
-# 部署说明
+# デプロイ解説
 
-## 架构（2026-08 迁移后）
+## アーキテクチャ（2026-08 移行後）
 
 ```
 bakivo.com (Cloudflare zone)
-├── 前端      Next.js 16（OpenNext on Workers；迁移准备已就绪，见下）
-├── 内容 API  server/ Hono Worker + D1（公开 REST + /panel 面板 API）
-├── 上传      R2 桶 schale-uploads
-├── 资源页    drive.bakivo.com（OpenList，iframe 内嵌）
-└── DNS/CDN   Cloudflare
+├── フロントエンド   Next.js 16（OpenNext on Workers; 移行準備は完了、下記参照）
+├── コンテンツ API   server/ Hono Worker + D1（公開 REST + /panel パネル API）
+├── アップロード     R2 バケット schale-uploads
+├── リソースページ   drive.bakivo.com（OpenList、iframe 埋め込み）
+└── DNS/CDN          Cloudflare
 ```
 
-Strapi / PostgreSQL(Neon) / Cloudinary / Render / Vercel / RSSHub 均已退役。
+Strapi / PostgreSQL(Neon) / Cloudinary / Render / Vercel / RSSHub はすべて廃止済み。
 
-## 首次部署步骤
+## 初回デプロイ手順
 
-### 1. 创建 D1 与 R2
+### 1. D1 と R2 の作成
 
 ```bash
 cd server
-wrangler d1 create schale_db          # 记下 database_id，写入 wrangler.toml
+wrangler d1 create schale_db          # database_id を控えて wrangler.toml に記入
 wrangler r2 bucket create schale-uploads
 wrangler d1 migrations apply schale_db --remote
 ```
 
-### 2. 设置密钥
+### 2. シークレットの設定
 
 ```bash
 cd server
-wrangler secret put SESSION_SECRET        # 随机 32+ 字节
-wrangler secret put PANEL_INTERNAL_TOKEN  # 前后端共享令牌（如启用内部限流）
+wrangler secret put SESSION_SECRET        # ランダム 32+ バイト
+wrangler secret put PANEL_INTERNAL_TOKEN  # フロント/バック共有トークン（内部レート制限を有効にする場合）
 ```
 
-### 3. 部署 Worker
+### 3. Worker のデプロイ
 
 ```bash
 cd server && wrangler deploy
-# 记录 workers.dev 域名，绑定到 bakivo.com/api 子路径或独立子域（路由在 CF Dashboard 配）
+# workers.dev ドメインを控え、bakivo.com/api サブパスまたは独立サブドメインにバインド（ルーティングは CF Dashboard で設定）
 ```
 
-### 4. 首个维护者账号
+### 4. 最初のメンテナ アカウント
 
-一次性设置环境变量后触发任意请求（bootstrap 幂等）：
+一回限りの環境変数を設定した後、任意のリクエストを発生させる（bootstrap は冪等）:
 
 ```bash
 wrangler secret put BOOTSTRAP_ADMIN_USERNAME
-wrangler secret put BOOTSTRAP_ADMIN_PASSWORD   # ≥16 位
-# 触发一次 /panel 请求后删除两个 secret
+wrangler secret put BOOTSTRAP_ADMIN_PASSWORD   # 16 文字以上
+# /panel リクエストを一度発生させた後、2 つのシークレットを削除
 ```
 
-### 5. 数据迁移（旧 Strapi → D1）
+### 5. データ移行（旧 Strapi → D1）
 
 ```bash
-# a. 从旧 Neon PG 导出（保留旧栈期间执行）
-# b. 转换 + 生成 301/外跳映射表
-cd server && node --experimental-strip-types scripts/transform.ts <导出目录> /tmp/out
-# c. 载入 D1
+# a. 旧 Neon PG からエクスポート（旧スタックが稼働中の間に実行）
+# b. 変換 + 301/外部リダイレクト マップテーブルを生成
+cd server && node --experimental-strip-types scripts/transform.ts <エクスポートディレクトリ> /tmp/out
+# c. D1 へ投入
 node --experimental-strip-types scripts/load-d1.ts /tmp/out --remote
 ```
 
-### 6. 前端
+### 6. フロントエンド
 
 ```bash
 cd frontend
-# OpenNext 迁移有一个已确认阻塞项：proxy.ts 为 Node runtime middleware，
-# OpenNext v1.20 尚不支持。切换 Edge runtime 后执行：
+# OpenNext 移行には確認済みのブロッカーあり: proxy.ts は Node runtime middleware であり、
+# OpenNext v1.20 は未対応。Edge runtime に切り替えた上で実行:
 pnpm deploy
 ```
 
-迁移完成前的过渡期：前端可继续部署 Vercel，`NEXT_PUBLIC_API_URL` 指向新 Worker。
+移行完了までの過渡期: フロントエンドは引き続き Vercel にデプロイでき、`NEXT_PUBLIC_API_URL` を新 Worker に向ける。
 
-## 备份
+## バックアップ
 
-- D1 time travel：30 天时点恢复（CF Dashboard → D1 → Time Travel）
-- 冷备：`wrangler d1 export schale_db --remote --output backup-$(date +%F).sql`，建议 cron 周备
+- D1 time travel: 30 日間の時点復元（CF Dashboard → D1 → Time Travel）
+- コールドバックアップ: `wrangler d1 export schale_db --remote --output backup-$(date +%F).sql`、cron による週次バックアップを推奨
 
-## 环境变量与密钥清单
+## 環境変数とシークレット一覧
 
-| 变量 | 位置 | 说明 |
-|------|------|------|
-| SESSION_SECRET | Worker secret | 会话签名 |
-| PANEL_INTERNAL_TOKEN | Worker secret | 内部限流令牌（可选） |
-| BOOTSTRAP_ADMIN_USERNAME/PASSWORD | 临时 secret | 首个维护者 |
-| NEXT_PUBLIC_API_URL | 前端 env | 内容 API 基址 |
-| NEXT_PUBLIC_SITE_URL | 前端 env | 站点 URL（sitemap/OG） |
+| 変数 | 配置場所 | 説明 |
+|------|----------|------|
+| SESSION_SECRET | Worker secret | セッション署名 |
+| PANEL_INTERNAL_TOKEN | Worker secret | 内部レート制限トークン（任意） |
+| BOOTSTRAP_ADMIN_USERNAME/PASSWORD | 一時 secret | 最初のメンテナ |
+| NEXT_PUBLIC_API_URL | フロントエンド env | コンテンツ API ベース URL |
+| NEXT_PUBLIC_SITE_URL | フロントエンド env | サイト URL（sitemap/OG） |
 
-## 安全基线（继承自审计整改）
+## セキュリティ基準ライン（監査対応の結果を引き継ぎ）
 
-- 会话 cookie：httpOnly + Secure + SameSite=Strict，8h TTL，查表即时吊销
-- 密码：PBKDF2-SHA256 210k 迭代
-- 登录限流：CF-Connecting-IP，10min/30 次
-- 上传：魔数嗅探（jpeg/png/webp/gif），SVG 禁用，4/8/12MB 分级
-- CSV 导出：公式注入中和
+- セッション cookie: httpOnly + Secure + SameSite=Strict、TTL 8h、テーブル照会による即時失効
+- パスワード: PBKDF2-SHA256 21 万回反復
+- ログイン レート制限: CF-Connecting-IP、10 分あたり 30 回
+- アップロード: マジックナンバー スニッフィング（jpeg/png/webp/gif）、SVG 無効、4/8/12MB の段階制限
+- CSV エクスポート: 数式インジェクションの無効化

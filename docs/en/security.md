@@ -1,30 +1,30 @@
-# 安全说明
+# Security
 
-## 当前架构（2026-08 迁移后）
+## Current architecture (after the 2026-08 migration)
 
-安全面从「Strapi 平台 + 自研层」收敛为「全自研 Worker」，Strapi 链依赖（axios/ajv 补丁、admin 面板暴露面、poweredBy 指纹）已随退役消失。
+The security surface has been consolidated from "the Strapi platform plus a custom layer" into a fully custom Worker. Strapi-chain dependencies (axios/ajv patches, the admin panel's exposure surface, the poweredBy fingerprint) disappeared along with its retirement.
 
-## 已落实的控制
+## Controls in place
 
-| 控制点 | 实现 |
+| Control | Implementation |
 |--------|------|
-| 认证 | users 表 + PBKDF2-SHA256（210k 迭代，WebCrypto）；会话 D1 查表即时吊销 |
-| 会话 cookie | httpOnly + Secure(生产) + SameSite=Strict，8h TTL |
-| 面板鉴权 | 全部 /panel 写路由 fail-closed 会话校验 + 角色白名单 |
-| 登录限流 | CF-Connecting-IP（边缘受信头），D1 计数，10min/30 次 |
-| 输入校验 | 集合白名单 + 字段白名单双重收口，未登记字段 400 拒绝 |
-| 上传 | 魔数嗅探（jpeg/png/webp/gif），SVG 禁用，4/8/12MB 分级限额 |
-| CSV 导出 | `= + - @` 开头单元格 `'` 前缀中和 |
-| 富文本 | 前端 DOMPurify 白名单消毒（继承保留） |
-| 外链 | http(s) scheme 白名单（入库与渲染双层） |
-| 审计 | 全部写操作落 admin_audit_logs，导出支持分页过滤 |
-| 启动断言 | 密钥缺失/占位直接抛错（继承 fail-fast 精神） |
+| Authentication | users table + PBKDF2-SHA256 (210k iterations, WebCrypto); sessions revoked immediately via D1 table lookup |
+| Session cookie | httpOnly + Secure (production) + SameSite=Strict, 8h TTL |
+| Panel authorization | All /panel write routes fail-closed session validation + role allowlist |
+| Login rate limiting | CF-Connecting-IP (edge-trusted header), counted in D1, 30 attempts per 10 minutes |
+| Input validation | Dual enforcement of collection allowlist + field allowlist; unregistered fields rejected with 400 |
+| Uploads | Magic-number sniffing (jpeg/png/webp/gif), SVG disabled, tiered 4/8/12MB limits |
+| CSV export | Cells starting with `= + - @` neutralized with a `'` prefix |
+| Rich text | Frontend DOMPurify allowlist sanitization (retained from before) |
+| External links | http(s) scheme allowlist (at both storage and render layers) |
+| Audit | All write operations recorded in admin_audit_logs; export supports pagination and filtering |
+| Startup assertions | Missing/placeholder secrets throw immediately (fail-fast spirit retained) |
 
-## 已知残留（低风险，接受）
+## Known residual issues (low risk, accepted)
 
-- 前端 CSP 仍含 unsafe-inline/unsafe-eval（OpenNext 迁移后由自持中间件做 nonce 收紧，见计划书 S3）
-- image-proxy 白名单域名未限端口（B站 CDN 固定域，攻击面极窄）
+- The frontend CSP still contains unsafe-inline/unsafe-eval (after the OpenNext migration, nonce-based tightening will be done by our own middleware, see plan S3)
+- image-proxy allowlisted domains do not restrict ports (Bilibili CDN uses fixed domains; the attack surface is very narrow)
 
-## 依赖审计
+## Dependency auditing
 
-Strapi 链 advisory 随退役消失；`pnpm audit` 常规跑即可，无需 allowlist 脚本。
+Strapi-chain advisories disappeared with its retirement; just run `pnpm audit` as usual — no allowlist script needed.

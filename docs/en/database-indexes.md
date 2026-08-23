@@ -1,28 +1,28 @@
-# 数据库索引说明
+# Database Indexes
 
-## D1（SQLite）索引现状
+## D1 (SQLite) index inventory
 
-索引随迁移定义在 `server/migrations/0001_baseline.sql`：
+Indexes are defined with the migrations in `server/migrations/0001_baseline.sql`:
 
-| 表 | 索引 | 用途 |
+| Table | Index | Purpose |
 |----|------|------|
-| creators | idx_creators_featured(is_featured, featured_priority) | 首页精选/列表排序 |
-| events | idx_events_start(kind, start_time DESC) | 活动列表排序 |
-| events | idx_events_published_start(published_at, start_time DESC) | 发布过滤+排序 |
-| announcements | idx_announcements_created(created_at DESC) | 公告列表 |
-| research_entries | idx_research_entries_slug(slug) | slug 详情查询 |
-| admin_audit_logs | idx_audit_created(created_at) | cron/手动清理 |
-| rate_limit_records | idx_rate_limit_reset(reset_at)、idx_rate_limit_scope_key(scope, identifier, key) | 限流窗口查询+清理 |
-| sessions | idx_sessions_expires(expires_at) | 过期会话清理 |
-| works | idx_works_published / idx_works_featured / idx_works_author | works 服役期查询（W5 后随表退役） |
+| creators | idx_creators_featured(is_featured, featured_priority) | Homepage featured/list sorting |
+| events | idx_events_start(kind, start_time DESC) | Event list sorting |
+| events | idx_events_published_start(published_at, start_time DESC) | Published filter + sort |
+| announcements | idx_announcements_created(created_at DESC) | Announcement list |
+| research_entries | idx_research_entries_slug(slug) | slug detail lookups |
+| admin_audit_logs | idx_audit_created(created_at) | cron/manual cleanup |
+| rate_limit_records | idx_rate_limit_reset(reset_at), idx_rate_limit_scope_key(scope, identifier, key) | Rate-limit window queries + cleanup |
+| sessions | idx_sessions_expires(expires_at) | Expired session cleanup |
+| works | idx_works_published / idx_works_featured / idx_works_author | works lifetime queries (table retired after W5) |
 
-## 设计原则（继承性能审计结论）
+## Design principles (inherited from the performance audit conclusions)
 
-- 清理类查询（created_at / reset_at / expires_at）必须有单列索引支撑
-- 列表查询浅加载、详情深加载分离（populate 由路由显式控制）
-- 无 FTS：搜索用 LIKE containsi（内容量级下足够，CJK 分词无收益）
+- Cleanup-style queries (created_at / reset_at / expires_at) must be backed by single-column indexes
+- List queries use shallow loading, detail pages use deep loading — the two are kept separate (populate is explicitly controlled by routes)
+- No FTS: search uses LIKE containsi (sufficient at this content volume; CJK tokenization would bring no benefit)
 
-## 备份与恢复
+## Backup and restore
 
-- time travel：30 天时点恢复（CF Dashboard）
-- 冷备：`wrangler d1 export schale_db --remote --output backup.sql`
+- Time travel: 30-day point-in-time recovery (CF Dashboard)
+- Cold backups: `wrangler d1 export schale_db --remote --output backup.sql`
