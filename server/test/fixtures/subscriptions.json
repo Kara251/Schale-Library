@@ -1,0 +1,5 @@
+[
+  { "documentId": "sub-bv-1001", "upName": "  Blue Archive FanDub ", "uid": "1001", "isActive": 1, "defaultNature": "fanmade", "createdAt": 1700000000000, "updatedAt": 1700000100000 },
+  { "documentId": "sub-bv-1002", "upName": "SenseiCut", "uid": "1002", "isActive": 1, "defaultNature": "official", "createdAt": 1700000200000, "updatedAt": 1700000300000 },
+  { "documentId": "sub-bv-1003", "upName": "NoWorksChannel", "uid": "1003", "isActive": 0, "defaultNature": "fanmade", "createdAt": 1700000400000, "updatedAt": 1700000500000 }
+]

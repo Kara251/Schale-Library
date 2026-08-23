@@ -1,0 +1,7 @@
+[
+  { "documentId": "stu-doc-1", "locale": null, "name": "Shiroko", "organization": "Foreclosure Task Force", "schoolEnum": "abydos", "schoolRefSlug": null, "createdAt": "2023-06-01T00:00:00.000Z", "updatedAt": "2023-06-02T00:00:00.000Z", "publishedAt": "2023-06-01T00:00:00.000Z" },
+  { "documentId": "stu-doc-2", "locale": null, "name": "Mika", "organization": "Tea Party", "schoolEnum": "trinity", "schoolRefSlug": null, "createdAt": "2023-06-03T00:00:00.000Z", "updatedAt": "2023-06-03T00:00:00.000Z", "publishedAt": "2023-06-03T00:00:00.000Z" },
+  { "documentId": "stu-doc-3", "locale": null, "name": "Hina", "organization": null, "schoolEnum": null, "schoolRefSlug": "gehenna", "createdAt": "2023-06-04T00:00:00.000Z", "updatedAt": "2023-06-05T00:00:00.000Z", "publishedAt": "2023-06-04T00:00:00.000Z" },
+  { "documentId": "stu-doc-4", "locale": null, "name": "Wakamo", "organization": null, "schoolEnum": "schrödinger-academy", "schoolRefSlug": null, "createdAt": "2023-06-06T00:00:00.000Z", "updatedAt": "2023-06-06T00:00:00.000Z", "publishedAt": null },
+  { "documentId": "stu-doc-5", "locale": null, "name": null, "organization": null, "schoolEnum": "other", "schoolRefSlug": null, "createdAt": "2023-06-07T00:00:00.000Z", "updatedAt": "2023-06-07T00:00:00.000Z", "publishedAt": "2023-06-07T00:00:00.000Z" }
+]

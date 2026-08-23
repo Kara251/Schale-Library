@@ -6,6 +6,10 @@ export default defineWorkersConfig({
       workers: {
         wrangler: { configPath: './wrangler.toml' },
         d1Databases: ['DB'],
+        isolatedStorage: false,
+        miniflare: {
+          modulesRules: [{ type: 'Text', include: ['**/*.sql'] }],
+        },
       },
     },
   },

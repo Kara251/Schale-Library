@@ -1,0 +1,6 @@
+[
+  { "documentId": "sch-doc-abydos", "locale": "zh-Hans", "name": "阿拜多斯高等学校", "description": "背负巨额债务的高中。", "shortName": "阿拜多斯", "color": "#2d77c9", "sortOrder": 1, "createdAt": "2023-01-01T00:00:00.000Z", "updatedAt": "2023-05-01T00:00:00.000Z" },
+  { "documentId": "sch-doc-abydos", "locale": "en", "name": "Abydos High School", "description": "A high school buried in debt.", "shortName": "Abydos", "color": "#2d77c9", "sortOrder": 1, "createdAt": "2023-01-01T00:00:00.000Z", "updatedAt": "2023-05-02T00:00:00.000Z" },
+  { "documentId": "sch-doc-abydos", "locale": "ja", "name": "アビドス高等学校", "description": null, "shortName": null, "color": "#2d77c9", "sortOrder": 1, "createdAt": "2023-01-01T00:00:00.000Z", "updatedAt": "2023-05-03T00:00:00.000Z" },
+  { "documentId": "sch-doc-trinity", "locale": "zh-Hans", "name": "圣三一综合学园", "description": null, "shortName": null, "color": "#e8e3d3", "sortOrder": 4, "createdAt": "2023-01-02T00:00:00.000Z", "updatedAt": "2023-05-01T00:00:00.000Z" }
+]
