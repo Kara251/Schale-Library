@@ -26,6 +26,17 @@ export interface CollectionDef {
   localized: boolean
   supportsDraft: boolean
   readOnly?: boolean
+  /**
+   * 固定过滤器：多个集合视图共用一张表时的判别列。
+   * 列表按它过滤，新建按它自动落值，单条读写按它限定作用域
+   * —— 否则 online-events 能读写到 offline 的行。
+   */
+  fixedFilter?: { column: string; value: string }
+  /**
+   * 1:1 副表：字段散落在关联表时的写入目标（如 events → event_locations）。
+   * 副表字段与主表字段在面板契约里是平的，读取 LEFT JOIN，写入 upsert。
+   */
+  sideTable?: { table: string; fk: string; fields: Record<string, FieldDef> }
   searchColumns: string[]
   defaultSort: Array<[string, 'asc' | 'desc']>
   labelColumn: string
@@ -113,7 +124,89 @@ export const COLLECTIONS: Record<string, CollectionDef> = {
       coverImage: f('cover_image_url', 'media'),
       organizer: f('organizer', 'text'),
       organizerVerified: f('organizer_verified', 'boolean'),
-      sourcePlatform: f('source_platform', 'text'),
+      sourceName: f('source_platform', 'text'),
+      sourceUrl: f('source_url', 'text'),
+      lastVerifiedAt: f('last_verified_at', 'datetime'),
+      tags: f('tags_json', 'text'),
+      guests: f('guests_json', 'text', true),
+      ticketPriceText: f('ticket_price_text_json', 'text', true),
+      priceMin: f('price_min', 'number'),
+      priceMax: f('price_max', 'number'),
+      currency: f('currency', 'text'),
+      ticketStatus: f('ticket_status', 'text'),
+      ticketUrl: f('ticket_url', 'text'),
+      publishedAt: f('published_at', 'published-at'),
+    },
+  },
+  'online-events': {
+    table: 'events',
+    fixedFilter: { column: 'kind', value: 'online' },
+    localized: true,
+    supportsDraft: true,
+    searchColumns: ['organizer', 'source_platform', 'source_url'],
+    defaultSort: [['start_time', 'desc']],
+    labelColumn: 'title_json',
+    fields: {
+      title: f('title_json', 'text', true),
+      description: f('description_json', 'text', true),
+      nature: f('nature', 'text'),
+      eventFormat: f('event_format', 'text'),
+      statusOverride: f('status_override', 'text'),
+      startTime: f('start_time', 'datetime'),
+      endTime: f('end_time', 'datetime'),
+      link: f('link', 'text'),
+      coverImage: f('cover_image_url', 'media'),
+      organizer: f('organizer', 'text'),
+      organizerVerified: f('organizer_verified', 'boolean'),
+      sourceName: f('source_platform', 'text'),
+      sourceUrl: f('source_url', 'text'),
+      lastVerifiedAt: f('last_verified_at', 'datetime'),
+      tags: f('tags_json', 'text'),
+      guests: f('guests_json', 'text', true),
+      ticketPriceText: f('ticket_price_text_json', 'text', true),
+      priceMin: f('price_min', 'number'),
+      priceMax: f('price_max', 'number'),
+      currency: f('currency', 'text'),
+      ticketStatus: f('ticket_status', 'text'),
+      ticketUrl: f('ticket_url', 'text'),
+      publishedAt: f('published_at', 'published-at'),
+    },
+  },
+  'offline-events': {
+    table: 'events',
+    fixedFilter: { column: 'kind', value: 'offline' },
+    // kind 不在字段白名单里：判别列由 fixedFilter 落值，客户端指定一律 400
+    sideTable: {
+      table: 'event_locations',
+      fk: 'event_id',
+      fields: {
+        country: f('country', 'text'),
+        region: f('region', 'text'),
+        city: f('city', 'text'),
+        venue: f('venue', 'text'),
+        address: f('address', 'text'),
+        location: f('location_note', 'text'),
+        mapUrl: f('map_url', 'text'),
+      },
+    },
+    localized: true,
+    supportsDraft: true,
+    searchColumns: ['organizer', 'source_platform', 'source_url'],
+    defaultSort: [['start_time', 'desc']],
+    labelColumn: 'title_json',
+    fields: {
+      title: f('title_json', 'text', true),
+      description: f('description_json', 'text', true),
+      nature: f('nature', 'text'),
+      eventFormat: f('event_format', 'text'),
+      statusOverride: f('status_override', 'text'),
+      startTime: f('start_time', 'datetime'),
+      endTime: f('end_time', 'datetime'),
+      link: f('link', 'text'),
+      coverImage: f('cover_image_url', 'media'),
+      organizer: f('organizer', 'text'),
+      organizerVerified: f('organizer_verified', 'boolean'),
+      sourceName: f('source_platform', 'text'),
       sourceUrl: f('source_url', 'text'),
       lastVerifiedAt: f('last_verified_at', 'datetime'),
       tags: f('tags_json', 'text'),

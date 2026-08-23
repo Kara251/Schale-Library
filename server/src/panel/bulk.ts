@@ -61,17 +61,23 @@ export async function handleBulkAction(
   const errors: string[] = []
   let updated = 0
 
+  // 视图集合（多个集合共用一张表）：每条语句都要带判别列，
+  // 否则从 online-events 能批量改删到 offline 的行。
+  const fixed = def.fixedFilter
+  const scope = fixed ? ` AND ${fixed.column} = ?` : ''
+  const scopeBind = fixed ? [fixed.value] : []
+
   for (const documentId of documentIds) {
     try {
       if (action === 'delete') {
-        const result = await c.env.DB.prepare(`DELETE FROM ${def.table} WHERE document_id = ?1`)
-          .bind(documentId)
+        const result = await c.env.DB.prepare(`DELETE FROM ${def.table} WHERE document_id = ?${scope}`)
+          .bind(documentId, ...scopeBind)
           .run()
         if (!result.meta.changes) throw new Error('not_found')
         updated++
       } else if (action === 'set-student-organization') {
-        const result = await c.env.DB.prepare(`UPDATE ${def.table} SET organization = ?1, updated_at = ?2 WHERE document_id = ?3`)
-          .bind(organization, now, documentId)
+        const result = await c.env.DB.prepare(`UPDATE ${def.table} SET organization = ?, updated_at = ? WHERE document_id = ?${scope}`)
+          .bind(organization, now, documentId, ...scopeBind)
           .run()
         // 不存在的 document_id：changes=0 → 计入 failed（对齐旧后端逐条报错语义）
         if (!result.meta.changes) throw new Error('not_found')
@@ -79,8 +85,8 @@ export async function handleBulkAction(
       } else {
         // publish → published_at = now；unpublish → published_at = NULL
         const published = action === 'publish' ? now : null
-        const result = await c.env.DB.prepare(`UPDATE ${def.table} SET published_at = ?1, updated_at = ?2 WHERE document_id = ?3`)
-          .bind(published, now, documentId)
+        const result = await c.env.DB.prepare(`UPDATE ${def.table} SET published_at = ?, updated_at = ? WHERE document_id = ?${scope}`)
+          .bind(published, now, documentId, ...scopeBind)
           .run()
         if (!result.meta.changes) throw new Error('not_found')
         updated++

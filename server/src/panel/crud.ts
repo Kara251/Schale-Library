@@ -7,6 +7,7 @@ import type { HonoPanel } from './types'
 import { fail, ok, okPaginated, paginationOf } from '../lib/respond'
 import { pickLocale } from '../lib/i18n'
 import { COLLECTIONS, isPanelCollection } from './collections'
+import type { CollectionDef } from './collections'
 import { FieldValidationError, mapLocale, pickAllowedFields } from './input-schema'
 import { recordAuditLog } from './audit'
 
@@ -38,7 +39,8 @@ function serializeRow(
     status: row.published_at ? 'published' : 'draft',
   }
 
-  for (const [fieldName, field] of Object.entries(def.fields)) {
+  const allFields = { ...def.fields, ...(def.sideTable?.fields ?? {}) }
+  for (const [fieldName, field] of Object.entries(allFields)) {
     if (field.kind === 'published-at') continue
     const raw = row[field.column]
     if (field.localized) {
@@ -50,13 +52,34 @@ function serializeRow(
   return out
 }
 
+/** 主表 SELECT（副表存在时 LEFT JOIN 拉平；副表列名与主表不重名）。 */
+function selectFrom(def: CollectionDef): string {
+  if (!def.sideTable) return `SELECT * FROM ${def.table}`
+  const cols = Object.values(def.sideTable.fields).map((f) => `s.${f.column}`).join(', ')
+  return `SELECT t.*, ${cols} FROM ${def.table} t LEFT JOIN ${def.sideTable.table} s ON s.${def.sideTable.fk} = t.id`
+}
+
+/** 固定过滤器的 WHERE 子句；无过滤器返回 null。列名在 selectFrom 有 JOIN 时需带 t. 前缀。 */
+function fixedWhere(def: CollectionDef, qualified: boolean): { sql: string; value: string } | null {
+  if (!def.fixedFilter) return null
+  const col = qualified && def.sideTable ? `t.${def.fixedFilter.column}` : def.fixedFilter.column
+  return { sql: col, value: def.fixedFilter.value }
+}
+
 /** 随机 documentId，对齐 Strapi 24 位十六进制格式。 */
 function generateDocumentId(): string {
   return crypto.randomUUID().replace(/-/g, '').slice(0, 24)
 }
 
-async function findByDocumentId(db: D1Database, table: string, documentId: string): Promise<RowRecord | null> {
-  return db.prepare(`SELECT * FROM ${table} WHERE document_id = ?1`).bind(documentId).first<RowRecord>()
+/**
+ * documentId 查单条。固定过滤器一并生效 —— 否则 online-events 能读写到 offline 的行。
+ */
+async function findByDocumentId(db: D1Database, def: CollectionDef, documentId: string): Promise<RowRecord | null> {
+  const docCol = def.sideTable ? 't.document_id' : 'document_id'
+  const fixed = fixedWhere(def, true)
+  const where = fixed ? `${docCol} = ?1 AND ${fixed.sql} = ?2` : `${docCol} = ?1`
+  const binds = fixed ? [documentId, fixed.value] : [documentId]
+  return db.prepare(`${selectFrom(def)} WHERE ${where}`).bind(...binds).first<RowRecord>()
 }
 
 export function registerCrudRoutes(panel: HonoPanel): void {
@@ -72,28 +95,37 @@ export function registerCrudRoutes(panel: HonoPanel): void {
 
     const where: string[] = []
     const binds: unknown[] = []
+    // 有 JOIN 时主表列必须带 t. 前缀，否则与副表列产生歧义
+    const q = (col: string) => (def.sideTable ? `t.${col}` : col)
+
+    const fixed = fixedWhere(def, true)
+    if (fixed) {
+      binds.push(fixed.value)
+      where.push(`${fixed.sql} = ?${binds.length}`)
+    }
 
     const status = c.req.query('status')
-    if (status === 'published') where.push('published_at IS NOT NULL')
-    else if (status === 'draft') where.push('published_at IS NULL')
+    if (status === 'published') where.push(`${q('published_at')} IS NOT NULL`)
+    else if (status === 'draft') where.push(`${q('published_at')} IS NULL`)
 
     const search = c.req.query('search')?.trim()
     if (search) {
-      const clauses = def.searchColumns.map((col) => `LOWER(${col}) LIKE ?${binds.length + 1}`)
       binds.push(`%${search.toLowerCase()}%`)
+      const clauses = def.searchColumns.map((col) => `LOWER(${q(col)}) LIKE ?${binds.length}`)
       if (clauses.length > 0) where.push(`(${clauses.join(' OR ')})`)
     }
 
     const whereSql = where.length > 0 ? `WHERE ${where.join(' AND ')}` : ''
-    const orderSql = def.defaultSort.map(([col, dir]) => `${col} ${dir.toUpperCase()}`).join(', ')
-    const totalRow = await c.env.DB.prepare(`SELECT COUNT(*) AS n FROM ${def.table} ${whereSql}`)
+    const orderSql = def.defaultSort.map(([col, dir]) => `${q(col)} ${dir.toUpperCase()}`).join(', ')
+    const countFrom = def.sideTable ? `${def.table} t` : def.table
+    const totalRow = await c.env.DB.prepare(`SELECT COUNT(*) AS n FROM ${countFrom} ${whereSql}`)
       .bind(...binds)
       .first<{ n: number }>()
     const total = totalRow?.n ?? 0
 
     const offset = (page - 1) * pageSize
     const { results } = await c.env.DB.prepare(
-      `SELECT * FROM ${def.table} ${whereSql} ORDER BY ${orderSql} LIMIT ${pageSize} OFFSET ${offset}`
+      `${selectFrom(def)} ${whereSql} ORDER BY ${orderSql} LIMIT ${pageSize} OFFSET ${offset}`
     )
       .bind(...binds)
       .all<RowRecord>()
@@ -106,7 +138,7 @@ export function registerCrudRoutes(panel: HonoPanel): void {
     const key = c.req.param('collection')
     if (!isPanelCollection(key)) return fail(404, 'unknown_collection')
     const def = COLLECTIONS[key]
-    const row = await findByDocumentId(c.env.DB, def.table, c.req.param('documentId'))
+    const row = await findByDocumentId(c.env.DB, def, c.req.param('documentId'))
     if (!row) return fail(404, 'not_found')
     return ok(serializeRow(key, row, mapLocale(c.req.query('locale'))))
   })
@@ -129,10 +161,16 @@ export function registerCrudRoutes(panel: HonoPanel): void {
 
     try {
       const now = Date.now()
-      const { values } = pickAllowedFields(key, payload, localeQuery)
+      const { values, sideValues } = pickAllowedFields(key, payload, localeQuery)
       const columns = ['document_id', 'created_at', 'updated_at']
       const placeholders = ['?1', '?2', '?3']
       const binds: unknown[] = [generateDocumentId(), now, now]
+      // 视图集合：判别列由服务端落值，不接受客户端指定
+      if (def.fixedFilter) {
+        columns.push(def.fixedFilter.column)
+        placeholders.push(`?${binds.length + 1}`)
+        binds.push(def.fixedFilter.value)
+      }
       for (const [column, value] of Object.entries(values)) {
         columns.push(column)
         placeholders.push(`?${binds.length + 1}`)
@@ -145,7 +183,9 @@ export function registerCrudRoutes(panel: HonoPanel): void {
         .run()
       if (!result.meta.changes) return fail(500, 'insert_failed')
 
-      const row = await findByDocumentId(c.env.DB, def.table, binds[0] as string)
+      await upsertSideRow(c.env.DB, def, result.meta.last_row_id as number, sideValues)
+
+      const row = await findByDocumentId(c.env.DB, def, binds[0] as string)
       await recordAuditLog(c, {
         action: 'create',
         targetCollection: key,
@@ -181,11 +221,11 @@ export function registerCrudRoutes(panel: HonoPanel): void {
     const localeQuery = 'locale' in body && typeof body.locale === 'string' ? body.locale : undefined
     const documentId = c.req.param('documentId')
 
-    const existing = await findByDocumentId(c.env.DB, def.table, documentId)
+    const existing = await findByDocumentId(c.env.DB, def, documentId)
     if (!existing) return fail(404, 'not_found')
 
     try {
-      const { values } = pickAllowedFields(key, payload, localeQuery)
+      const { values, sideValues } = pickAllowedFields(key, payload, localeQuery)
       const sets = ['updated_at = ?1']
       const binds: unknown[] = [Date.now()]
       for (const [column, value] of Object.entries(values)) {
@@ -197,7 +237,9 @@ export function registerCrudRoutes(panel: HonoPanel): void {
         .bind(...binds)
         .run()
 
-      const row = await findByDocumentId(c.env.DB, def.table, documentId)
+      await upsertSideRow(c.env.DB, def, existing.id, sideValues)
+
+      const row = await findByDocumentId(c.env.DB, def, documentId)
       await recordAuditLog(c, {
         action: 'update',
         targetCollection: key,
@@ -223,13 +265,38 @@ export function registerCrudRoutes(panel: HonoPanel): void {
     if (def.readOnly) return fail(400, 'read_only_collection')
     const documentId = c.req.param('documentId')
 
-    const existing = await findByDocumentId(c.env.DB, def.table, documentId)
+    const existing = await findByDocumentId(c.env.DB, def, documentId)
     if (!existing) return fail(404, 'not_found')
 
-    await c.env.DB.prepare(`DELETE FROM ${def.table} WHERE document_id = ?1`).bind(documentId).run()
+    // 按主键删：existing 已经过固定过滤器校验，副表由外键 ON DELETE CASCADE 清理
+    await c.env.DB.prepare(`DELETE FROM ${def.table} WHERE id = ?1`).bind(existing.id).run()
     await recordAuditLog(c, { action: 'delete', targetCollection: key, targetDocumentId: documentId })
     return ok({ success: true })
   })
+}
+
+/** 1:1 副表 upsert；没有副表或本次没有副表字段时是 no-op。 */
+async function upsertSideRow(
+  db: D1Database,
+  def: CollectionDef,
+  rowId: number,
+  sideValues: Record<string, string | number | null>
+): Promise<void> {
+  const side = def.sideTable
+  if (!side || Object.keys(sideValues).length === 0) return
+
+  const columns = [side.fk, ...Object.keys(sideValues)]
+  const binds: unknown[] = [rowId, ...Object.values(sideValues)]
+  const placeholders = columns.map((_, i) => `?${i + 1}`)
+  const updates = Object.keys(sideValues).map((col) => `${col} = excluded.${col}`)
+
+  await db
+    .prepare(
+      `INSERT INTO ${side.table} (${columns.join(', ')}) VALUES (${placeholders.join(', ')})
+       ON CONFLICT(${side.fk}) DO UPDATE SET ${updates.join(', ')}`
+    )
+    .bind(...binds)
+    .run()
 }
 
 function summarizePayload(payload: Record<string, unknown>): string {

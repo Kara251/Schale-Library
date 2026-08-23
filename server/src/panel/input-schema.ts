@@ -112,6 +112,8 @@ function normalizeByKind(field: FieldDef, value: unknown): string | number | nul
 export interface NormalizedInput {
   /** column → 归一化后的值（i18n 字段已是 JSON 字符串） */
   values: Record<string, string | number | null>
+  /** 同上，但目标是集合的 1:1 副表（如 event_locations） */
+  sideValues: Record<string, string | number | null>
 }
 
 /**
@@ -125,17 +127,25 @@ export function pickAllowedFields(
 ): NormalizedInput {
   const def: CollectionDef = COLLECTIONS[collectionKey]
   const values: Record<string, string | number | null> = {}
+  const sideValues: Record<string, string | number | null> = {}
 
   for (const key of Object.keys(payload)) {
     const field = def.fields[key]
-    if (!field) {
-      throw new FieldValidationError(`未登记字段: ${key}`, key)
+    if (field) {
+      values[field.column] = normalizeByKind(field, payload[key])
+      continue
     }
-    values[field.column] = normalizeByKind(field, payload[key])
+    // 副表字段在面板契约里与主表字段是平的，写入时才分流
+    const sideField = def.sideTable?.fields[key]
+    if (sideField) {
+      sideValues[sideField.column] = normalizeByKind(sideField, payload[key])
+      continue
+    }
+    throw new FieldValidationError(`未登记字段: ${key}`, key)
   }
 
   void locale // i18n 单列 JSON 方案下 locale 仅影响读取，不影响存储
-  return { values }
+  return { values, sideValues }
 }
 
 export function mapLocale(locale: string | null | undefined): string {
