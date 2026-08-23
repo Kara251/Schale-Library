@@ -19,7 +19,8 @@ export function createPanelRoutes(): HonoPanel {
   const panel: HonoPanel = new Hono()
 
   // bootstrap 维护账号：环境变量存在且 users 表空时创建（幂等，请求级触发）
-  panel.use('*', async (c, next) => {
+  // 仅挂 /panel/*：公开内容 API 不该为此付一次 users 计数查询
+  panel.use('/panel/*', async (c, next) => {
     await ensureBootstrapAdmin(
       c.env.DB,
       c.env.BOOTSTRAP_ADMIN_USERNAME,

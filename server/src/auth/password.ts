@@ -1,8 +1,9 @@
 /**
  * PBKDF2 密码哈希（WebCrypto crypto.subtle）。
  * 存储格式：$pbkdf2$<iter>$<saltB64>$<hashB64>，迭代次数 ≥100000。
+ * 100000 同时是 Workers WebCrypto 的迭代上限，超过会抛 NotSupportedError。
  */
-const PBKDF2_ITERATIONS = 210000
+const PBKDF2_ITERATIONS = 100000
 const HASH_LENGTH = 32
 export const PASSWORD_HASH_PREFIX = '$pbkdf2$'
 

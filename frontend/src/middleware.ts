@@ -72,7 +72,7 @@ function setLocaleRequestHeader(request: NextRequest, locale: Locale) {
     return requestHeaders
 }
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
 
     if (

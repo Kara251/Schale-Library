@@ -12,6 +12,11 @@ export default defineWorkersConfig({
         isolatedStorage: false,
         miniflare: {
           modulesRules: [{ type: 'Text', include: ['**/*.sql'] }],
+          // 测试环境自持：不继承 wrangler.toml 的生产 vars（角色准入、Cookie Secure 语义都随之变）
+          bindings: {
+            ENVIRONMENT: 'development',
+            ADMIN_PANEL_ALLOWED_ROLES: '',
+          },
         },
       },
     },
