@@ -47,17 +47,28 @@ export function clearSessionCookie(c: Context<{ Bindings: PanelEnv }>): void {
 
 const TOKEN_BYTES = 32
 
+/**
+ * 会话行的主键存的是 token 的 SHA-256，不是 token 本身。
+ * 明文存储意味着任何一次数据库读取泄露（冷备、导出、控制台）都等于
+ * 直接拿到全部有效登录态；存摘要后泄露的内容不可用于冒充。
+ * token 是 32 字节随机值，不存在字典攻击面，无需加盐。
+ */
+export async function hashToken(token: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))
+  return toHex(new Uint8Array(digest))
+}
+
 export async function createSession(db: D1Database, userId: number, now = Date.now()): Promise<string> {
   const token = toHex(crypto.getRandomValues(new Uint8Array(TOKEN_BYTES)))
   await db
     .prepare('INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?1, ?2, ?3, ?4)')
-    .bind(token, userId, now + SESSION_TTL_SECONDS * 1000, now)
+    .bind(await hashToken(token), userId, now + SESSION_TTL_SECONDS * 1000, now)
     .run()
   return token
 }
 
 export async function deleteSession(db: D1Database, token: string): Promise<void> {
-  await db.prepare('DELETE FROM sessions WHERE id = ?1').bind(token).run()
+  await db.prepare('DELETE FROM sessions WHERE id = ?1').bind(await hashToken(token)).run()
 }
 
 /** 顺带清理已过期的会话行，避免表无限膨胀。 */
@@ -77,6 +88,7 @@ export async function getSessionUser(
 ): Promise<PanelUser | null> {
   if (!token || !/^[0-9a-f]{64}$/.test(token)) return null
 
+  const tokenHash = await hashToken(token)
   const row = await db
     .prepare(
       `SELECT s.expires_at AS expires_at, u.id AS user_id, u.username AS username,
@@ -84,7 +96,7 @@ export async function getSessionUser(
        FROM sessions s JOIN users u ON u.id = s.user_id
        WHERE s.id = ?1`
     )
-    .bind(token)
+    .bind(tokenHash)
     .first<{
       expires_at: number
       user_id: number

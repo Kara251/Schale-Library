@@ -1,12 +1,11 @@
 import type { Metadata } from "next"
 import { headers } from "next/headers"
-import { Analytics } from "@vercel/analytics/next"
 import { BackToTop } from "@/components/back-to-top"
 import { BackgroundImage } from "@/components/background-image"
 import { AuthProvider } from "@/contexts/auth-context"
 import { LocaleProvider } from "@/contexts/locale-context"
 import { ToastProvider } from "@/contexts/toast-context"
-import { GoogleAnalytics, Clarity } from "@/components/third-party-analytics"
+import { CloudflareAnalytics, GoogleAnalytics, Clarity } from "@/components/third-party-analytics"
 import { SITE_URL } from "@/lib/config"
 import "./globals.css"
 
@@ -65,12 +64,8 @@ export default async function RootLayout({
             <ToastProvider>
               {children}
               <BackToTop />
-              {/* TODO(W6): 迁移至 Cloudflare Workers 后，用 CF Web Analytics 替换 Vercel Analytics。
-                  接入方式：在 <head> 加
-                  <script defer src="https://static.cloudflareinsights.com/beacon.min.js"
-                    data-cf-beacon='{"token": "<CF_WEB_ANALYTICS_TOKEN>"}' />
-                  token 由 Cloudflare Dashboard -> Analytics & Logs -> Web Analytics 签发。 */}
-              <Analytics />
+              {/* NEXT_PUBLIC_CF_BEACON_TOKEN 未配置时不渲染 */}
+              <CloudflareAnalytics />
               <GoogleAnalytics />
               <Clarity />
             </ToastProvider>

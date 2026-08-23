@@ -13,11 +13,12 @@ const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
 const VALID_KEY = 'panel/lx7f2a-0a1b2c3d.png'
 
 beforeAll(async () => {
-  await env.UPLOADS.put(VALID_KEY, PNG_BYTES, {
+  const bucket = env.UPLOADS!
+  await bucket.put(VALID_KEY, PNG_BYTES, {
     httpMetadata: { contentType: 'image/png' },
   })
   // 桶里的非上传对象，用于验证不会被公开路径取出
-  await env.UPLOADS.put('backups/secret-dump.sql', 'SENSITIVE')
+  await bucket.put('backups/secret-dump.sql', 'SENSITIVE')
 })
 
 describe('GET /media/<key>', () => {

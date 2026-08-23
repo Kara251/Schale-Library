@@ -7,7 +7,7 @@ import { env } from 'cloudflare:test'
 import { describe, it, expect, beforeAll } from 'vitest'
 import { BASELINE_STATEMENTS } from './baseline'
 import { hashPassword } from '../src/auth/password'
-import { createSession, deleteSession } from '../src/auth/session'
+import { createSession, deleteSession, hashToken } from '../src/auth/session'
 import app from '../src/index'
 
 const LOGIN_BODY = { identifier: 'panel-admin', password: 'panel-pass-123' }
@@ -59,7 +59,7 @@ describe('POST /panel/auth/login', () => {
 
     // 会话行已落库
     const token = /schale_admin_session=([0-9a-f]{64})/.exec(cookie)![1]
-    const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions WHERE id = ?1').bind(token).first<{ n: number }>()
+    const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions WHERE id = ?1').bind(await hashToken(token)).first<{ n: number }>()
     expect(row!.n).toBe(1)
   })
 
@@ -316,7 +316,7 @@ describe('collection CRUD with field whitelist', () => {
     )
     expect(logout.status).toBe(200)
 
-    const remaining = await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions WHERE id = ?1').bind(token).first<{ n: number }>()
+    const remaining = await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions WHERE id = ?1').bind(await hashToken(token)).first<{ n: number }>()
     expect(remaining!.n).toBe(0)
     expect(cookieFrom(logout)).toContain('Max-Age=0')
   })

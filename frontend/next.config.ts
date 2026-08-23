@@ -34,6 +34,7 @@ const apiUploadPatterns = getApiUploadPatterns();
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083';
 
 function getSecurityHeaders() {
+  const isProduction = process.env.NODE_ENV === 'production';
   const apiOrigin = (() => {
     try {
       return new URL(apiUrl).origin;
@@ -49,10 +50,12 @@ function getSecurityHeaders() {
     "object-src 'none'",
     "form-action 'self'",
     "frame-src 'self' https://drive.bakivo.com",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vitals.vercel-insights.com https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms",
+    // unsafe-eval 只有开发期的 React Refresh 需要，生产环境去掉以收窄 XSS 面。
+    // unsafe-inline 暂时保留：Next 会内联 bootstrap 脚本，移除需改用 nonce。
+    `script-src 'self' 'unsafe-inline'${isProduction ? '' : " 'unsafe-eval'"} https://static.cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms`,
     "style-src 'self' 'unsafe-inline' https://fonts.loli.net",
     `img-src 'self' data: blob: ${apiOrigin} http://localhost:8083 https://res.cloudinary.com https://i0.hdslb.com https://i1.hdslb.com https://i2.hdslb.com`,
-    `connect-src 'self' ${apiOrigin} https://vitals.vercel-insights.com https://www.google-analytics.com https://region1.google-analytics.com https://www.clarity.ms https://*.clarity.ms`,
+    `connect-src 'self' ${apiOrigin} https://cloudflareinsights.com https://www.google-analytics.com https://region1.google-analytics.com https://www.clarity.ms https://*.clarity.ms`,
     // fonts.loli.net 只提供 CSS，字体文件实际托管在 gstatic.loli.net；
     // 漏掉后者会让日文字体在浏览器里被 CSP 全部拦下
     "font-src 'self' data: https://fonts.gstatic.com https://fonts.loli.net https://gstatic.loli.net",

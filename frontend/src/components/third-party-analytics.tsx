@@ -53,3 +53,27 @@ export function Clarity({ projectId }: ClarityProps) {
         </Script>
     )
 }
+
+interface CloudflareAnalyticsProps {
+    token?: string
+}
+
+/**
+ * Cloudflare Web Analytics。取代迁移前的 Vercel Analytics
+ * —— 后者的采集端点只存在于 Vercel，站点搬到 Workers 后不会有任何数据。
+ * 未配置 token 时不渲染，本地开发与未接入的环境都不会打无效请求。
+ * token 由 Cloudflare Dashboard → Analytics & Logs → Web Analytics 签发。
+ */
+export function CloudflareAnalytics({ token }: CloudflareAnalyticsProps) {
+    const beaconToken = token || process.env.NEXT_PUBLIC_CF_BEACON_TOKEN
+
+    if (!beaconToken) return null
+
+    return (
+        <Script
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            strategy="afterInteractive"
+            data-cf-beacon={JSON.stringify({ token: beaconToken })}
+        />
+    )
+}

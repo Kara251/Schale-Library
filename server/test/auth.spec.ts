@@ -7,7 +7,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 
 import { BASELINE_STATEMENTS } from './baseline'
 import { hashPassword, verifyPassword } from '../src/auth/password'
-import { createSession, getSessionUser, deleteSession, pruneExpiredSessions, SESSION_TTL_SECONDS } from '../src/auth/session'
+import { createSession, getSessionUser, deleteSession, pruneExpiredSessions, SESSION_TTL_SECONDS, hashToken } from '../src/auth/session'
 import { ensureBootstrapAdmin } from '../src/auth/bootstrap'
 import { isAllowedAdminUser, getAllowedRoles } from '../src/auth/roles'
 
@@ -54,6 +54,38 @@ describe('password hashing (PBKDF2 WebCrypto)', () => {
   })
 })
 
+describe('会话 token 摘要存储', () => {
+  it('sessions 表里存的是 SHA-256 摘要，不是 token 本身', async () => {
+    const userId = await seedUser('digest-user')
+    const token = await createSession(env.DB, userId)
+
+    // 明文 token 在表里查不到
+    const byPlain = await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions WHERE id = ?1')
+      .bind(token)
+      .first<{ n: number }>()
+    expect(byPlain!.n).toBe(0)
+
+    // 摘要能查到，且不等于 token
+    const digest = await hashToken(token)
+    expect(digest).not.toBe(token)
+    const byDigest = await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions WHERE id = ?1')
+      .bind(digest)
+      .first<{ n: number }>()
+    expect(byDigest!.n).toBe(1)
+  })
+
+  it('拿到库里的摘要也无法冒充：摘要不能当 token 用', async () => {
+    const userId = await seedUser('digest-attacker')
+    const token = await createSession(env.DB, userId)
+    const digest = await hashToken(token)
+
+    // 攻击者读到数据库内容，拿摘要当 token 提交
+    expect(await getSessionUser(env.DB, digest)).toBeNull()
+    // 原 token 仍然有效
+    expect(await getSessionUser(env.DB, token)).not.toBeNull()
+  })
+})
+
 describe('sessions (D1-backed, fail-closed)', () => {
   it('creates and resolves a session; unknown token rejected', async () => {
     const userId = await seedUser(`session-user-${Date.now()}`)
@@ -77,7 +109,7 @@ describe('sessions (D1-backed, fail-closed)', () => {
     const user = await getSessionUser(env.DB, token)
     expect(user).toBeNull()
 
-    const remaining = await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions WHERE id = ?1').bind(token).first<{ n: number }>()
+    const remaining = await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions WHERE id = ?1').bind(await hashToken(token)).first<{ n: number }>()
     expect(remaining!.n).toBe(0)
   })
 
@@ -99,8 +131,8 @@ describe('sessions (D1-backed, fail-closed)', () => {
     const fresh = await createSession(env.DB, u2, now)
 
     await pruneExpiredSessions(env.DB, now)
-    expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions WHERE id = ?1').bind(stale).first<{ n: number }>()).toMatchObject({ n: 0 })
-    expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions WHERE id = ?1').bind(fresh).first<{ n: number }>()).toMatchObject({ n: 1 })
+    expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions WHERE id = ?1').bind(await hashToken(stale)).first<{ n: number }>()).toMatchObject({ n: 0 })
+    expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions WHERE id = ?1').bind(await hashToken(fresh)).first<{ n: number }>()).toMatchObject({ n: 1 })
   })
 
   it('refuses sessions of blocked users', async () => {
