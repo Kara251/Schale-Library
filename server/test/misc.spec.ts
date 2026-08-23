@@ -47,7 +47,7 @@ describe('GET /announcements', () => {
     await seedAnnouncement({ title_json: JSON.stringify({ 'zh-Hans': '高优先级' }), priority: 10 })
     await seedAnnouncement({ title_json: JSON.stringify({ 'zh-Hans': '普通公告', en: 'Normal EN' }) })
 
-    const r = await app.request('/announcements?locale=zh-Hans&sort[0]=isPinned:desc&sort[1]=priority:desc', {}, env)
+    const r = await app.request('/api/announcements?locale=zh-Hans&sort[0]=isPinned:desc&sort[1]=priority:desc', {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as { data: Array<Record<string, unknown>> }
     expect(body.data.map((d) => d.title)).toEqual(['Pinned EN', '高优先级', '普通公告'])
@@ -63,7 +63,7 @@ describe('GET /announcements', () => {
     await seedAnnouncement({ title_json: JSON.stringify({ 'zh-Hans': '已停用' }), is_active: 0 })
     await seedAnnouncement({ title_json: JSON.stringify({ 'zh-Hans': '草稿' }), published_at: null })
 
-    const r = await app.request('/announcements', {}, env)
+    const r = await app.request('/api/announcements', {}, env)
     const body = (await r.json()) as { data: Array<{ title: string }> }
     expect(body.data.map((d) => d.title)).toEqual(['正常'])
   })
@@ -73,7 +73,7 @@ describe('GET /announcements', () => {
     await seedAnnouncement({ title_json: JSON.stringify({ 'zh-Hans': '活动预告' }), content_json: JSON.stringify({ 'zh-Hans': '新活动上线，期间服务器不维护' }) })
     await seedAnnouncement({ title_json: JSON.stringify({ 'zh-Hans': '无关内容' }), content_json: JSON.stringify({ 'zh-Hans': '别的消息' }) })
 
-    const r = await app.request('/announcements?filters[$or][0][title][$containsi]=维护&filters[$or][1][content][$containsi]=维护', {}, env)
+    const r = await app.request('/api/announcements?filters[$or][0][title][$containsi]=维护&filters[$or][1][content][$containsi]=维护', {}, env)
     const body = (await r.json()) as { data: Array<{ title: string }> }
     expect(new Set(body.data.map((d) => d.title))).toEqual(new Set(['维护通知', '活动预告']))
   })
@@ -82,13 +82,13 @@ describe('GET /announcements', () => {
     const docId = `an-detail-${Math.random().toString(36).slice(2, 8)}`
     await seedAnnouncement({ document_id: docId, title_json: JSON.stringify({ 'zh-Hans': '详情公告' }), content_json: JSON.stringify({ 'zh-Hans': '<p>正文</p>' }) })
 
-    const r = await app.request(`/announcements/${docId}`, {}, env)
+    const r = await app.request(`/api/announcements/${docId}`, {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as { data: Record<string, unknown> }
     expect(body.data.content).toBe('<p>正文</p>')
     expect(body.data.documentId).toBe(docId)
 
-    const missing = await app.request('/announcements/an-missing-doc-id', {}, env)
+    const missing = await app.request('/api/announcements/an-missing-doc-id', {}, env)
     expect(missing.status).toBe(404)
   })
 })
@@ -107,7 +107,7 @@ describe('GET /friend-links', () => {
         .run()
     }
 
-    const r = await app.request('/friend-links', {}, env)
+    const r = await app.request('/api/friend-links', {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as { data: Array<Record<string, unknown>>; meta: { pagination: { total: number } } }
     expect(body.meta.pagination.total).toBe(2)
@@ -133,7 +133,7 @@ describe('GET /schools', () => {
       .bind('sc-draft', 'srt', JSON.stringify({ 'zh-Hans': 'SRT' }), '#fff', 3, NOW, NOW, null)
       .run()
 
-    const r = await app.request('/schools?locale=en', {}, env)
+    const r = await app.request('/api/schools?locale=en', {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as { data: Array<{ slug: string; name: string; order: number }> }
     expect(body.data.map((d) => d.slug)).toEqual(['abydos', 'gehenna'])
@@ -155,7 +155,7 @@ describe('GET /spoiler-tiers', () => {
         .run()
     }
 
-    const r = await app.request('/spoiler-tiers', {}, env)
+    const r = await app.request('/api/spoiler-tiers', {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as { data: Array<{ key: string; name: string }> }
     expect(body.data.map((d) => d.key)).toEqual(['none', 'vol3', 'final'])

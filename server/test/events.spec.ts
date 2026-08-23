@@ -90,7 +90,7 @@ describe('GET /online-events', () => {
     await seedEvent({ title_json: JSON.stringify({ en: 'EN Only Title' }), start_time: NOW + HOUR, end_time: NOW + 2 * HOUR })
     await seedEvent({ title_json: JSON.stringify({ 'zh-Hans': '中文标题' }), start_time: NOW + 3 * HOUR, end_time: NOW + 4 * HOUR })
 
-    const r = await app.request('/online-events?locale=zh-Hans', {}, env)
+    const r = await app.request('/api/online-events?locale=zh-Hans', {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as { data: Array<Record<string, unknown>>; meta: { pagination: { total: number } } }
     expect(body.data).toHaveLength(2)
@@ -109,12 +109,12 @@ describe('GET /online-events', () => {
     await seedEvent({ published_at: null, title_json: JSON.stringify({ 'zh-Hans': '草稿活动' }) })
     await seedEvent({ title_json: JSON.stringify({ 'zh-Hans': '已发布' }) })
 
-    const r = await app.request('/offline-events', {}, env)
+    const r = await app.request('/api/offline-events', {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as { data: Array<Record<string, unknown>> }
     expect(body.data).toHaveLength(0)
 
-    const r2 = await app.request('/online-events', {}, env)
+    const r2 = await app.request('/api/online-events', {}, env)
     const body2 = (await r2.json()) as { data: Array<{ title: string }> }
     expect(body2.data.map((d) => d.title)).toEqual(['已发布'])
   })
@@ -123,7 +123,7 @@ describe('GET /online-events', () => {
     await seedEvent({ nature: 'fanmade', title_json: JSON.stringify({ 'zh-Hans': '同人展' }) })
     await seedEvent({ nature: 'official', title_json: JSON.stringify({ 'zh-Hans': '官方直播' }) })
 
-    const r = await app.request('/online-events?filters[nature][$eq]=fanmade', {}, env)
+    const r = await app.request('/api/online-events?filters[nature][$eq]=fanmade', {}, env)
     const body = (await r.json()) as { data: Array<{ title: string; nature: string }> }
     expect(body.data).toHaveLength(1)
     expect(body.data[0].title).toBe('同人展')
@@ -148,7 +148,7 @@ describe('GET /offline-events', () => {
       { country: '中国', region: '华东', city: '上海', venue: '新国际博览中心', address: null, map_url: null }
     )
 
-    const r = await app.request('/offline-events?filters[city][$containsi]=东京', {}, env)
+    const r = await app.request('/api/offline-events?filters[city][$containsi]=东京', {}, env)
     const body = (await r.json()) as { data: Array<Record<string, unknown>> }
     expect(body.data).toHaveLength(1)
     const ev = body.data[0]
@@ -163,17 +163,17 @@ describe('GET /offline-events', () => {
       title_json: JSON.stringify({ 'zh-Hans': '详情活动' }),
     }, { city: '京都' })
 
-    const byId = await app.request(`/offline-events/${id}`, {}, env)
+    const byId = await app.request(`/api/offline-events/${id}`, {}, env)
     expect(byId.status).toBe(200)
     const bodyById = (await byId.json()) as { data: Record<string, unknown> }
     expect(bodyById.data.id).toBe(id)
 
     const docRes = await env.DB.prepare('SELECT document_id FROM events WHERE id = ?').bind(id).first<{ document_id: string }>()
-    const byDoc = await app.request(`/offline-events/${docRes!.document_id}`, {}, env)
+    const byDoc = await app.request(`/api/offline-events/${docRes!.document_id}`, {}, env)
     const bodyByDoc = (await byDoc.json()) as { data: Record<string, unknown> }
     expect(bodyByDoc.data.documentId).toBe(docRes!.document_id)
 
-    const missing = await app.request('/offline-events/999999', {}, env)
+    const missing = await app.request('/api/offline-events/999999', {}, env)
     expect(missing.status).toBe(404)
   })
 })
@@ -193,7 +193,7 @@ describe('GET /events-bundle', () => {
       { country: '日本', region: '关东', city: '千叶' }
     )
 
-    const r = await app.request('/events-bundle', {}, env)
+    const r = await app.request('/api/events-bundle', {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as {
       data: Array<{ type: string; event: Record<string, unknown> }>
@@ -212,7 +212,7 @@ describe('GET /events-bundle', () => {
     for (let i = 0; i < 5; i++) {
       await seedEvent({ title_json: JSON.stringify({ 'zh-Hans': `第${i}场` }), start_time: NOW - i * HOUR })
     }
-    const r = await app.request('/events-bundle?page=2&pageSize=2', {}, env)
+    const r = await app.request('/api/events-bundle?page=2&pageSize=2', {}, env)
     const body = (await r.json()) as { data: Array<{ event: { title: string } }>; meta: { pagination: { page: number; pageCount: number; total: number } } }
     expect(body.meta.pagination.page).toBe(2)
     expect(body.meta.pagination.total).toBe(5)

@@ -14,7 +14,7 @@ const LOGIN_BODY = { identifier: 'panel-admin', password: 'panel-pass-123' }
 
 async function login(identifier = LOGIN_BODY.identifier, password = LOGIN_BODY.password): Promise<Response> {
   return app.request(
-    'https://test.local/panel/auth/login',
+    'https://test.local/api/panel/auth/login',
     { method: 'POST', headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '203.0.113.7' }, body: JSON.stringify({ identifier, password }) },
     env
   )
@@ -90,7 +90,7 @@ describe('POST /panel/auth/login', () => {
 
     // 换 IP 不受限流影响
     const freshIp = await app.request(
-      'https://test.local/panel/auth/login',
+      'https://test.local/api/panel/auth/login',
       { method: 'POST', headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '198.51.100.9' }, body: JSON.stringify(LOGIN_BODY) },
       env
     )
@@ -100,7 +100,7 @@ describe('POST /panel/auth/login', () => {
 
 describe('session guard (fail-closed)', () => {
   it('GET /panel/auth/session without cookie → 401', async () => {
-    const res = await app.request('https://test.local/panel/auth/session', {}, env)
+    const res = await app.request('https://test.local/api/panel/auth/session', {}, env)
     expect(res.status).toBe(401)
   })
 
@@ -109,7 +109,7 @@ describe('session guard (fail-closed)', () => {
     if (loginRes.status !== 200) {
       // IP 被上一组用例限流：换 IP 登录
       const alt = await app.request(
-        'https://test.local/panel/auth/login',
+        'https://test.local/api/panel/auth/login',
         { method: 'POST', headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '198.51.100.10' }, body: JSON.stringify(LOGIN_BODY) },
         env
       )
@@ -118,7 +118,7 @@ describe('session guard (fail-closed)', () => {
   })
 
   it('panel routes require session: GET /panel/announcements without cookie → 401', async () => {
-    const res = await app.request('https://test.local/panel/announcements', {}, env)
+    const res = await app.request('https://test.local/api/panel/announcements', {}, env)
     expect(res.status).toBe(401)
   })
 
@@ -128,11 +128,11 @@ describe('session guard (fail-closed)', () => {
     const token = await createSession(env.DB, user!.id)
     const cookie = `schale_admin_session=${token}; Path=/`
 
-    const okRes = await app.request('https://test.local/panel/auth/session', { headers: { Cookie: cookie } }, env)
+    const okRes = await app.request('https://test.local/api/panel/auth/session', { headers: { Cookie: cookie } }, env)
     expect(okRes.status).toBe(200)
 
     await deleteSession(env.DB, token)
-    const revokedRes = await app.request('https://test.local/panel/announcements', { headers: { Cookie: cookie } }, env)
+    const revokedRes = await app.request('https://test.local/api/panel/announcements', { headers: { Cookie: cookie } }, env)
     expect(revokedRes.status).toBe(401)
   })
 })
@@ -142,7 +142,7 @@ describe('collection CRUD with field whitelist', () => {
     const user = await env.DB.prepare("SELECT id FROM users WHERE username = 'panel-admin'").first<{ id: number }>()
     const token = await createSession(env.DB, user!.id)
     return app.request(
-      `https://test.local${path}`,
+      `https://test.local/api${path}`,
       { ...init, headers: { 'Content-Type': 'application/json', Cookie: `schale_admin_session=${token}`, ...(init?.headers ?? {}) } },
       env
     )
@@ -310,7 +310,7 @@ describe('collection CRUD with field whitelist', () => {
     const token = await createSession(env.DB, user!.id)
 
     const logout = await app.request(
-      'https://test.local/panel/auth/logout',
+      'https://test.local/api/panel/auth/logout',
       { method: 'POST', headers: { Cookie: `schale_admin_session=${token}` } },
       env
     )

@@ -79,7 +79,7 @@ export async function requirePanelSession(
   c: PanelContext,
   next: Next
 ): Promise<Response | undefined> {
-  const token = getCookieValue(c.req.header('Cookie'), 'schale_admin_session')
+  const token = getSessionToken(c)
   const user = await getSessionUser(c.env.DB, token)
 
   if (!user) {
@@ -95,6 +95,19 @@ export async function requirePanelSession(
   c.set('sessionToken', token!)
   await next()
   return undefined
+}
+
+/**
+ * 会话 token 取值：Authorization: Bearer 优先，回退 schale_admin_session cookie。
+ * 前端服务端代理层按契约走 Bearer；浏览器直连面板时走 cookie。两者是同一个不透明 token。
+ */
+export function getSessionToken(c: PanelContext): string | undefined {
+  const auth = c.req.header('Authorization')
+  if (auth) {
+    const match = /^Bearer\s+(.+)$/i.exec(auth.trim())
+    if (match) return match[1]!.trim()
+  }
+  return getCookieValue(c.req.header('Cookie'), 'schale_admin_session')
 }
 
 function getCookieValue(header: string | undefined, name: string): string | undefined {

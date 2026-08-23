@@ -72,7 +72,7 @@ describe('GET /creators', () => {
     await seedCreator({ slug: 'feat-b', name: '精选B', is_featured: 1, featured_priority: 5 })
     await seedCreator({ slug: 'feat-c', name: '精选C', is_featured: 1, featured_priority: 7 })
 
-    const r = await app.request('/creators?sort[0]=isFeatured:desc&sort[1]=featuredPriority:desc', {}, env)
+    const r = await app.request('/api/creators?sort[0]=isFeatured:desc&sort[1]=featuredPriority:desc', {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as { data: Array<Record<string, unknown>>; meta: { pagination: { total: number } } }
     expect(body.data.map((d) => d.slug)).toEqual(['feat-c', 'feat-b', 'normal-a'])
@@ -93,7 +93,7 @@ describe('GET /creators', () => {
     await seedCreator({ slug: 'normal-a', name: '普通A' })
     await seedCreator({ slug: 'feat-b', name: '精选B', is_featured: 1, featured_priority: 3 })
 
-    const r = await app.request('/creators?filters[isFeatured][$eq]=true', {}, env)
+    const r = await app.request('/api/creators?filters[isFeatured][$eq]=true', {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as { data: Array<{ slug: string; isFeatured: boolean }> }
     expect(body.data.map((d) => d.slug)).toEqual(['feat-b'])
@@ -108,12 +108,12 @@ describe('GET /creators', () => {
     })
 
     // zh-Hans 缺失 → 回退 en（FALLBACK_ORDER 中 en 先于 ja）
-    const zh = await app.request('/creators?locale=zh-Hans', {}, env)
+    const zh = await app.request('/api/creators?locale=zh-Hans', {}, env)
     const zhBody = (await zh.json()) as { data: Array<{ bio?: string }> }
     expect(zhBody.data[0].bio).toBe('English bio')
 
     // 直接命中 en
-    const en = await app.request('/creators?locale=en', {}, env)
+    const en = await app.request('/api/creators?locale=en', {}, env)
     const enBody = (await en.json()) as { data: Array<{ bio?: string }> }
     expect(enBody.data[0].bio).toBe('English bio')
   })
@@ -123,7 +123,7 @@ describe('GET /creators', () => {
       await seedCreator({ slug: `p-${i}`, name: `作者${i}`, created_at: NOW + i, updated_at: NOW + i })
     }
 
-    const r = await app.request('/creators?pagination[page]=2&pagination[pageSize]=2&sort=updatedAt:desc', {}, env)
+    const r = await app.request('/api/creators?pagination[page]=2&pagination[pageSize]=2&sort=updatedAt:desc', {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as { data: Array<{ slug: string }>; meta: { pagination: { page: number; pageCount: number; total: number } } }
     expect(body.data.map((d) => d.slug)).toEqual(['p-1'])
@@ -134,7 +134,7 @@ describe('GET /creators', () => {
     await seedCreator({ slug: 'alpha-cc', name: 'AlphaCC' })
     await seedCreator({ slug: 'beta-draw', name: 'BetaDraw' })
 
-    const r = await app.request('/creators?filters[name][$containsi]=alphacc', {}, env)
+    const r = await app.request('/api/creators?filters[name][$containsi]=alphacc', {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as { data: Array<{ slug: string }> }
     expect(body.data.map((d) => d.slug)).toEqual(['alpha-cc'])
@@ -144,7 +144,7 @@ describe('GET /creators', () => {
     await seedCreator({ slug: 'published', name: '已发布' })
     await seedCreator({ slug: 'draft', name: '草稿', published_at: null })
 
-    const r = await app.request('/creators', {}, env)
+    const r = await app.request('/api/creators', {}, env)
     const body = (await r.json()) as { data: Array<{ slug: string }> }
     expect(body.data.map((d) => d.slug)).toEqual(['published'])
   })
@@ -185,7 +185,7 @@ describe('GET /creators/:slug', () => {
       .bind(creatorId, 1, '第一作', 'https://example.com/works/1', null, null)
       .run()
 
-    const r = await app.request('/creators/studio-x?locale=zh-Hans&populate=students,representativeWorks', {}, env)
+    const r = await app.request('/api/creators/studio-x?locale=zh-Hans&populate=students,representativeWorks', {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as {
       data: {
@@ -221,10 +221,10 @@ describe('GET /creators/:slug', () => {
     const creatorId = await seedCreator({ slug: 'doc-test', name: '文档测试' })
     const doc = await env.DB.prepare('SELECT document_id FROM creators WHERE id = ?').bind(creatorId).first<{ document_id: string }>()
 
-    const byDoc = await app.request(`/creators/${doc!.document_id}`, {}, env)
+    const byDoc = await app.request(`/api/creators/${doc!.document_id}`, {}, env)
     expect(byDoc.status).toBe(200)
 
-    const missing = await app.request('/creators/no-such-creator', {}, env)
+    const missing = await app.request('/api/creators/no-such-creator', {}, env)
     expect(missing.status).toBe(404)
   })
 })

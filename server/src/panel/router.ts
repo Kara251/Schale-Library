@@ -3,7 +3,8 @@
  * 中间件顺序：bootstrap（幂等）→ login/session/logout 白名单放行 → 其余全部会话校验 fail-closed。
  */
 import { Hono } from 'hono'
-import type { HonoPanel } from './types'
+import type { Context, Next } from 'hono'
+import type { HonoPanel, PanelEnv, PanelVars } from './types'
 import { ensureBootstrapAdmin } from '../auth/bootstrap'
 import { pruneExpiredSessions } from '../auth/session'
 import { requirePanelSession } from '../auth/middleware'
@@ -19,8 +20,11 @@ export function createPanelRoutes(): HonoPanel {
   const panel: HonoPanel = new Hono()
 
   // bootstrap 维护账号：环境变量存在且 users 表空时创建（幂等，请求级触发）
-  // 仅挂 /panel/*：公开内容 API 不该为此付一次 users 计数查询
-  panel.use('/panel/*', async (c, next) => {
+  // 只挂认证与面板路径：公开内容 API 不该为此付一次 users 计数查询
+  const bootstrapMiddleware = async (
+    c: Context<{ Bindings: PanelEnv; Variables: PanelVars }>,
+    next: Next
+  ) => {
     await ensureBootstrapAdmin(
       c.env.DB,
       c.env.BOOTSTRAP_ADMIN_USERNAME,
@@ -31,7 +35,9 @@ export function createPanelRoutes(): HonoPanel {
       await pruneExpiredSessions(c.env.DB)
     }
     await next()
-  })
+  }
+  panel.use('/panel/*', bootstrapMiddleware)
+  panel.use('/auth/*', bootstrapMiddleware)
 
   // 认证路由：无需会话
   panel.route('/', authRoutes)
@@ -45,6 +51,8 @@ export function createPanelRoutes(): HonoPanel {
   panel.post('/panel/bulk-action', (c) => handleBulkAction(c as never))
   panel.get('/panel/content-quality-issues', (c) => handleQualityIssuesList(c as never))
   panel.post('/panel/quality-scan', (c) => handleQualityScan(c as never))
+  // 契约（getSystemHealth）走 /panel/system/health；/panel/system-health 保留为旧别名
+  panel.get('/panel/system/health', (c) => handleSystemHealth(c as never))
   panel.get('/panel/system-health', (c) => handleSystemHealth(c as never))
   panel.get('/panel/admin-audit-logs/export', (c) => handleAuditLogExport(c as never))
   panel.get('/panel/admin-audit-logs', (c) => handleAuditLogList(c as never))

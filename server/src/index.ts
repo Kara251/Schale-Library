@@ -20,9 +20,10 @@ const app = new Hono<{ Bindings: Env }>()
 
 app.get('/healthz', (c) => c.json({ ok: true, env: c.env.ENVIRONMENT }))
 
-
+// 全部业务路由挂在 /api 下：契约快照（frontend/tests/contracts）里的端点一律带此前缀，
+// 前端 fetchAPI 也固定拼 `${API_URL}/api${endpoint}`。
 // /panel 面板 API（认证会话 + 兼容层，PanelAuth 域）
-app.route('/', createPanelRoutes())
+app.route('/api', createPanelRoutes())
 
 // 公开内容 API（events/works/students/misc 域，ContentApiA）
 import { eventsRoutes } from './content/events'
@@ -31,15 +32,15 @@ import { studentsRoutes } from './content/students'
 import { miscRoutes } from './content/misc'
 import { creatorsRoutes } from './content/creators'
 
-app.route('/', eventsRoutes)
-app.route('/', worksRoutes)
-app.route('/', studentsRoutes)
-app.route('/', miscRoutes)
-app.route('/', creatorsRoutes)
+app.route('/api', eventsRoutes)
+app.route('/api', worksRoutes)
+app.route('/api', studentsRoutes)
+app.route('/api', miscRoutes)
+app.route('/api', creatorsRoutes)
 
 // 考据域公开 API（research 域，ContentApiB）
 import { researchRoutes } from './content/research'
 
-app.route('/', researchRoutes)
+app.route('/api', researchRoutes)
 
 export default app

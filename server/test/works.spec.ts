@@ -73,7 +73,7 @@ describe('GET /works', () => {
     await seedWork({ title: '推荐新作', is_featured: 1, featured_priority: 9 }, [s1])
     await seedWork({ title: '普通作品' })
 
-    const r = await app.request('/works?filters[is_active][$eq]=true&sort[0]=isFeatured:desc&sort[1]=featuredPriority:desc', {}, env)
+    const r = await app.request('/api/works?filters[is_active][$eq]=true&sort[0]=isFeatured:desc&sort[1]=featuredPriority:desc', {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as { data: Array<Record<string, unknown>>; meta: { pagination: { total: number } } }
     expect(body.data.map((d) => d.title)).toEqual(['推荐新作', '推荐旧作', '普通作品'])
@@ -89,7 +89,7 @@ describe('GET /works', () => {
     await seedWork({ title: '已下架作品', is_active: 0 })
     await seedWork({ title: '在架作品' })
 
-    const r = await app.request('/works', {}, env)
+    const r = await app.request('/api/works', {}, env)
     const body = (await r.json()) as { data: Array<{ title: string }> }
     expect(body.data.map((d) => d.title)).toEqual(['在架作品'])
   })
@@ -100,12 +100,12 @@ describe('GET /works', () => {
     await seedWork({ author: '阿露老师', title: '无关标题' })
     await seedWork({ title: '第三支', author: ' nobody ' }, [s])
 
-    const r = await app.request('/works?filters[$or][0][title][$containsi]=特别&filters[$or][1][author][$containsi]=特别&filters[$or][3][students][name][$containsi]=特别&filters[is_active][$eq]=true', {}, env)
+    const r = await app.request('/api/works?filters[$or][0][title][$containsi]=特别&filters[$or][1][author][$containsi]=特别&filters[$or][3][students][name][$containsi]=特别&filters[is_active][$eq]=true', {}, env)
     let body = (await r.json()) as { data: Array<{ title: string }> }
     expect(body.data).toHaveLength(1)
 
     // 学生名搜索：$or 组内 name 命中
-    const r2 = await app.request(`/works?filters[$or][0][title][$containsi]=星野&filters[$or][3][students][name][$containsi]=星野&filters[is_active][$eq]=true`, {}, env)
+    const r2 = await app.request(`/api/works?filters[$or][0][title][$containsi]=星野&filters[$or][3][students][name][$containsi]=星野&filters[is_active][$eq]=true`, {}, env)
     body = (await r2.json()) as { data: Array<{ title: string }> }
     expect(body.data.map((d) => d.title)).toEqual(['第三支'])
   })
@@ -115,7 +115,7 @@ describe('GET /works', () => {
     await seedWork({ author: '同作者', title: '其他作品A' })
     await seedWork({ author: '另一位', title: '其他作品B' })
 
-    const r = await app.request(`/works?filters[author][$eq]=${encodeURIComponent('同作者')}&filters[id][$ne]=${currentId}`, {}, env)
+    const r = await app.request(`/api/works?filters[author][$eq]=${encodeURIComponent('同作者')}&filters[id][$ne]=${currentId}`, {}, env)
     const body = (await r.json()) as { data: Array<{ title: string; author?: string }> }
     expect(body.data.map((d) => d.title)).toEqual(['其他作品A'])
   })
@@ -139,7 +139,7 @@ describe('GET /works/:key', () => {
     const doc = await env.DB.prepare('SELECT document_id FROM works WHERE id = ?').bind(id).first<{ document_id: string }>()
 
     for (const key of [String(id), doc!.document_id]) {
-      const r = await app.request(`/works/${key}`, {}, env)
+      const r = await app.request(`/api/works/${key}`, {}, env)
       expect(r.status).toBe(200)
       const body = (await r.json()) as { data: Record<string, unknown> }
       expect(body.data.id).toBe(id)
@@ -148,7 +148,7 @@ describe('GET /works/:key', () => {
       expect(body.data.isActive).toBe(true)
     }
 
-    const missing = await app.request('/works/no-such-doc', {}, env)
+    const missing = await app.request('/api/works/no-such-doc', {}, env)
     expect(missing.status).toBe(404)
   })
 })

@@ -12,6 +12,7 @@ export interface PanelEnv {
   BOOTSTRAP_ADMIN_USERNAME?: string
   BOOTSTRAP_ADMIN_PASSWORD?: string
   ADMIN_PANEL_ALLOWED_ROLES?: string
+  PANEL_INTERNAL_TOKEN?: string
 }
 
 export interface PanelUser {

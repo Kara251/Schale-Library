@@ -53,7 +53,7 @@ describe('GET /students', () => {
     await seedStudent({ name: '星野', school_id: null })
     await seedStudent({ name: '白子', school_id: gehennaId, avatar_url: 'https://cdn.example.com/hoshino.png' })
 
-    const r = await app.request('/students?sort=name:asc', {}, env)
+    const r = await app.request('/api/students?sort=name:asc', {}, env)
     expect(r.status).toBe(200)
     const body = (await r.json()) as { data: Array<Record<string, unknown>>; meta: { pagination: { total: number } } }
     // SQLite BINARY 排序按 UTF-8 码点：星(26143) < 白(30333)，与拼音序不同
@@ -70,7 +70,7 @@ describe('GET /students', () => {
     await seedStudent({ name: '可见学生' })
     await seedStudent({ name: '隐藏学生', published_at: null })
 
-    const r = await app.request('/students', {}, env)
+    const r = await app.request('/api/students', {}, env)
     const body = (await r.json()) as { data: Array<{ name: string }> }
     expect(body.data.map((d) => d.name)).toEqual(['可见学生'])
   })
@@ -82,7 +82,7 @@ describe('GET /students', () => {
     await seedStudent({ name: '芹香', organization: null, school_id: trinityId })
 
     // query=渚 → 命中两个；school=trinity → 只剩一个
-    const r = await app.request('/students?filters[$and][0][$or][0][name][$containsi]=渚&filters[$and][0][$or][1][organization][$containsi]=渚&filters[$and][1][$or][0][school_ref][slug][$eq]=trinity&filters[$and][1][$or][1][school][$eq]=trinity', {}, env)
+    const r = await app.request('/api/students?filters[$and][0][$or][0][name][$containsi]=渚&filters[$and][0][$or][1][organization][$containsi]=渚&filters[$and][1][$or][0][school_ref][slug][$eq]=trinity&filters[$and][1][$or][1][school][$eq]=trinity', {}, env)
     const body = (await r.json()) as { data: Array<{ name: string }> }
     expect(body.data.map((d) => d.name)).toEqual(['渚'])
   })
@@ -92,7 +92,7 @@ describe('GET /students', () => {
     const b = await seedStudent({ name: 'B' })
     await seedStudent({ name: 'C' })
 
-    const r = await app.request(`/students?filters[id][$eq]=${a}&filters[id][$eq]=${b}`, {}, env)
+    const r = await app.request(`/api/students?filters[id][$eq]=${a}&filters[id][$eq]=${b}`, {}, env)
     const body = (await r.json()) as { data: Array<{ name: string }> }
     expect(new Set(body.data.map((d) => d.name))).toEqual(new Set(['A', 'B']))
   })
@@ -109,14 +109,14 @@ describe('GET /students/:key', () => {
     const id = await seedStudent({ name: '详情学生', organization: '补习部' })
     const doc = await env.DB.prepare('SELECT document_id FROM students WHERE id = ?').bind(id).first<{ document_id: string }>()
 
-    const byId = await app.request(`/students/${id}`, {}, env)
+    const byId = await app.request(`/api/students/${id}`, {}, env)
     expect(byId.status).toBe(200)
-    const byDoc = await app.request(`/students/${doc!.document_id}`, {}, env)
+    const byDoc = await app.request(`/api/students/${doc!.document_id}`, {}, env)
     expect(byDoc.status).toBe(200)
     const body = (await byDoc.json()) as { data: Record<string, unknown> }
     expect(body.data.organization).toBe('补习部')
 
-    const missing = await app.request('/students/424242', {}, env)
+    const missing = await app.request('/api/students/424242', {}, env)
     expect(missing.status).toBe(404)
   })
 })
