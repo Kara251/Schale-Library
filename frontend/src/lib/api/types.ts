@@ -123,6 +123,7 @@ export interface Student {
   school?: SchoolType;
   school_ref?: { id: number; documentId: string; name: string; slug: string; color?: string } | null;
   organization?: string;
+  wikiUrl?: string;
   avatar?: StrapiMedia;
   bio?: string;
   createdAt: string;

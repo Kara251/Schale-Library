@@ -18,9 +18,8 @@ import type {
   OnlineEvent,
 } from './events';
 import type { Announcement, FriendLink, SchoolType, StrapiMedia, StrapiResponse, Student } from './types';
-import { searchStudents } from './students';
-import type { Work } from './works';
-import { searchWorks } from './works';
+import type { Creator } from './creators';
+import type { ResearchSubject } from './research';
 
 export async function getAnnouncements(
   locale: string = 'zh-Hans',
@@ -168,26 +167,65 @@ async function safeSearch<T>(label: string, request: Promise<StrapiResponse<T[]>
   }
 }
 
+/**
+ * 搜索创作者（按名称 / 简介）
+ */
+export async function searchCreators(query: string, locale: string = 'zh-Hans') {
+  return fetchAPI<StrapiResponse<Creator[]>>(
+    `/creators?${createCollectionQuery({
+      locale: toStrapiLocale(locale),
+      'filters[$or][0][name][$containsi]': query,
+      'filters[$or][1][bio][$containsi]': query,
+      'sort[0]': 'isFeatured:desc',
+      'pagination[limit]': 50,
+    })}`
+  );
+}
+
+/**
+ * 搜索考据对象：列表接口暂不支持全文过滤，取全量后在内存中按名称匹配。
+ */
+export async function searchResearchSubjects(query: string, locale: string = 'zh-Hans') {
+  const response = await fetchAPI<StrapiResponse<ResearchSubject[]>>(
+    `/research-subjects?${createCollectionQuery({
+      locale: toStrapiLocale(locale),
+      'pagination[pageSize]': 100,
+    })}`
+  );
+  const keyword = query.trim().toLowerCase();
+  const data = (response.data || []).filter(
+    (subject) =>
+      subject.name.toLowerCase().includes(keyword) ||
+      (subject.description ? sanitizeText(subject.description).includes(keyword) : false)
+  );
+  return { ...response, data };
+}
+
+/** 去除 HTML 标签后做纯文本包含匹配 */
+function sanitizeText(html: string): string {
+  return html.replace(/<[^>]*>/g, ' ');
+}
+
 export async function searchAllContent(query: string, locale: string = 'zh-Hans') {
   if (!query.trim()) {
     return {
       announcements: { data: [], total: 0 } as SearchSectionResult<Announcement>,
-      works: { data: [], total: 0 } as SearchSectionResult<Work>,
+      creators: { data: [], total: 0 } as SearchSectionResult<Creator>,
+      subjects: { data: [], total: 0 } as SearchSectionResult<ResearchSubject>,
       onlineEvents: { data: [], total: 0 } as SearchSectionResult<OnlineEvent>,
       offlineEvents: { data: [], total: 0 } as SearchSectionResult<OfflineEvent>,
-      students: { data: [], total: 0 } as SearchSectionResult<Student>,
     }
   }
 
-  const [announcements, works, onlineEvents, offlineEvents, students] = await Promise.all([
+  const [announcements, creators, subjects, onlineEvents, offlineEvents] = await Promise.all([
     safeSearch('announcements', searchAnnouncements(query, locale)),
-    safeSearch('works', searchWorks(query, locale)),
+    safeSearch('creators', searchCreators(query, locale)),
+    safeSearch('research subjects', searchResearchSubjects(query, locale)),
     safeSearch('online events', searchOnlineEvents(query, locale)),
     safeSearch('offline events', searchOfflineEvents(query, locale)),
-    safeSearch('students', searchStudents(query, locale)),
   ])
 
-  return { announcements, works, onlineEvents, offlineEvents, students }
+  return { announcements, creators, subjects, onlineEvents, offlineEvents }
 }
 
 // ── 学院（后台可维护的基础数据）──

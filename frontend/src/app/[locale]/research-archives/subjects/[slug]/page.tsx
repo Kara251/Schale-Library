@@ -9,6 +9,7 @@ import {
   getResearchEntriesBySubjectSlug,
   getResearchSubjectBySlug,
   researchSubjectTypeLabels,
+  safeExternalUrl,
   type ResearchEntry,
 } from '@/lib/api'
 import { getMediaUrl } from '@/lib/media'
@@ -98,30 +99,47 @@ export default async function ResearchSubjectPage({ params }: SubjectPageProps) 
                 </h2>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {students.map((student) => (
-                  <LocaleLink
-                    key={student.id}
-                    href={`/students/${student.documentId || student.id}`}
-                    className="ba-card group flex items-center gap-3 p-3 transition-colors hover:border-primary/50"
-                  >
-                    <span className="relative h-8 w-8 overflow-hidden rounded-full border bg-secondary">
-                      {student.avatar ? (
-                        <Image
-                          src={getMediaUrl(student.avatar.formats?.thumbnail?.url || student.avatar.url)}
-                          alt={student.name}
-                          fill
-                          sizes="32px"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <span className="flex h-full w-full items-center justify-center text-xs font-bold text-muted-foreground">
-                          {student.name.charAt(0)}
-                        </span>
-                      )}
-                    </span>
-                    <span className="text-sm font-medium group-hover:text-primary transition-colors">{student.name}</span>
-                  </LocaleLink>
-                ))}
+                {students.map((student) => {
+                  const wikiHref = safeExternalUrl(student.wikiUrl)
+                  const chip = (
+                    <>
+                      <span className="relative h-8 w-8 overflow-hidden rounded-full border bg-secondary">
+                        {student.avatar ? (
+                          <Image
+                            src={getMediaUrl(student.avatar.formats?.thumbnail?.url || student.avatar.url)}
+                            alt={student.name}
+                            fill
+                            sizes="32px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <span className="flex h-full w-full items-center justify-center text-xs font-bold text-muted-foreground">
+                            {student.name.charAt(0)}
+                          </span>
+                        )}
+                      </span>
+                      <span className={`text-sm font-medium transition-colors ${wikiHref ? 'group-hover:text-primary' : ''}`}>{student.name}</span>
+                    </>
+                  )
+                  return wikiHref ? (
+                    <a
+                      key={student.id}
+                      href={wikiHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ba-card group flex items-center gap-3 p-3 transition-colors hover:border-primary/50"
+                    >
+                      {chip}
+                    </a>
+                  ) : (
+                    <div
+                      key={student.id}
+                      className="ba-card flex items-center gap-3 p-3"
+                    >
+                      {chip}
+                    </div>
+                  )
+                })}
               </div>
             </section>
           ) : null}

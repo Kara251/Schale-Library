@@ -245,7 +245,7 @@ export function EventsWithFilters({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {events.map((item) => {
               const event = isEventListItem(item) ? item.event : item
-              const eventType = isEventListItem(item) ? item.type : type === 'all' ? 'online' : type
+              const eventType = isEventListItem(item) ? item.type : type === 'all' ? undefined : type
 
               return (
                 <EventCard

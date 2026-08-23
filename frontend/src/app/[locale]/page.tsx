@@ -4,8 +4,8 @@ import { Carousel } from "@/components/carousel"
 import { EventList } from "@/components/event-list"
 import { FriendLinksSection } from "@/components/friend-links-section"
 import { HomeResearchSection } from "@/components/home-research-section"
-import { WorkCard } from "@/components/work-card"
-import { getFeaturedWorks, getFriendLinks, getHomeAnnouncements, getHomeOfflineEvents, getHomeOnlineEvents, getRecentResearchEntries } from "@/lib/api"
+import { CreatorCard } from "@/components/creator-card"
+import { getCreators, getFriendLinks, getHomeAnnouncements, getHomeOfflineEvents, getHomeOnlineEvents, getRecentResearchEntries } from "@/lib/api"
 import { translations, type Locale } from "@/lib/i18n"
 
 interface HomePageProps {
@@ -19,11 +19,11 @@ export default async function HomePage({ params }: HomePageProps) {
     const t = translations[locale as Locale] || translations['zh-Hans']
 
     // 并行获取数据，传递语言参数
-    const [announcementsRes, onlineEventsRes, offlineEventsRes, worksRes, friendLinksRes, researchRes] = await Promise.all([
+    const [announcementsRes, onlineEventsRes, offlineEventsRes, creatorsRes, friendLinksRes, researchRes] = await Promise.all([
         getHomeAnnouncements(locale).catch(() => ({ data: [] })),
         getHomeOnlineEvents(6, locale).catch(() => ({ data: [] })),
         getHomeOfflineEvents(6, locale).catch(() => ({ data: [] })),
-        getFeaturedWorks(6, locale).catch(() => ({ data: [] })),
+        getCreators(locale, { featuredOnly: true, pageSize: 6 }).catch(() => ({ data: [] })),
         getFriendLinks(locale, 6).catch(() => ({ data: [] })),
         getRecentResearchEntries(locale, 3).catch(() => ({ data: [] })),
     ]);
@@ -31,7 +31,7 @@ export default async function HomePage({ params }: HomePageProps) {
     const announcements = announcementsRes.data || [];
     const onlineEvents = onlineEventsRes.data || [];
     const offlineEvents = offlineEventsRes.data || [];
-    const works = worksRes.data || [];
+    const creators = creatorsRes.data || [];
     const friendLinks = friendLinksRes.data || [];
     const researchEntries = researchRes.data || [];
 
@@ -62,23 +62,23 @@ export default async function HomePage({ params }: HomePageProps) {
                         />
                     </section>
 
-                    {/* 最新推荐作品区域 */}
+                    {/* 精选推荐创作者区域 */}
                     <section>
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-3xl font-bold">
-                                {t['home.featuredWorks'] || t['home.latestWorks'] || '精选推荐作品'}
+                                {t['home.featuredCreators'] || '精选推荐创作者'}
                             </h2>
                         </div>
-                        {works.length > 0 ? (
+                        {creators.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {works.slice(0, 3).map((work) => (
-                                    <WorkCard key={work.id} work={work} />
+                                {creators.slice(0, 3).map((creator) => (
+                                    <CreatorCard key={creator.id} creator={creator} />
                                 ))}
                             </div>
                         ) : (
                             <div className="text-center py-8">
                                 <p className="text-muted-foreground">
-                                    {t['home.noWorks'] || '暂无推荐作品'}
+                                    {t['home.noCreators'] || '暂无推荐创作者'}
                                 </p>
                             </div>
                         )}

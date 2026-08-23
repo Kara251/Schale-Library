@@ -680,6 +680,21 @@ export async function getOfflineEventById(
 }
 
 /**
+ * 获取单个活动详情（合并模型：先查线上集合，未命中再查线下集合）
+ */
+export async function getEventById(
+  id: ContentIdentifier,
+  locale: string = 'zh-Hans'
+): Promise<{ event: OnlineEvent | OfflineEvent; kind: EventKind } | null> {
+  const online = await getOnlineEventById(id, locale).catch(() => null);
+  if (online?.data) {
+    return { event: online.data, kind: 'online' };
+  }
+  const offline = await getOfflineEventById(id, locale).catch(() => null);
+  return offline?.data ? { event: offline.data, kind: 'offline' } : null;
+}
+
+/**
  * 搜索线上活动
  * @param query 搜索关键词
  * @param locale 语言代码

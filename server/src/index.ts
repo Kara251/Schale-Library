@@ -29,11 +29,13 @@ import { eventsRoutes } from './content/events'
 import { worksRoutes } from './content/works'
 import { studentsRoutes } from './content/students'
 import { miscRoutes } from './content/misc'
+import { creatorsRoutes } from './content/creators'
 
 app.route('/', eventsRoutes)
 app.route('/', worksRoutes)
 app.route('/', studentsRoutes)
 app.route('/', miscRoutes)
+app.route('/', creatorsRoutes)
 
 // 考据域公开 API（research 域，ContentApiB）
 import { researchRoutes } from './content/research'

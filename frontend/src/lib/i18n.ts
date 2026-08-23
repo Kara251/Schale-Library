@@ -42,7 +42,7 @@ export function setLocale(locale: Locale): void {
 export const translations = {
   'zh-Hans': {
     // 导航
-    'nav.works': '推荐作品',
+    'nav.creators': '推荐创作者',
     'nav.researchArchives': '考据档案',
     'nav.resources': '资源整理',
     'nav.events': '活动',
@@ -57,10 +57,8 @@ export const translations = {
     // 首页
     'home.title': '欢迎来到夏莱图书馆',
     'home.latestEvents': '进行中 / 即将开始',
-    'home.latestWorks': '最新推荐作品',
-    'home.featuredWorks': '精选推荐作品',
-    'home.noEvents': '暂无活动',
-    'home.noWorks': '暂无推荐作品',
+    'home.featuredCreators': '精选推荐创作者',
+    'home.noCreators': '暂无推荐创作者',
     'home.friendLinks': '友情链接',
     'home.loadMore': '加载更多',
     'home.researchArchives': '最新考据档案',
@@ -185,7 +183,7 @@ export const translations = {
 
   'en': {
     // Navigation
-    'nav.works': 'Works',
+    'nav.creators': 'Creators',
     'nav.researchArchives': 'Research Archives',
     'nav.resources': 'Resources',
     'nav.events': 'Events',
@@ -200,10 +198,9 @@ export const translations = {
     // Home
     'home.title': 'Welcome to Schale Library',
     'home.latestEvents': 'Ongoing / Upcoming',
-    'home.latestWorks': 'Latest Recommended Works',
-    'home.featuredWorks': 'Featured Works',
     'home.noEvents': 'No events',
-    'home.noWorks': 'No recommended works yet',
+    'home.featuredCreators': 'Featured Creators',
+    'home.noCreators': 'No featured creators yet',
     'home.friendLinks': 'Friend Links',
     'home.loadMore': 'Load More',
     'home.researchArchives': 'Latest Research',
@@ -328,7 +325,7 @@ export const translations = {
 
   'ja': {
     // ナビゲーション
-    'nav.works': '作品',
+    'nav.creators': 'おすすめクリエイター',
     'nav.researchArchives': '考察アーカイブ',
     'nav.resources': 'リソース',
     'nav.events': 'イベント',
@@ -343,10 +340,9 @@ export const translations = {
     // ホーム
     'home.title': 'シャーレ図書館へようこそ',
     'home.latestEvents': '開催中 / 近日開催',
-    'home.latestWorks': '最新おすすめ作品',
-    'home.featuredWorks': 'おすすめ作品',
     'home.noEvents': 'イベントはありません',
-    'home.noWorks': 'おすすめ作品がありません',
+    'home.featuredCreators': 'おすすめクリエイター',
+    'home.noCreators': 'おすすめクリエイターはありません',
     'home.friendLinks': '相互リンク',
     'home.loadMore': 'もっと見る',
     'home.researchArchives': '最新考察記事',

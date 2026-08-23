@@ -6,14 +6,12 @@ export { relationTypeOptions, revisionTypeOptions, subjectTypeOptions } from '@/
 
 export type AdminCollectionKey =
   | 'announcements'
-  | 'works'
+  | 'creators'
   | 'friend-links'
   | 'online-events'
   | 'offline-events'
   | 'students'
   | 'schools'
-  | 'bilibili-subscriptions'
-  | 'sync-logs'
   | 'admin-audit-logs'
   | 'research-entries'
   | 'research-themes'

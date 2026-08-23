@@ -18,7 +18,8 @@ import type { Locale } from '@/lib/i18n'
 
 interface EventCardProps {
   event: OnlineEvent | OfflineEvent
-  type: 'online' | 'offline'
+  /** kind 预设；合并模型下事件对象可能自带 kind 字段，未提供时按字段推断 */
+  type?: 'online' | 'offline'
 }
 
 const dateLocales = { 'zh-Hans': zhCN, 'en': enUS, 'ja': ja }
@@ -61,6 +62,16 @@ const labels: Record<Locale, {
   },
 }
 
+function resolveEventKind(event: OnlineEvent | OfflineEvent, type?: 'online' | 'offline'): 'online' | 'offline' {
+  if (type) return type
+  // 合并模型下事件对象可能自带 kind 字段
+  if ('kind' in event && (event.kind === 'online' || event.kind === 'offline')) {
+    return event.kind
+  }
+  // 线下活动必有 location 字段，线上活动没有
+  return 'location' in event ? 'offline' : 'online'
+}
+
 /**
  * 活动卡片组件 - 蔚蓝档案风格
  * 使用 memo 优化列表渲染性能
@@ -70,7 +81,8 @@ export const EventCard = memo(function EventCard({ event, type }: EventCardProps
   const t = labels[locale] || labels['zh-Hans']
   const dateLocale = dateLocales[locale] || zhCN
 
-  const isOffline = type === 'offline'
+  const kind = resolveEventKind(event, type)
+  const isOffline = kind === 'offline'
 
   // 格式化时间
   const formatDate = (dateString: string) => {
@@ -94,13 +106,13 @@ export const EventCard = memo(function EventCard({ event, type }: EventCardProps
 
   const status = getEventStatusOverrideLabel(event.statusOverride, locale) || getEventStatus()
   const natureLabel = event.nature === 'official' ? t.official : t.fanmade
-  const displayPlace = getEventDisplayPlace(event, type, locale)
+  const displayPlace = getEventDisplayPlace(event, kind, locale)
   const priceLabel = formatEventPrice(event, locale)
   const tags = splitEventTags(event.tags).slice(0, 3)
 
   return (
     <LocaleLink
-      href={`/${type}-events/${getContentEntryPathId(event)}`}
+      href={`/events/${getContentEntryPathId(event)}`}
       className="block group ba-card p-4"
     >
       <div className="ba-card-content">

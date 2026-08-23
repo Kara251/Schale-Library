@@ -75,7 +75,7 @@ export default async function BulkActionsPage({ params, searchParams }: BulkActi
     'use server'
     const session = await requireAdminSession(locale, `/${locale}/manage/bulk-actions`)
     const payload: BulkActionPayload = {
-      collection: String(formData.get('collection') || 'works') as AdminCollectionKey,
+      collection: String(formData.get('collection') || 'friend-links') as AdminCollectionKey,
       action: String(formData.get('action') || 'publish'),
       ids: parseIds(formData.get('ids')),
       locale,
@@ -104,13 +104,12 @@ export default async function BulkActionsPage({ params, searchParams }: BulkActi
           <label className="space-y-2 text-sm">
             <span className="font-medium">{t.collection}</span>
             <select name="collection" className="w-full rounded-md border bg-background px-3 py-2">
-              <option value="works">works</option>
               <option value="friend-links">friend-links</option>
               <option value="students">students</option>
               <option value="announcements">announcements</option>
               <option value="online-events">online-events</option>
               <option value="offline-events">offline-events</option>
-              <option value="bilibili-subscriptions">bilibili-subscriptions</option>
+              <option value="creators">creators</option>
             </select>
           </label>
 

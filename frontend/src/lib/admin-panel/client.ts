@@ -301,34 +301,6 @@ export async function uploadAdminMedia(
   return data.data
 }
 
-export interface AdminSyncResult {
-  success: boolean
-  message?: string
-  total?: number
-  created?: number
-  skipped?: number
-  failed?: number
-  errors?: string[]
-}
-
-export async function syncBilibiliSubscription(
-  session: AdminSession,
-  id: number
-): Promise<AdminSyncResult> {
-  return adminFetchJson<AdminSyncResult>(session, `/api/bilibili-subscriptions/${id}/sync`, {
-    method: 'POST',
-    body: {},
-  })
-}
-
-export async function syncAllBilibiliSubscriptions(
-  session: AdminSession
-): Promise<AdminSyncResult> {
-  return adminFetchJson<AdminSyncResult>(session, '/api/bilibili-subscriptions/sync-all', {
-    method: 'POST',
-    body: {},
-  })
-}
 
 async function getCollectionTotal(session: AdminSession, key: AdminCollectionKey, locale?: string): Promise<number> {
   const result = await listAdminCollection(session, key, {

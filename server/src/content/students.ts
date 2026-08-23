@@ -20,7 +20,7 @@ import type { SqlCond } from './sql'
 
 type Row = Record<string, unknown>
 
-interface StudentRow {
+export interface StudentRow {
   id: number
   document_id: string
   slug: string
@@ -41,7 +41,7 @@ interface StudentRow {
 const STUDENTS_SELECT = `SELECT st.*, sc.id AS school_id2, sc.name_json AS school_name, sc.document_id AS school_document_id, sc.slug AS school_slug, sc.color AS school_color
 FROM students st LEFT JOIN schools sc ON sc.id = st.school_id`
 
-function studentToJson(r: StudentRow): Row {
+export function studentToJson(r: StudentRow): Row {
   return {
     id: r.id,
     documentId: r.document_id,

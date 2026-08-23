@@ -19,7 +19,7 @@ import { translations, type Locale } from "@/lib/i18n"
 const getNavItems = (locale: Locale) => {
   const t = translations[locale] || translations['zh-Hans']
   return [
-    { label: t['nav.works'] as string, href: '/works' },
+    { label: t['nav.creators'] as string, href: '/creators' },
     { label: t['nav.researchArchives'] as string, href: '/research-archives' },
     { label: t['nav.resources'] as string, href: '/resources' },
     { label: t['nav.events'] as string, href: '/events' },
