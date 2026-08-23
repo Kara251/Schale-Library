@@ -34,7 +34,7 @@ const labels: Record<Locale, {
 }> = {
   'zh-Hans': {
     title: '内容质量',
-    description: '扫描缺图、缺翻译、重复来源、草稿、无学生关联、友链缺链接、精选推荐和活动时间异常。',
+    description: '扫描缺图、缺翻译、重复来源、草稿、无学生关联、友链缺链接和活动时间异常。',
     scan: '重新扫描',
     empty: '暂无内容质量问题。',
     issue: '问题',

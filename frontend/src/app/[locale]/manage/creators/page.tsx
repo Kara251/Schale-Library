@@ -47,7 +47,7 @@ const labels: Record<Locale, {
 }> = {
   'zh-Hans': {
     title: '创作者',
-    description: '维护创作者档案、精选推荐与代表作。',
+    description: '维护创作者档案与代表作。',
     search: '筛选',
     searchPlaceholder: '搜索创作者名称或 Slug',
     reset: '重置',

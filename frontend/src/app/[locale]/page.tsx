@@ -23,7 +23,7 @@ export default async function HomePage({ params }: HomePageProps) {
         getHomeAnnouncements(locale).catch(() => ({ data: [] })),
         getHomeOnlineEvents(6, locale).catch(() => ({ data: [] })),
         getHomeOfflineEvents(6, locale).catch(() => ({ data: [] })),
-        getCreators(locale, { featuredOnly: true, pageSize: 6 }).catch(() => ({ data: [] })),
+        getCreators(locale, { sort: 'createdAt:desc', pageSize: 6 }).catch(() => ({ data: [] })),
         getFriendLinks(locale, 6).catch(() => ({ data: [] })),
         getRecentResearchEntries(locale, 3).catch(() => ({ data: [] })),
     ]);
@@ -62,11 +62,11 @@ export default async function HomePage({ params }: HomePageProps) {
                         />
                     </section>
 
-                    {/* 精选推荐创作者区域 */}
+                    {/* 最新收录创作者区域 */}
                     <section>
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-3xl font-bold">
-                                {t['home.featuredCreators'] || '精选推荐创作者'}
+                                {t['home.latestCreators'] || '最新收录创作者'}
                             </h2>
                         </div>
                         {creators.length > 0 ? (
@@ -78,7 +78,7 @@ export default async function HomePage({ params }: HomePageProps) {
                         ) : (
                             <div className="text-center py-8">
                                 <p className="text-muted-foreground">
-                                    {t['home.noCreators'] || '暂无推荐创作者'}
+                                    {t['home.noCreators'] || '暂无收录创作者'}
                                 </p>
                             </div>
                         )}

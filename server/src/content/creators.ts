@@ -99,7 +99,8 @@ function orderByOf(sorts: Array<{ field: string; dir: 'asc' | 'desc' }>): string
       return col ? `${col} ${s.dir.toUpperCase()}` : null
     })
     .filter((p): p is string => p !== null)
-  return parts.length > 0 ? parts.join(', ') : 'cr.is_featured DESC, cr.featured_priority DESC, cr.updated_at DESC'
+  // 中立收录站：默认最新收录优先（无推荐/精选语义）；显式 sort 参数仍可按 featured 列排序
+  return parts.length > 0 ? parts.join(', ') : 'cr.created_at DESC'
 }
 
 /**

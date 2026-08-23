@@ -1,9 +1,8 @@
 /**
- * 创作者域：创作者列表（featured 置顶）、详情（关联学生 + 代表作）、外链安全校验。
+ * 创作者域：创作者列表（最新收录优先）、详情（关联学生 + 代表作）、外链安全校验。
  *
  * 端点（server/src/content 暂无 creators 路由，按同风格定义待对拍）：
- * - GET /creators?locale=&sort[0]=isFeatured:desc&sort[1]=featuredPriority:desc
- *   &filters[isFeatured][$eq]=true&pagination[page|pageSize]
+ * - GET /creators?locale=&sort[0]=createdAt:desc&pagination[page|pageSize]
  * - GET /creators/:slug?locale=&populate=students,representativeWorks
  */
 import { createCollectionQuery, fetchAPI, toStrapiLocale } from './core';
@@ -39,28 +38,23 @@ export interface Creator {
 }
 
 export interface CreatorListOptions {
-  /** 仅取精选创作者 */
-  featuredOnly?: boolean;
   page?: number;
   pageSize?: number;
+  /** 覆盖默认排序（默认 createdAt:desc = 最新收录优先） */
+  sort?: string;
 }
 
 /**
- * 获取创作者列表（featured 置顶：isFeatured desc → featuredPriority desc）
+ * 获取创作者列表（中立收录站：默认最新收录优先，无推荐/精选语义）
  */
 export async function getCreators(locale: string = 'zh-Hans', options: CreatorListOptions = {}) {
   const strapiLocale = toStrapiLocale(locale);
   const params: Record<string, string | number | boolean | undefined> = {
     locale: strapiLocale,
-    'sort[0]': 'isFeatured:desc',
-    'sort[1]': 'featuredPriority:desc',
+    'sort[0]': options.sort || 'createdAt:desc',
     'pagination[page]': Math.max(1, options.page || 1),
     'pagination[pageSize]': Math.min(100, Math.max(1, options.pageSize || 50)),
   };
-
-  if (options.featuredOnly) {
-    params['filters[isFeatured][$eq]'] = true;
-  }
 
   return fetchAPI<StrapiResponse<Creator[]>>(
     `/creators?${createCollectionQuery(params)}`

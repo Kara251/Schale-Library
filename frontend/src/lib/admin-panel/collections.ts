@@ -98,8 +98,8 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       ja: 'クリエイター',
     },
     description: {
-      'zh-Hans': '维护创作者档案、精选推荐与代表作。',
-      en: 'Manage creator profiles, featured picks, and representative works.',
+      'zh-Hans': '维护创作者档案与代表作。',
+      en: 'Manage creator profiles and representative works.',
       ja: 'クリエイター情報、おすすめ設定、代表作品を管理します。',
     },
     createLabel: {
@@ -124,8 +124,6 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       ] },
       { name: 'platformUid', type: 'text', label: { 'zh-Hans': '平台 UID', en: 'Platform UID', ja: 'プラットフォーム UID' } },
       { name: 'homepageUrl', type: 'url', label: { 'zh-Hans': '个人主页', en: 'Homepage', ja: 'ホームページ' } },
-      { name: 'isFeatured', type: 'boolean', label: { 'zh-Hans': '精选推荐', en: 'Featured', ja: 'おすすめ' } },
-      { name: 'featuredPriority', type: 'number', label: { 'zh-Hans': '推荐优先级', en: 'Featured priority', ja: 'おすすめ優先度' } },
       { name: 'students', type: 'relation-multiselect', label: { 'zh-Hans': '关联学生', en: 'Related students', ja: '関連生徒' }, relationKey: 'students' },
       {
         name: 'representativeWorks', type: 'component-rows', label: { 'zh-Hans': '代表作', en: 'Representative works', ja: '代表作品' },

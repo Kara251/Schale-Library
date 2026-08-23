@@ -42,7 +42,7 @@ export function setLocale(locale: Locale): void {
 export const translations = {
   'zh-Hans': {
     // 导航
-    'nav.creators': '推荐创作者',
+    'nav.creators': '创作者',
     'nav.researchArchives': '考据档案',
     'nav.resources': '资源整理',
     'nav.events': '活动',
@@ -57,8 +57,8 @@ export const translations = {
     // 首页
     'home.title': '欢迎来到夏莱图书馆',
     'home.latestEvents': '进行中 / 即将开始',
-    'home.featuredCreators': '精选推荐创作者',
-    'home.noCreators': '暂无推荐创作者',
+    'home.latestCreators': '最新收录创作者',
+    'home.noCreators': '暂无收录创作者',
     'home.friendLinks': '友情链接',
     'home.loadMore': '加载更多',
     'home.researchArchives': '最新考据档案',
@@ -199,8 +199,8 @@ export const translations = {
     'home.title': 'Welcome to Schale Library',
     'home.latestEvents': 'Ongoing / Upcoming',
     'home.noEvents': 'No events',
-    'home.featuredCreators': 'Featured Creators',
-    'home.noCreators': 'No featured creators yet',
+    'home.latestCreators': 'Recently Added Creators',
+    'home.noCreators': 'No creators indexed yet',
     'home.friendLinks': 'Friend Links',
     'home.loadMore': 'Load More',
     'home.researchArchives': 'Latest Research',
@@ -341,8 +341,8 @@ export const translations = {
     'home.title': 'シャーレ図書館へようこそ',
     'home.latestEvents': '開催中 / 近日開催',
     'home.noEvents': 'イベントはありません',
-    'home.featuredCreators': 'おすすめクリエイター',
-    'home.noCreators': 'おすすめクリエイターはありません',
+    'home.latestCreators': '新着クリエイター',
+    'home.noCreators': 'クリエイターはまだありません',
     'home.friendLinks': '相互リンク',
     'home.loadMore': 'もっと見る',
     'home.researchArchives': '最新考察記事',
