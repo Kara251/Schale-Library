@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { defaultLocale, locales, type Locale } from '@/lib/i18n'
+import { SITE_URL } from '@/lib/config'
 
 const localeMapping: Record<string, Locale> = {
     zh: 'zh-Hans',
@@ -72,7 +73,37 @@ function setLocaleRequestHeader(request: NextRequest, locale: Locale) {
     return requestHeaders
 }
 
+/**
+ * 规范主机名：apex → www 永久跳转。
+ * 迁移前这一步由 Vercel 承担，切到 Workers 后必须自己做，
+ * 否则 apex 与 www 会各自返回同一份内容（SEO 重复内容），
+ * 且 SITE_URL/OG 绝对地址与实际访问域不一致。
+ */
+function canonicalHostRedirect(request: NextRequest): NextResponse | null {
+    const canonicalHost = (() => {
+        try {
+            return new URL(SITE_URL).host
+        } catch {
+            return null
+        }
+    })()
+    if (!canonicalHost) return null
+
+    const currentHost = request.headers.get('host')
+    // 只处理 apex → www：其他主机名（workers.dev 预览、本地开发）原样放行
+    if (!currentHost || currentHost === canonicalHost) return null
+    if (`www.${currentHost}` !== canonicalHost) return null
+
+    const target = new URL(request.nextUrl.toString())
+    target.host = canonicalHost
+    target.port = ''
+    return NextResponse.redirect(target, 308)
+}
+
 export function middleware(request: NextRequest) {
+    const canonical = canonicalHostRedirect(request)
+    if (canonical) return canonical
+
     const { pathname } = request.nextUrl
 
     if (

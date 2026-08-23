@@ -15,5 +15,22 @@
   },
   "observability": {
     "enabled": true
+  },
+  // 自定义域。绑定即改写区域 DNS 记录 —— 这就是从 Vercel 的切流动作。
+  // apex 不做重定向规则，由 middleware 的 canonicalHostRedirect 308 到 www。
+  "routes": [
+    { "pattern": "www.bakivo.com", "custom_domain": true },
+    { "pattern": "bakivo.com", "custom_domain": true }
+  ],
+  // 切流验证期保留 workers.dev 作为回退入口，稳定后置 false
+  "workers_dev": true,
+  "preview_urls": false,
+  // 服务端运行时变量。NEXT_PUBLIC_* 不在此处 —— 那些构建期就被内联进产物，
+  // 见 .env.production。密钥（PANEL_INTERNAL_TOKEN）走 wrangler secret put。
+  "vars": {
+    // 生产环境角色准入 fail-closed：不显式列出则后台拒绝全部登录
+    "ADMIN_PANEL_ALLOWED_ROLES": "maintainer,admin",
+    "ADMIN_PANEL_TRUSTED_ORIGINS": "https://www.bakivo.com",
+    "API_TIMEOUT_MS": "10000"
   }
 }

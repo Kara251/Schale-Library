@@ -26,6 +26,9 @@ yarn-error.log*
 .env
 .env.*
 !.env.example
+# 生产构建期的公开变量（NEXT_PUBLIC_*，必须在构建时就位才能内联进产物）。
+# 只放非机密值 —— 密钥一律 wrangler secret put。
+!frontend/.env.production
 *.local
 
 # ----------------------

@@ -4,7 +4,7 @@
 
 ```
 bakivo.com (Cloudflare zone)
-├── 前端      Next.js 16（OpenNext on Workers；迁移准备已就绪，见下）
+├── 前端      Next.js 16（OpenNext on Workers，schale-library-frontend）
 ├── 内容 API  server/ Hono Worker + D1（公开 REST + /panel 面板 API）
 ├── 上传      R2 桶 schale-uploads
 ├── 资源页    drive.bakivo.com（OpenList，iframe 内嵌）
@@ -63,12 +63,27 @@ node --experimental-strip-types scripts/load-d1.ts /tmp/out --remote
 
 ```bash
 cd frontend
-# OpenNext 迁移有一个已确认阻塞项：proxy.ts 为 Node runtime middleware，
-# OpenNext v1.20 尚不支持。切换 Edge runtime 后执行：
-pnpm deploy
+pnpm deploy      # opennextjs-cloudflare build && deploy
 ```
 
-迁移完成前的过渡期：前端可继续部署 Vercel，`NEXT_PUBLIC_API_URL` 指向新 Worker。
+构建期变量在 `frontend/.env.production`（`NEXT_PUBLIC_*` 会被内联进产物，
+放 wrangler vars 无效）；服务端运行时变量在 `wrangler.jsonc` 的 `vars`，
+密钥走 `wrangler secret put`。
+
+首次绑定自定义域时，若 www/apex 上已有其他服务商的 DNS 记录，
+Cloudflare API 会返回 409。需要在 Dashboard 上确认覆盖一次
+（Workers 和 Pages → schale-library-frontend → 域 → 添加域名），
+之后 `wrangler deploy` 即可正常匹配。
+
+两条约束曾经是迁移的阻塞项，改动方式记在此以免回退：
+
+- **文件名不能叫 `proxy.ts`。** Next 16 把 `proxy` 这个文件名硬编码成 Node
+  runtime（`build/utils.js` 的 `isProxyFile`），加任何 runtime config 都无效，
+  而 OpenNext 不支持 Node middleware。必须用 `middleware.ts`（仅有弃用警告）。
+- **服务端不能用 jsdom。** 免费版 Worker 体积上限 3 MiB（压缩后）。
+  `isomorphic-dompurify` 在服务端拉 jsdom，产物直接超限，且 jsdom 在 Workers
+  上本就跑不起来。HTML 消毒改用 `sanitize-html`（htmlparser2，不需要 DOM）。
+  注意 DOMPurify 在不受支持的环境里会**静默原样返回输入**，换实现必须实测。
 
 ## 备份
 
@@ -80,15 +95,16 @@ pnpm deploy
 | 变量 | 位置 | 说明 |
 |------|------|------|
 | SESSION_SECRET | Worker secret | 会话签名 |
-| PANEL_INTERNAL_TOKEN | Worker secret | 内部限流令牌（可选） |
-| BOOTSTRAP_ADMIN_USERNAME/PASSWORD | 临时 secret | 首个维护者 |
+| PANEL_INTERNAL_TOKEN | Worker secret + 前端 secret | 内部限流令牌，两侧必须一致 |
+| BOOTSTRAP_ADMIN_USERNAME/PASSWORD | 临时 secret | 首个维护者，建完即删 |
+| ADMIN_PANEL_ALLOWED_ROLES | Worker vars + 前端 vars | 面板角色准入。**生产环境缺省拒绝全部登录**，两侧都必须显式列出 |
 | NEXT_PUBLIC_API_URL | 前端 env | 内容 API 基址 |
 | NEXT_PUBLIC_SITE_URL | 前端 env | 站点 URL（sitemap/OG） |
 
 ## 安全基线（继承自审计整改）
 
 - 会话 cookie：httpOnly + Secure + SameSite=Strict，8h TTL，查表即时吊销
-- 密码：PBKDF2-SHA256 210k 迭代
+- 密码：PBKDF2-SHA256 100k 迭代（100000 是 Workers WebCrypto 的迭代上限，超过抛 NotSupportedError）
 - 登录限流：CF-Connecting-IP，10min/30 次
 - 上传：魔数嗅探（jpeg/png/webp/gif），SVG 禁用，4/8/12MB 分级
 - CSV 导出：公式注入中和
