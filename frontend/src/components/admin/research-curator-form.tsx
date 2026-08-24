@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/contexts/toast-context'
 import type { CuratorAdminData } from '@/lib/server/admin-content'
 import type { Locale } from '@/lib/i18n'
@@ -128,12 +127,12 @@ export function ResearchCuratorForm({ initialData, entries, locale }: ResearchCu
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t.title}</CardTitle>
-          <CardDescription>{t.description}</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-5 md:grid-cols-2">
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-base font-bold">{t.title}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t.description}</p>
+        </div>
+        <div className="grid gap-5 md:grid-cols-2">
           {/* 主编精选条目 */}
           <div className="space-y-2 md:col-span-2">
             <label className="text-sm font-medium" htmlFor="featured_entry">
@@ -185,8 +184,8 @@ export function ResearchCuratorForm({ initialData, entries, locale }: ResearchCu
           <div className="md:col-span-2 rounded-md border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
             <p>{t.pathStepsNote}</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {error ? (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">

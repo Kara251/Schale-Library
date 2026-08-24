@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { LoaderCircle, Upload } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/contexts/toast-context'
 import { AdminPublishStateField } from '@/components/admin/admin-publish-state-field'
@@ -233,9 +232,8 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
-      {/* 标题与说明由页面头（AdminPageHeader）承载，此处不再重复一遍 */}
-      <Card>
-        <CardContent className="grid gap-5 pt-6 md:grid-cols-2">
+      {/* 标题与说明由页面头承载；表单本身不套卡片，靠字段间距分区 */}
+      <div className="grid gap-5 md:grid-cols-2">
           {schema.fields.map((field) => {
             const value = formValues[field.name]
             const label = getDisplayLabel(field, locale)
@@ -463,8 +461,7 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
               </div>
             )
           })}
-        </CardContent>
-      </Card>
+      </div>
 
       {error ? (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">

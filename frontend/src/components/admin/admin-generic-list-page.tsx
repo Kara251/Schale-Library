@@ -12,6 +12,7 @@ import { ADMIN_COLLECTION_META, type AdminCollectionKey } from '@/lib/admin-pane
 import { getAdminActionLabels } from '@/lib/admin-panel-labels'
 import { type AdminStrapiEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
+import { AdminPublishStatusBadge } from '@/components/admin/admin-publish-status-badge'
 
 /** 每页条数选项；首项为默认值（不写进 URL）。上限受 client 端 50 约束。 */
 const PAGE_SIZE_OPTIONS = [12, 24, 50]
@@ -234,9 +235,10 @@ export async function AdminGenericListPage({
             header: t.publishStatus,
             className: 'w-28',
             render: (item: AdminStrapiEntry) => (
-              <Badge variant={item.publishedAt ? 'default' : 'outline'}>
-                {item.publishedAt ? t.statusPublished : t.statusDraft}
-              </Badge>
+              <AdminPublishStatusBadge
+                status={typeof item.status === 'string' ? item.status : undefined}
+                labels={{ published: t.statusPublished, scheduled: t.statusScheduled, draft: t.statusDraft }}
+              />
             ),
           }] : []),
           {

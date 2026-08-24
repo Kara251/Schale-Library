@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/contexts/toast-context'
 import type { Locale } from '@/lib/i18n'
@@ -228,12 +227,11 @@ export function AdminProfileForm({ locale, user }: AdminProfileFormProps) {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t.accountTitle}</CardTitle>
-          <p className="pt-2 text-sm text-muted-foreground">{t.accountDescription}</p>
-        </CardHeader>
-        <CardContent>
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-base font-bold">{t.accountTitle}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t.accountDescription}</p>
+        </div>
           <form onSubmit={handleProfileSubmit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -264,15 +262,13 @@ export function AdminProfileForm({ locale, user }: AdminProfileFormProps) {
               {savingProfile ? t.saving : t.saveProfile}
             </Button>
           </form>
-        </CardContent>
-      </Card>
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t.passwordTitle}</CardTitle>
-          <p className="pt-2 text-sm text-muted-foreground">{t.passwordDescription}</p>
-        </CardHeader>
-        <CardContent>
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-base font-bold">{t.passwordTitle}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t.passwordDescription}</p>
+        </div>
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
             <div>
               <label className="mb-1 block text-sm font-medium" htmlFor="current-password">
@@ -322,8 +318,7 @@ export function AdminProfileForm({ locale, user }: AdminProfileFormProps) {
               {savingPassword ? t.saving : t.savePassword}
             </Button>
           </form>
-        </CardContent>
-      </Card>
+      </section>
     </div>
   )
 }

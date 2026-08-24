@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/contexts/toast-context'
 import type { Locale } from '@/lib/i18n'
@@ -98,13 +97,12 @@ export function AdminUserCreateForm({ locale, labels }: AdminUserCreateFormProps
   void locale
 
   return (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle>{labels.title}</CardTitle>
-        <p className="pt-2 text-sm text-muted-foreground">{labels.description}</p>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <section className="mb-8 space-y-4">
+      <div>
+        <h2 className="text-base font-bold">{labels.title}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{labels.description}</p>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium" htmlFor="new-username">
@@ -166,8 +164,7 @@ export function AdminUserCreateForm({ locale, labels }: AdminUserCreateFormProps
           <Button type="submit" disabled={submitting}>
             {submitting ? labels.submitting : labels.submit}
           </Button>
-        </form>
-      </CardContent>
-    </Card>
+      </form>
+    </section>
   )
 }

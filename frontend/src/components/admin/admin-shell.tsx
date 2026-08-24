@@ -226,7 +226,8 @@ export function AdminShell({ children, locale, user }: AdminShellProps) {
         <div className="content-panel">
           <div className="flex flex-col gap-6 lg:flex-row">
             <aside className="lg:w-72 xl:w-80">
-              <div className="rounded-lg border bg-card p-4 shadow-sm">
+              {/* 侧栏不再自成一个卡片：它已在 content-panel 内，靠右侧一条竖线与内容区分隔 */}
+              <div className="lg:border-r lg:pr-4">
                 <div className="mb-4 border-b pb-4">
                   <p className="text-xl font-bold">{t.title}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{t.subtitle}</p>

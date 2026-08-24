@@ -47,7 +47,8 @@ export function AdminPagination({
       : null
 
   return (
-    <div className="mt-6 flex flex-col gap-3 rounded-lg border bg-card p-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+    // 不套卡片：顶上一条细分隔线足以与列表拉开，不需要再围一圈边框
+    <div className="mt-6 flex flex-col gap-3 border-t pt-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span>{summary}</span>
         {totalText ? <span>{totalText}</span> : null}

@@ -11,6 +11,7 @@ import { getAdminActionLabels } from '@/lib/admin-panel-labels'
 import type { Locale } from '@/lib/i18n'
 import { type AdminStrapiEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
+import { AdminPublishStatusBadge } from '@/components/admin/admin-publish-status-badge'
 
 /** 每页条数选项；首项为默认值（不写进 URL）。 */
 const PAGE_SIZE_OPTIONS = [12, 24, 50]
@@ -228,9 +229,10 @@ export default async function CreatorsManagePage({ params, searchParams }: Creat
             header: t.publishStatus,
             className: 'w-28',
             render: (item) => (
-              <Badge variant={item.publishedAt ? 'default' : 'outline'}>
-                {item.publishedAt ? t.statusPublished : t.statusDraft}
-              </Badge>
+              <AdminPublishStatusBadge
+                status={typeof item.status === 'string' ? item.status : undefined}
+                labels={{ published: t.statusPublished, scheduled: t.statusScheduled, draft: t.statusDraft }}
+              />
             ),
           },
           {

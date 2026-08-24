@@ -28,10 +28,12 @@ export function AdminSearchForm({
   showStatus = true,
   labels,
 }: AdminSearchFormProps) {
+  // 不套卡片：靠间距与控件本身分区，与站点其余页面一致
   return (
-    <form action={action} className="mb-6 grid gap-3 rounded-lg border bg-card p-4 md:grid-cols-[minmax(0,1fr)_180px_auto_auto]">
+    <form action={action} className="mb-6 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_auto_auto]">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        {/* 放大镜是装饰性图标，不是可点击的提交按钮 —— 提交按钮在输入框外 */}
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input name="search" defaultValue={search} placeholder={placeholder} className="pl-10" />
       </div>
 
