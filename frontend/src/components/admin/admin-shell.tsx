@@ -10,6 +10,8 @@ import {
   FileSearch,
   GitFork,
   GraduationCap,
+  UserCog,
+  UserCircle,
   HeartPulse,
   LayoutDashboard,
   Quote,
@@ -28,6 +30,8 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 import type { AdminUser } from '@/lib/server/admin-auth'
 import type { Locale } from '@/lib/i18n'
+import { Header } from '@/components/header'
+import { Footer } from '@/components/footer'
 
 interface AdminShellProps {
   children: React.ReactNode
@@ -71,6 +75,8 @@ const navLabels: Record<Locale, Record<string, string>> = {
     spoilerTiers: '剧透档位',
     researchCurator: '策展配置',
     auditLogs: '审计日志',
+    users: '用户管理',
+    profile: '个人设置',
     quality: '内容质量',
     system: '系统自检',
     bulk: '批量操作',
@@ -92,6 +98,8 @@ const navLabels: Record<Locale, Record<string, string>> = {
     spoilerTiers: 'Spoiler Tiers',
     researchCurator: 'Curation Settings',
     auditLogs: 'Audit Logs',
+    users: 'Users',
+    profile: 'My account',
     quality: 'Content Quality',
     system: 'System Health',
     bulk: 'Bulk Actions',
@@ -114,6 +122,8 @@ const navLabels: Record<Locale, Record<string, string>> = {
     spoilerTiers: 'ネタバレ段階',
     researchCurator: 'キュレーション設定',
     auditLogs: '監査ログ',
+    users: 'ユーザー管理',
+    profile: 'アカウント設定',
     quality: '品質チェック',
     system: 'システム確認',
     bulk: '一括操作',
@@ -122,6 +132,7 @@ const navLabels: Record<Locale, Record<string, string>> = {
 
 export function AdminShell({ children, locale, user }: AdminShellProps) {
   const pathname = usePathname()
+  const isAdmin = (user.role?.type || '').toLowerCase() === 'admin'
   const { logout } = useAuth()
   const t = labels[locale] || labels['zh-Hans']
   const nav = navLabels[locale] || navLabels['zh-Hans']
@@ -146,11 +157,20 @@ export function AdminShell({ children, locale, user }: AdminShellProps) {
     { href: `/${locale}/manage/bulk-actions`, label: nav.bulk, icon: SlidersHorizontal },
     { href: `/${locale}/manage/system-health`, label: nav.system, icon: ShieldCheck },
     { href: `/${locale}/manage/admin-audit-logs`, label: nav.auditLogs, icon: ShieldCheck },
+    // 用户管理仅 admin 可见；maintainer 点进去会看到「需要管理员权限」，
+    // 真正的拦截在 Worker 端，这里只是不给出无效入口
+    ...(isAdmin ? [{ href: `/${locale}/manage/users`, label: nav.users, icon: UserCog }] : []),
+    { href: `/${locale}/manage/profile`, label: nav.profile, icon: UserCircle },
   ]
 
   return (
-    <div className="min-h-screen">
-      <main className="relative container mx-auto px-4 pt-6 pb-12">
+    // 与站点其余页面同构：Header → main → Footer。
+    // 此前后台只有自己的侧栏，没有站点头尾，维护者进来后既无处返回站点，
+    // 也拿不到语言与主题切换。
+    <div className="min-h-screen flex flex-col">
+      <Header />
+
+      <main className="relative flex-1 container mx-auto px-4 pt-6 pb-12">
         <div className="content-panel">
           <div className="flex flex-col gap-6 lg:flex-row">
             <aside className="lg:w-72 xl:w-80">
@@ -208,6 +228,8 @@ export function AdminShell({ children, locale, user }: AdminShellProps) {
           </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   )
 }

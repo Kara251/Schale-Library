@@ -164,6 +164,14 @@ interface AdminFetchOptions {
   contentType?: string
 }
 
+/**
+ * 面板 API 通用透传。导出供 Next 路由代理层直接转发那些没有专用封装的端点
+ * （个人设置、用户管理），避免为每个端点各写一份重复的 fetch。
+ */
+export async function adminPanelFetch<T>(session: AdminSession, pathname: string, options: AdminFetchOptions = {}): Promise<T> {
+  return adminFetchJson<T>(session, pathname, options)
+}
+
 async function adminFetchJson<T>(session: AdminSession, pathname: string, options: AdminFetchOptions = {}): Promise<T> {
   const headers = new Headers({
     Authorization: `Bearer ${session.token}`,
@@ -380,4 +388,44 @@ export async function getAdminDashboardItems(session: AdminSession, locale: stri
     total: totals[index],
     href: `/${locale}/manage/${key}`,
   }))
+}
+
+// ───────────────────────── 用户与个人设置 ─────────────────────────
+
+export interface AdminPanelUser {
+  id: number
+  username: string
+  email: string | null
+  role: { type: string; name: string }
+  blocked: boolean
+  confirmed: boolean
+  createdAt: string
+}
+
+export interface AdminUserListQuery {
+  page?: number
+  pageSize?: number
+  search?: string
+  status?: 'all' | 'active' | 'blocked'
+}
+
+export async function getOwnProfile(session: AdminSession): Promise<AdminPanelUser> {
+  const res = await adminFetchJson<{ data: AdminPanelUser }>(session, '/api/panel/users/me')
+  return res.data
+}
+
+export async function listPanelUsers(
+  session: AdminSession,
+  query: AdminUserListQuery = {}
+): Promise<AdminListResponse<AdminPanelUser & AdminStrapiEntry>> {
+  const params = new URLSearchParams()
+  params.set('page', String(query.page ?? 1))
+  params.set('pageSize', String(query.pageSize ?? 20))
+  if (query.search?.trim()) params.set('search', query.search.trim())
+  if (query.status && query.status !== 'all') params.set('status', query.status)
+
+  return adminFetchJson<AdminListResponse<AdminPanelUser & AdminStrapiEntry>>(
+    session,
+    `/api/panel/users?${params.toString()}`
+  )
 }
