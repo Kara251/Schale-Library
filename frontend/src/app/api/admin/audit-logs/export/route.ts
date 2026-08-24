@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { getAdminSession } from '@/lib/server/admin-auth'
 
-import { STRAPI_API_URL as STRAPI_URL } from '@/lib/config'
+import { API_BASE_URL } from '@/lib/config'
 
 export async function GET(request: NextRequest) {
   const session = await getAdminSession()
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const response = await fetch(`${STRAPI_URL}/api/panel/admin-audit-logs/export?${request.nextUrl.searchParams.toString()}`, {
+  const response = await fetch(`${API_BASE_URL}/api/panel/admin-audit-logs/export?${request.nextUrl.searchParams.toString()}`, {
     headers: {
       Authorization: `Bearer ${session.token}`,
     },

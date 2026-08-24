@@ -10,7 +10,7 @@ import { AdminTable } from '@/components/admin/admin-table'
 import type { Locale } from '@/lib/i18n'
 import { ADMIN_COLLECTION_META, type AdminCollectionKey } from '@/lib/admin-panel'
 import { getAdminActionLabels } from '@/lib/admin-panel-labels'
-import { type AdminStrapiEntry, listAdminCollection } from '@/lib/server/admin-content'
+import { type AdminEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
 import { AdminPublishStatusBadge } from '@/components/admin/admin-publish-status-badge'
 
@@ -140,7 +140,7 @@ export async function AdminGenericListPage({
     : PAGE_SIZE_OPTIONS[0]!
   const status = searchParams.status === 'published' || searchParams.status === 'scheduled' || searchParams.status === 'draft' ? searchParams.status : 'all'
 
-  const response = await listAdminCollection<AdminStrapiEntry>(session, collection, {
+  const response = await listAdminCollection<AdminEntry>(session, collection, {
     locale,
     page,
     pageSize,
@@ -163,10 +163,10 @@ export async function AdminGenericListPage({
   // 换每页条数时回到第一页：原页码在新分页下多半越界
   const buildPageSizeHref = (nextPageSize: number) => buildQuery({ page: 1, pageSize: nextPageSize })
 
-  const getPrimary = (item: AdminStrapiEntry) =>
+  const getPrimary = (item: AdminEntry) =>
     String(item[primaryField] || item.name || item.title || `#${item.id}`)
 
-  const getFieldValue = (item: AdminStrapiEntry, field: string) => {
+  const getFieldValue = (item: AdminEntry, field: string) => {
     const value = field.split('.').reduce<unknown>((current, key) => {
       if (!current || typeof current !== 'object') return undefined
       return (current as Record<string, unknown>)[key]
@@ -218,7 +218,7 @@ export async function AdminGenericListPage({
             key: badgeField,
             header: badgeField,
             className: 'w-28',
-            render: (item: AdminStrapiEntry) => (
+            render: (item: AdminEntry) => (
               <Badge variant="outline">{String(item[badgeField] || '-')}</Badge>
             ),
           }] : []),
@@ -226,7 +226,7 @@ export async function AdminGenericListPage({
             key: field.field,
             header: field.label[locale as Locale] || field.label['zh-Hans'],
             className: field.className || 'w-32',
-            render: (item: AdminStrapiEntry) => (
+            render: (item: AdminEntry) => (
               <span className="text-xs text-muted-foreground">{getFieldValue(item, field.field)}</span>
             ),
           })),
@@ -234,7 +234,7 @@ export async function AdminGenericListPage({
             key: 'publishedAt',
             header: t.publishStatus,
             className: 'w-28',
-            render: (item: AdminStrapiEntry) => (
+            render: (item: AdminEntry) => (
               <AdminPublishStatusBadge
                 status={typeof item.status === 'string' ? item.status : undefined}
                 labels={{ published: t.statusPublished, scheduled: t.statusScheduled, draft: t.statusDraft }}

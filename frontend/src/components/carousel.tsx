@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { LocaleLink } from '@/components/locale-link'
 import { useLocale } from '@/contexts/locale-context'
 import { cn } from '@/lib/utils'
-import { getContentEntryPathId, type Announcement, type OnlineEvent, type OfflineEvent, type StrapiMedia } from '@/lib/api'
+import { getContentEntryPathId, type Announcement, type OnlineEvent, type OfflineEvent, type MediaAsset } from '@/lib/api'
 import type { Locale } from '@/lib/i18n'
 import { getMediaUrl } from '@/lib/media'
 
@@ -17,7 +17,7 @@ interface CarouselItem {
   type: 'announcement' | 'online-event' | 'offline-event'
   title: string
   description?: string
-  coverImage?: StrapiMedia
+  coverImage?: MediaAsset
   href: string
   badge?: string
   badgeVariant?: 'default' | 'secondary'

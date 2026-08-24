@@ -1,13 +1,13 @@
 /**
- * Strapi API 核心工具：通用请求、查询串构建、多语言回退取数。
+ * 内容 API 核心工具：通用请求、查询串构建、多语言回退取数。
  * 本文件不 import 任何域模块（events/works/students/research/misc），防止循环依赖。
  */
 
-import { STRAPI_API_URL as API_URL } from '@/lib/config';
+import { API_BASE_URL as API_URL } from '@/lib/config';
 import type {
   ContentIdentifier,
-  StrapiResponse,
-  StrapiSingleResponse,
+  ApiListResponse,
+  ApiSingleResponse,
 } from './types';
 
 export type { ContentIdentifier };
@@ -55,7 +55,7 @@ export async function fetchAPI<T>(
   }
 }
 
-export function toStrapiLocale(locale: string = 'zh-Hans') {
+export function toApiLocale(locale: string = 'zh-Hans') {
   if (locale === 'zh-CN') {
     return 'zh-Hans';
   }
@@ -82,7 +82,7 @@ export function createCollectionQuery(params: Record<string, string | number | b
 }
 
 function getFallbackLocales(locale: string = 'zh-Hans') {
-  const primaryLocale = toStrapiLocale(locale);
+  const primaryLocale = toApiLocale(locale);
   return primaryLocale === 'zh-Hans' ? [primaryLocale] : [primaryLocale, 'zh-Hans'];
 }
 
@@ -96,7 +96,7 @@ export async function fetchLocalizedSingleBySlug<T>(
   // 语义保持：任一请求抛错则整体抛错（与原串行行为一致）；全部为空返回 null。
   const results = await Promise.allSettled(
     getFallbackLocales(locale).map((candidateLocale) =>
-      fetchAPI<StrapiResponse<T[]>>(
+      fetchAPI<ApiListResponse<T[]>>(
         `/${collection}?${createCollectionQuery({
           locale: candidateLocale,
           'filters[slug][$eq]': slug,
@@ -108,14 +108,14 @@ export async function fetchLocalizedSingleBySlug<T>(
 
   for (const result of results) {
     if (result.status === 'fulfilled' && result.value.data?.[0]) {
-      return { data: result.value.data[0], meta: {} } as StrapiSingleResponse<T | null>;
+      return { data: result.value.data[0], meta: {} } as ApiSingleResponse<T | null>;
     }
   }
   const firstRejected = results.find((result) => result.status === 'rejected');
   if (firstRejected && firstRejected.status === 'rejected') {
     throw firstRejected.reason;
   }
-  return { data: null, meta: {} } as StrapiSingleResponse<T | null>;
+  return { data: null, meta: {} } as ApiSingleResponse<T | null>;
 }
 
 export async function fetchLocalizedCollectionWithFallback<T>(
@@ -126,7 +126,7 @@ export async function fetchLocalizedCollectionWithFallback<T>(
   // 性能：同上，候选 locale 并发；全部为空时回退最后一个成功响应（zh-Hans）。
   const results = await Promise.allSettled(
     getFallbackLocales(locale).map((candidateLocale) =>
-      fetchAPI<StrapiResponse<T[]>>(
+      fetchAPI<ApiListResponse<T[]>>(
         `/${collection}?${createCollectionQuery({
           locale: candidateLocale,
           ...params,
@@ -135,7 +135,7 @@ export async function fetchLocalizedCollectionWithFallback<T>(
     )
   );
 
-  let lastResponse: StrapiResponse<T[]> | null = null;
+  let lastResponse: ApiListResponse<T[]> | null = null;
   for (const result of results) {
     if (result.status === 'fulfilled') {
       lastResponse = result.value;

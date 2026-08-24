@@ -64,16 +64,16 @@ export default async function SystemHealthPage({ params }: SystemHealthPageProps
     <div>
       <AdminPageHeader title={t.title} description={t.description} />
 
-      <div className="mb-4 rounded-lg border bg-card p-4 text-sm text-muted-foreground">
+      <div className="mb-6 text-sm text-muted-foreground">
         {t.generatedAt}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'medium' }).format(new Date(health.generatedAt))}
       </div>
 
-      <div className="space-y-3">
+      <div className="divide-y border-t">
         {health.checks.map((check) => (
-          <div key={check.key} className="rounded-lg border bg-card p-4">
+          <div key={check.key} className="py-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="font-semibold">{check.label}</h2>
+                <h2 className="font-bold">{check.label}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">{check.message}</p>
               </div>
               <Badge variant={statusVariant(check.status)}>{statusLabel(check.status, t)}</Badge>

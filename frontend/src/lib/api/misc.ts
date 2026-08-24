@@ -6,7 +6,7 @@ import {
   createCollectionQuery,
   fetchAPI,
   isNumericIdentifier,
-  toStrapiLocale,
+  toApiLocale,
 } from './core';
 import {
   searchOfflineEvents,
@@ -17,7 +17,7 @@ import type {
   OfflineEvent,
   OnlineEvent,
 } from './events';
-import type { Announcement, FriendLink, SchoolType, StrapiMedia, StrapiResponse, Student } from './types';
+import type { Announcement, FriendLink, SchoolType, MediaAsset, ApiListResponse, Student } from './types';
 import type { Creator } from './creators';
 import type { ResearchSubject } from './research';
 
@@ -25,10 +25,10 @@ export async function getAnnouncements(
   locale: string = 'zh-Hans',
   options: { page?: number; pageSize?: number } = {}
 ) {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<Announcement[]>>(
+  const apiLocale = toApiLocale(locale);
+  return fetchAPI<ApiListResponse<Announcement[]>>(
     `/announcements?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       'filters[isActive][$eq]': true,
       'sort[0]': 'isPinned:desc',
       'sort[1]': 'priority:desc',
@@ -41,10 +41,10 @@ export async function getAnnouncements(
 }
 
 export async function getHomeAnnouncements(locale: string = 'zh-Hans', limit: number = 3) {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<Announcement[]>>(
+  const apiLocale = toApiLocale(locale);
+  return fetchAPI<ApiListResponse<Announcement[]>>(
     `/announcements?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       'filters[isActive][$eq]': true,
       'sort[0]': 'isPinned:desc',
       'sort[1]': 'priority:desc',
@@ -56,11 +56,11 @@ export async function getHomeAnnouncements(locale: string = 'zh-Hans', limit: nu
 }
 
 export async function getFriendLinks(locale: string = 'zh-Hans', limit: number = 12) {
-  const strapiLocale = toStrapiLocale(locale);
+  const apiLocale = toApiLocale(locale);
   // 性能：友链为全站页脚静态内容，缓存分层至 1 小时（其余集合维持 60s）。
-  return fetchAPI<StrapiResponse<FriendLink[]>>(
+  return fetchAPI<ApiListResponse<FriendLink[]>>(
     `/friend-links?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       'pagination[pageSize]': limit,
       'populate[icon]': true,
     })}`
@@ -74,11 +74,11 @@ export async function getAnnouncementById(
   id: string | number,
   locale: string = 'zh-Hans'
 ) {
-  const strapiLocale = toStrapiLocale(locale)
+  const apiLocale = toApiLocale(locale)
   const identifier = String(id).trim()
-  const response = await fetchAPI<StrapiResponse<Announcement[]>>(
+  const response = await fetchAPI<ApiListResponse<Announcement[]>>(
     `/announcements?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       [isNumericIdentifier(identifier) ? 'filters[id][$eq]' : 'filters[documentId][$eq]']: identifier,
       ...COVER_IMAGE_POPULATE_PARAMS,
     })}`
@@ -98,10 +98,10 @@ export async function searchAnnouncements(
   query: string,
   locale: string = 'zh-Hans'
 ) {
-  const strapiLocale = toStrapiLocale(locale)
-  return fetchAPI<StrapiResponse<Announcement[]>>(
+  const apiLocale = toApiLocale(locale)
+  return fetchAPI<ApiListResponse<Announcement[]>>(
     `/announcements?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       'filters[$or][0][title][$containsi]': query,
       'filters[$or][1][content][$containsi]': query,
       'filters[isActive][$eq]': true,
@@ -127,9 +127,9 @@ export async function getAllCollectionItems<T>(
   let pageCount = 1
 
   do {
-    const response = await fetchAPI<StrapiResponse<T[]>>(
+    const response = await fetchAPI<ApiListResponse<T[]>>(
       `/${endpoint}?${createCollectionQuery({
-        locale: toStrapiLocale(locale),
+        locale: toApiLocale(locale),
         populate: options.populate || '*',
         'pagination[page]': page,
         'pagination[pageSize]': pageSize,
@@ -150,7 +150,7 @@ export interface SearchSectionResult<T> {
   error?: string;
 }
 
-async function safeSearch<T>(label: string, request: Promise<StrapiResponse<T[]>>): Promise<SearchSectionResult<T>> {
+async function safeSearch<T>(label: string, request: Promise<ApiListResponse<T[]>>): Promise<SearchSectionResult<T>> {
   try {
     const response = await request
     return {
@@ -171,9 +171,9 @@ async function safeSearch<T>(label: string, request: Promise<StrapiResponse<T[]>
  * 搜索创作者（按名称 / 简介）
  */
 export async function searchCreators(query: string, locale: string = 'zh-Hans') {
-  return fetchAPI<StrapiResponse<Creator[]>>(
+  return fetchAPI<ApiListResponse<Creator[]>>(
     `/creators?${createCollectionQuery({
-      locale: toStrapiLocale(locale),
+      locale: toApiLocale(locale),
       'filters[$or][0][name][$containsi]': query,
       'filters[$or][1][bio][$containsi]': query,
       'sort[0]': 'isFeatured:desc',
@@ -186,9 +186,9 @@ export async function searchCreators(query: string, locale: string = 'zh-Hans') 
  * 搜索考据对象：列表接口暂不支持全文过滤，取全量后在内存中按名称匹配。
  */
 export async function searchResearchSubjects(query: string, locale: string = 'zh-Hans') {
-  const response = await fetchAPI<StrapiResponse<ResearchSubject[]>>(
+  const response = await fetchAPI<ApiListResponse<ResearchSubject[]>>(
     `/research-subjects?${createCollectionQuery({
-      locale: toStrapiLocale(locale),
+      locale: toApiLocale(locale),
       'pagination[pageSize]': 100,
     })}`
   );
@@ -238,15 +238,15 @@ export interface School {
   description?: string;
   color?: string;
   order: number;
-  logo?: StrapiMedia;
+  logo?: MediaAsset;
   locale: string;
 }
 
 export async function getSchools(locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<School[]>>(
+  const apiLocale = toApiLocale(locale);
+  return fetchAPI<ApiListResponse<School[]>>(
     `/schools?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       'sort[0]': 'order:asc',
       'sort[1]': 'name:asc',
       'pagination[pageSize]': 100,

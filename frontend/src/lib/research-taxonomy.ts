@@ -7,7 +7,7 @@
  *
  * 改一个值/标签只需改这里一处，杜绝以往「4 处各抄一遍、漏一处即 bug」的漂移。
  *
- * 注意：后端 Strapi schema 的 enum 仍是各自独立维护的（跨包无法共享 TS）。
+ * 注意：后端 schema 的 enum 仍是各自独立维护的（跨包无法共享 TS）。
  * 新增/删除枚举值时，务必同步更新对应 schema.json 与后端 research-constants.ts。
  */
 

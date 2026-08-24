@@ -117,7 +117,7 @@ export function ResearchFilter({ entries, themes, locale }: ResearchFilterProps)
           </section>
         )}
 
-        {/* Themes (from Strapi) */}
+        {/* Themes (from API) */}
         {themes.length > 0 && (
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">

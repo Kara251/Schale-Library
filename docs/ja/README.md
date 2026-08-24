@@ -14,19 +14,20 @@ Schale Library は、ゲーム作品『ブルーアーカイブ』に関連す�
 
 - **フルスタックフレームワーク:** [React](https://github.com/facebook/react) + [Next.js](https://github.com/vercel/next.js) App Router + [TypeScript](https://github.com/microsoft/TypeScript)
 - **スタイル:** [Shadcn/UI](https://github.com/shadcn-ui/ui) + [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss)
-- **CMS:** [Strapi](https://github.com/strapi/strapi)
-- **API:** Strapi REST API
+- **バックエンド:** [Hono](https://github.com/honojs/hono) on Cloudflare Workers
+- **データベース:** Cloudflare D1 (SQLite)
 - **データ処理:** Next.js Route Handlers
-- **メディア:** [Cloudinary](https://cloudinary.com) + [OpenList](https://github.com/OpenListTeam/OpenList) + OneDrive
+- **オブジェクトストレージ:** Cloudflare R2
+- **ドライブ:** [OpenList](https://github.com/OpenListTeam/OpenList) + OneDrive
 
 ## ローカル開発
 
 - このプロジェクトは pnpm workspace を使用しており、Docker は不要です。
 - 依存関係のインストール：`pnpm install`
-- Strapi の起動：`pnpm dev:backend`
+- バックエンドの起動（ローカル Workers）：`pnpm dev:server`
 - フロントエンドの起動：`pnpm dev:frontend`
-- Bilibili RSS 同期は、デフォルトでローカル RSSHub `http://localhost:1200` を優先します。ローカルで RSSHub を使う場合は、`RSSHub/` ディレクトリで公式手順に従ってインストールおよび起動し、`backend/.env` に `RSSHUB_URL=http://localhost:1200` を設定します。
-- 独自管理パネルは `/{locale}/manage` にあります。同一オリジンの Next.js Route Handlers と HttpOnly Cookie セッションを通じて Strapi にアクセスし、コンテンツ管理、Bilibili 購読同期、アップロード、同期ログ確認を行えます。
+- バックエンドのテスト：`pnpm test:server`
+- 管理パネルは `/{locale}/manage` にあります。同一オリジンの Next.js Route Handlers と HttpOnly Cookie セッションを通じてバックエンドにアクセスし、コンテンツ管理、ユーザー管理、アップロード、監査ログの確認を行えます。
 
 ## デプロイ
 
@@ -34,9 +35,7 @@ Schale Library は、ゲーム作品『ブルーアーカイブ』に関連す�
 
 セキュリティの補償的コントロールと依存関係監査については [セキュリティメモ](security.md) を参照してください。
 
-正式公開の gate については [本番リリース準備](production-readiness.md) を参照してください。
-
-PostgreSQL/Supabase のパフォーマンス向けインデックス推奨は [PostgreSQL インデックス推奨](database-indexes.md) を参照してください。
+データベースのインデックスについては [データベースインデックス](database-indexes.md) を参照してください。
 
 ## 権利表記
 

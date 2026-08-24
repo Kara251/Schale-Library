@@ -18,14 +18,12 @@ import {
   type AdminRelationOption,
   type AdminRowColumn,
 } from '@/lib/admin-panel'
-import type { AdminStrapiEntry } from '@/lib/server/admin-content'
+import type { AdminEntry } from '@/lib/server/admin-content'
 import { labels as ADMIN_EDITOR_LABELS } from './admin-editor-labels'
 import {
   buildInitialValues,
   getDisplayLabel,
-  getFormStringValue,
   getLocationSelectOptions,
-  toDateTimeLocal,
   type ComponentRow,
   type MediaState,
 } from './admin-value-utils'
@@ -34,16 +32,14 @@ import { getMediaUrl } from '@/lib/media'
 import { cn } from '@/lib/utils'
 import {
   getEventLocationLabel,
-  getEventLocationOptions,
   normalizeEventLocationName,
-  type EventLocationLevel,
 } from '@/lib/utils/event-location'
 
 interface AdminEditorFormProps {
   collection: AdminCollectionKey
   locale: Locale
   returnPath: string
-  initialData?: AdminStrapiEntry | null
+  initialData?: AdminEntry | null
   relationOptions?: Record<string, AdminRelationOption[]>
 }
 

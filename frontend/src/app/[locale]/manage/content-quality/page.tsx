@@ -141,7 +141,7 @@ export default async function ContentQualityPage({ params, searchParams }: Conte
         }
       />
 
-      <form action={`/${locale}/manage/content-quality`} className="mb-4 grid gap-3 rounded-lg border bg-card p-4 md:grid-cols-5">
+      <form action={`/${locale}/manage/content-quality`} className="mb-6 grid gap-3 md:grid-cols-5">
         <select name="status" defaultValue={query.status || 'open'} className="rounded-md border bg-background px-3 py-2 text-sm">
           <option value="open">{t.all}</option>
           <option value="resolved">resolved</option>

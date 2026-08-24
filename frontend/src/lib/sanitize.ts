@@ -12,7 +12,7 @@
 import sanitize from 'sanitize-html';
 
 const TRUSTED_IMAGE_HOSTS = new Set(['i0.hdslb.com', 'i1.hdslb.com', 'i2.hdslb.com', 'res.cloudinary.com']);
-import { STRAPI_API_URL as API_URL } from '@/lib/config';
+import { API_BASE_URL as API_URL } from '@/lib/config';
 
 try {
     const parsedApiUrl = new URL(API_URL);

@@ -94,12 +94,12 @@ export default async function BulkActionsPage({ params, searchParams }: BulkActi
       <AdminPageHeader title={t.title} description={t.description} />
 
       {(query.updated || query.failed) && (
-        <div className="mb-4 rounded-lg border bg-card p-4 text-sm text-muted-foreground">
+        <div className="mb-6 text-sm text-muted-foreground">
           {t.result}: updated={query.updated || 0}, failed={query.failed || 0}
         </div>
       )}
 
-      <form action={bulkAction} className="space-y-4 rounded-lg border bg-card p-5">
+      <form action={bulkAction} className="max-w-3xl space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2 text-sm">
             <span className="font-medium">{t.collection}</span>

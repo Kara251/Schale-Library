@@ -14,19 +14,20 @@ Library URL: [https://bakivo.com](https://bakivo.com)
 
 - **Full-stack framework:** [React](https://github.com/facebook/react) + [Next.js](https://github.com/vercel/next.js) App Router + [TypeScript](https://github.com/microsoft/TypeScript)
 - **Styling:** [Shadcn/UI](https://github.com/shadcn-ui/ui) + [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss)
-- **CMS:** [Strapi](https://github.com/strapi/strapi)
-- **API:** Strapi REST API
+- **Backend:** [Hono](https://github.com/honojs/hono) on Cloudflare Workers
+- **Database:** Cloudflare D1 (SQLite)
 - **Data processing:** Next.js Route Handlers
-- **Media:** [Cloudinary](https://cloudinary.com) + [OpenList](https://github.com/OpenListTeam/OpenList) + OneDrive
+- **Object storage:** Cloudflare R2
+- **Drive:** [OpenList](https://github.com/OpenListTeam/OpenList) + OneDrive
 
 ## Local Development
 
 - This project uses a pnpm workspace and does not require Docker.
 - Install dependencies: `pnpm install`
-- Start Strapi: `pnpm dev:backend`
+- Start the backend (local Workers): `pnpm dev:server`
 - Start the frontend: `pnpm dev:frontend`
-- Bilibili RSS sync reads local RSSHub first by default: `http://localhost:1200`. To run RSSHub locally, install and start it from the `RSSHub/` directory following RSSHub's official instructions, then keep `RSSHUB_URL=http://localhost:1200` in `backend/.env`.
-- The custom admin panel is available at `/{locale}/manage`. It uses same-origin Next.js Route Handlers and HttpOnly cookie sessions to access Strapi, and includes content maintenance, Bilibili subscription sync, uploads, and sync logs.
+- Backend tests: `pnpm test:server`
+- The admin panel is available at `/{locale}/manage`. It uses same-origin Next.js Route Handlers and HttpOnly cookie sessions to access the backend, and covers content maintenance, user management, uploads, and audit logs.
 
 ## Deployment
 
@@ -34,9 +35,7 @@ Deployment, database, and maintainer account recovery notes are available in [De
 
 Security compensating controls and dependency audit notes are available in [Security Notes](security.md).
 
-Formal launch gates are available in [Production Readiness](production-readiness.md).
-
-PostgreSQL/Supabase performance index recommendations are available in [PostgreSQL Index Recommendations](database-indexes.md).
+Database index notes are available in [Database Indexes](database-indexes.md).
 
 ## Copyright
 

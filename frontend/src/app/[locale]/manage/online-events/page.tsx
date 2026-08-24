@@ -9,14 +9,14 @@ import { AdminSearchForm } from '@/components/admin/admin-search-form'
 import { AdminTable } from '@/components/admin/admin-table'
 import { getAdminActionLabels } from '@/lib/admin-panel-labels'
 import type { Locale } from '@/lib/i18n'
-import { type AdminStrapiEntry, listAdminCollection } from '@/lib/server/admin-content'
+import { type AdminEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
 import { AdminPublishStatusBadge } from '@/components/admin/admin-publish-status-badge'
 
 /** 每页条数选项；首项为默认值（不写进 URL）。 */
 const PAGE_SIZE_OPTIONS = [12, 24, 50]
 
-interface OnlineEventAdminEntry extends AdminStrapiEntry {
+interface OnlineEventAdminEntry extends AdminEntry {
   title: string
   organizer?: string
   nature: 'official' | 'fanmade'
@@ -152,6 +152,8 @@ export default async function OnlineEventsManagePage({ params, searchParams }: O
     if (query.search) params.set('search', query.search)
     if (status !== 'all') params.set('status', status)
     params.set('page', String(nextPage))
+    // 翻页要保留每页条数，否则选了 50/页再点下一页会被打回默认值
+    if (pageSize !== PAGE_SIZE_OPTIONS[0]) params.set('pageSize', String(pageSize))
     const qs = params.toString()
     return `/${locale}/manage/online-events${qs ? `?${qs}` : ''}`
   }
@@ -256,8 +258,18 @@ export default async function OnlineEventsManagePage({ params, searchParams }: O
       <AdminPagination
         page={response.meta.pagination.page}
         pageCount={response.meta.pagination.pageCount}
+        total={response.meta.pagination.total}
+        pageSize={pageSize}
         buildHref={buildHref}
-        labels={{ previous: t.previous, next: t.next, summary: t.pagination }}
+        buildPageSizeHref={buildPageSizeHref}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        labels={{
+          previous: t.previous,
+          next: t.next,
+          summary: t.pagination,
+          totalSummary: t.totalSummary,
+          perPage: t.perPage,
+        }}
       />
     </div>
   )

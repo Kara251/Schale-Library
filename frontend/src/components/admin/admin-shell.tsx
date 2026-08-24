@@ -23,7 +23,6 @@ import {
   LogOut,
   Radio,
   Route,
-  ShieldCheck,
   SlidersHorizontal,
   Tags,
   Users,

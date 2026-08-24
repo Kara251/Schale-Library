@@ -5,8 +5,8 @@
  * - GET /creators?locale=&sort[0]=createdAt:desc&pagination[page|pageSize]
  * - GET /creators/:slug?locale=&populate=students,representativeWorks
  */
-import { createCollectionQuery, fetchAPI, toStrapiLocale } from './core';
-import type { StrapiResponse, StrapiSingleResponse, Student } from './types';
+import { createCollectionQuery, fetchAPI, toApiLocale } from './core';
+import type { ApiListResponse, ApiSingleResponse, Student } from './types';
 
 /** 代表作（组件语义，随创作者详情一并返回） */
 export interface RepresentativeWork {
@@ -48,15 +48,15 @@ export interface CreatorListOptions {
  * 获取创作者列表（中立收录站：默认最新收录优先，无推荐/精选语义）
  */
 export async function getCreators(locale: string = 'zh-Hans', options: CreatorListOptions = {}) {
-  const strapiLocale = toStrapiLocale(locale);
+  const apiLocale = toApiLocale(locale);
   const params: Record<string, string | number | boolean | undefined> = {
-    locale: strapiLocale,
+    locale: apiLocale,
     'sort[0]': options.sort || 'createdAt:desc',
     'pagination[page]': Math.max(1, options.page || 1),
     'pagination[pageSize]': Math.min(100, Math.max(1, options.pageSize || 50)),
   };
 
-  return fetchAPI<StrapiResponse<Creator[]>>(
+  return fetchAPI<ApiListResponse<Creator[]>>(
     `/creators?${createCollectionQuery(params)}`
   );
 }
@@ -65,10 +65,10 @@ export async function getCreators(locale: string = 'zh-Hans', options: CreatorLi
  * 获取单个创作者详情（含关联学生 populate 与代表作）
  */
 export async function getCreatorBySlug(slug: string, locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
-  const response = await fetchAPI<StrapiSingleResponse<Creator | null>>(
+  const apiLocale = toApiLocale(locale);
+  const response = await fetchAPI<ApiSingleResponse<Creator | null>>(
     `/creators/${encodeURIComponent(slug)}?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       populate: 'students,representativeWorks',
     })}`
   );

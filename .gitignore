@@ -47,16 +47,11 @@ yarn-error.log*
 .idea/
 
 # ----------------------
-# 后端
+# 后端（Cloudflare Workers）
 # ----------------------
-backend/.tmp/
-backend/.cache/
-backend/build/
-backend/dist/
-backend/public/uploads/
-backend/database/data.db
-backend/.strapi/
-backend/.strapi-updater.json
+server/.wrangler/
+server/.vite-node/
+server/dist/
 
 # ----------------------
 # 前端

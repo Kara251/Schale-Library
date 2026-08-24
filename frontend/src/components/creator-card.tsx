@@ -5,7 +5,6 @@ import { UserRound } from 'lucide-react'
 import { OptimizedImage } from '@/components/optimized-image'
 import { LocaleLink } from '@/components/locale-link'
 import type { Creator } from '@/lib/api'
-import type { Locale } from '@/lib/i18n'
 
 interface CreatorCardProps {
   creator: Creator

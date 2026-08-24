@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { BookMarked, ShieldCheck } from 'lucide-react'
 
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { AdminStatCard } from '@/components/admin/admin-stat-card'
@@ -18,8 +17,6 @@ const labels: Record<Locale, {
   configTitle: string
   curatorTitle: string
   curatorBody: string
-  securityTitle: string
-  securityBody: string
 }> = {
   'zh-Hans': {
     title: '仪表盘',
@@ -28,8 +25,6 @@ const labels: Record<Locale, {
     configTitle: '配置项',
     curatorTitle: '策展配置',
     curatorBody: '编辑考据档案的主编精选与推荐阅读路径。',
-    securityTitle: '安全说明',
-    securityBody: '当前自研后台通过同源接口与 HttpOnly Cookie 会话访问 Strapi，避免在浏览器中暴露维护者令牌。写操作、上传和同步动作会记录到审计日志。',
   },
   en: {
     title: 'Dashboard',
@@ -38,8 +33,6 @@ const labels: Record<Locale, {
     configTitle: 'Settings',
     curatorTitle: 'Curation settings',
     curatorBody: 'Edit the research archive editor pick and recommended path.',
-    securityTitle: 'Security notes',
-    securityBody: 'The panel uses same-origin APIs and HttpOnly cookies to access Strapi, keeping maintainer tokens out of browser storage. Write actions, uploads, and sync actions are recorded in audit logs.',
   },
   ja: {
     title: 'ダッシュボード',
@@ -48,8 +41,6 @@ const labels: Record<Locale, {
     configTitle: '設定',
     curatorTitle: 'キュレーション設定',
     curatorBody: '考察アーカイブのおすすめと読み順を編集します。',
-    securityTitle: 'セキュリティ',
-    securityBody: 'この管理パネルは同一オリジン API と HttpOnly Cookie セッション経由で Strapi に接続し、ブラウザ保存領域へトークンを置きません。書き込み、アップロード、同期操作は監査ログに記録されます。',
   },
 }
 
@@ -63,7 +54,7 @@ export default async function ManageDashboardPage({ params }: ManageDashboardPag
     <div>
       <AdminPageHeader title={t.title} description={t.description} />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 xl:grid-cols-3">
         {dashboardItems.map((item) => (
           <AdminStatCard
             key={item.key}
@@ -75,28 +66,15 @@ export default async function ManageDashboardPage({ params }: ManageDashboardPag
         ))}
       </div>
 
-      <div className="mt-6">
-        <h2 className="mb-3 text-lg font-semibold">{t.configTitle}</h2>
+      <div className="mt-10 border-t pt-6">
+        <h2 className="text-base font-bold">{t.configTitle}</h2>
         <Link
           href={`/${locale}/manage/research-curator`}
-          className="flex items-start gap-3 rounded-lg border bg-card p-5 transition-colors hover:bg-muted/40"
+          className="mt-3 block max-w-xl transition-colors hover:text-primary"
         >
-          <BookMarked className="mt-0.5 h-5 w-5 text-primary" />
-          <span>
-            <span className="block font-medium">{t.curatorTitle}</span>
-            <span className="mt-1 block text-sm leading-6 text-muted-foreground">{t.curatorBody}</span>
-          </span>
+          <span className="block font-medium">{t.curatorTitle}</span>
+          <span className="mt-1 block text-sm leading-6 text-muted-foreground">{t.curatorBody}</span>
         </Link>
-      </div>
-
-      <div className="mt-6 rounded-lg border bg-card p-5">
-        <div className="flex items-start gap-3">
-          <ShieldCheck className="mt-0.5 h-5 w-5 text-primary" />
-          <div>
-            <h2 className="text-lg font-semibold">{t.securityTitle}</h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">{t.securityBody}</p>
-          </div>
-        </div>
       </div>
     </div>
   )

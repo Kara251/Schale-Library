@@ -5,18 +5,17 @@ import { AdminPagination } from '@/components/admin/admin-pagination'
 import { AdminRowActions } from '@/components/admin/admin-row-actions'
 import { AdminSearchForm } from '@/components/admin/admin-search-form'
 import { AdminTable } from '@/components/admin/admin-table'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getAdminActionLabels } from '@/lib/admin-panel-labels'
 import type { Locale } from '@/lib/i18n'
-import { type AdminStrapiEntry, listAdminCollection } from '@/lib/server/admin-content'
+import { type AdminEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
 import { AdminPublishStatusBadge } from '@/components/admin/admin-publish-status-badge'
 
 /** 每页条数选项；首项为默认值（不写进 URL）。 */
 const PAGE_SIZE_OPTIONS = [12, 24, 50]
 
-interface FriendLinkAdminEntry extends AdminStrapiEntry {
+interface FriendLinkAdminEntry extends AdminEntry {
   title: string
   url: string
   priority: number
@@ -158,6 +157,8 @@ export default async function FriendLinksManagePage({ params, searchParams }: Fr
     if (query.search) params.set('search', query.search)
     if (status !== 'all') params.set('status', status)
     params.set('page', String(nextPage))
+    // 翻页要保留每页条数，否则选了 50/页再点下一页会被打回默认值
+    if (pageSize !== PAGE_SIZE_OPTIONS[0]) params.set('pageSize', String(pageSize))
     const qs = params.toString()
     return `/${locale}/manage/friend-links${qs ? `?${qs}` : ''}`
   }

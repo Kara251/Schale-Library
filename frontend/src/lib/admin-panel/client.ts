@@ -7,7 +7,7 @@ import type {
   AdminMediaAsset,
 } from './types'
 
-import { STRAPI_API_URL as STRAPI_URL } from '@/lib/config'
+import { API_BASE_URL } from '@/lib/config'
 
 const DEFAULT_PAGE_SIZE = 12
 
@@ -52,7 +52,7 @@ function parseErrorCode(text: string): string | undefined {
   }
 }
 
-export interface AdminStrapiEntry {
+export interface AdminEntry {
   /** 对外 ID：后端返回的是 documentId（24 位十六进制字符串），不是数字主键 */
   id: string
   documentId?: string
@@ -63,7 +63,7 @@ export interface AdminStrapiEntry {
   [key: string]: unknown
 }
 
-export interface AdminListResponse<T extends AdminStrapiEntry> {
+export interface AdminListResponse<T extends AdminEntry> {
   data: T[]
   meta: {
     pagination: {
@@ -95,7 +95,7 @@ export interface AdminSystemHealth {
   checks: AdminSystemHealthCheck[]
 }
 
-export interface ContentQualityIssue extends AdminStrapiEntry {
+export interface ContentQualityIssue extends AdminEntry {
   issueType: string
   severity: 'info' | 'warning' | 'error'
   status: 'open' | 'resolved'
@@ -186,7 +186,7 @@ async function adminFetchJson<T>(session: AdminSession, pathname: string, option
     body = typeof options.body === 'string' ? options.body : JSON.stringify(options.body)
   }
 
-  const response = await fetch(`${STRAPI_URL}${pathname}`, {
+  const response = await fetch(`${API_BASE_URL}${pathname}`, {
     method: options.method || 'GET',
     headers,
     body,
@@ -203,7 +203,7 @@ async function adminFetchJson<T>(session: AdminSession, pathname: string, option
   return response.json() as Promise<T>
 }
 
-export async function listAdminCollection<T extends AdminStrapiEntry>(
+export async function listAdminCollection<T extends AdminEntry>(
   session: AdminSession,
   key: AdminCollectionKey,
   query: AdminListQuery
@@ -249,7 +249,7 @@ export async function runBulkAction(
   })
 }
 
-export async function getAdminCollectionItem<T extends AdminStrapiEntry>(
+export async function getAdminCollectionItem<T extends AdminEntry>(
   session: AdminSession,
   key: AdminCollectionKey,
   documentId: string,
@@ -267,7 +267,7 @@ export async function getAdminCollectionItem<T extends AdminStrapiEntry>(
   return data.data
 }
 
-export async function createAdminCollectionItem<T extends AdminStrapiEntry>(
+export async function createAdminCollectionItem<T extends AdminEntry>(
   session: AdminSession,
   key: AdminCollectionKey,
   payload: Record<string, unknown>,
@@ -281,7 +281,7 @@ export async function createAdminCollectionItem<T extends AdminStrapiEntry>(
   return data.data
 }
 
-export async function updateAdminCollectionItem<T extends AdminStrapiEntry>(
+export async function updateAdminCollectionItem<T extends AdminEntry>(
   session: AdminSession,
   key: AdminCollectionKey,
   documentId: string,
@@ -431,14 +431,14 @@ export async function getOwnProfile(session: AdminSession): Promise<AdminPanelUs
 export async function listPanelUsers(
   session: AdminSession,
   query: AdminUserListQuery = {}
-): Promise<AdminListResponse<AdminPanelUser & AdminStrapiEntry>> {
+): Promise<AdminListResponse<AdminPanelUser & AdminEntry>> {
   const params = new URLSearchParams()
   params.set('page', String(query.page ?? 1))
   params.set('pageSize', String(query.pageSize ?? 20))
   if (query.search?.trim()) params.set('search', query.search.trim())
   if (query.status && query.status !== 'all') params.set('status', query.status)
 
-  return adminFetchJson<AdminListResponse<AdminPanelUser & AdminStrapiEntry>>(
+  return adminFetchJson<AdminListResponse<AdminPanelUser & AdminEntry>>(
     session,
     `/api/panel/users?${params.toString()}`
   )

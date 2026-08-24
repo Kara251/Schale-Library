@@ -6,7 +6,7 @@
  * - works/events/students/research/misc → frontend/src/lib/api/<域>.ts
  * - admin-panel（含 auth/rate-limit）   → frontend/src/lib/admin-panel/client.ts、lib/server/*
  * - audit-logs                          → frontend/src/app/api/admin/audit-logs/export/route.ts
- * - media-seed                          → frontend/src/lib/media.ts、scripts/seed-basics.mjs
+ * - media-seed                          → frontend/src/lib/media.ts
  */
 
 export { WORKS_CONTRACT } from './works';
@@ -20,7 +20,7 @@ export {
   RATE_LIMIT_CONTRACT,
 } from './admin-panel';
 export { AUDIT_LOGS_EXPORT_CONTRACT } from './audit-logs';
-export { MEDIA_CONTRACT, SEED_BASICS_CONTRACT } from './media-seed';
+export { MEDIA_CONTRACT } from './media-seed';
 
 /**
  * 全部契约快照的聚合视图，便于一次性遍历校验。
@@ -36,7 +36,7 @@ import {
   RATE_LIMIT_CONTRACT,
 } from './admin-panel';
 import { AUDIT_LOGS_EXPORT_CONTRACT } from './audit-logs';
-import { MEDIA_CONTRACT, SEED_BASICS_CONTRACT } from './media-seed';
+import { MEDIA_CONTRACT } from './media-seed';
 
 export const ALL_CONTRACTS = {
   works: WORKS_CONTRACT,
@@ -49,5 +49,4 @@ export const ALL_CONTRACTS = {
   rateLimit: RATE_LIMIT_CONTRACT,
   auditLogsExport: AUDIT_LOGS_EXPORT_CONTRACT,
   media: MEDIA_CONTRACT,
-  seedBasics: SEED_BASICS_CONTRACT,
 } as const;

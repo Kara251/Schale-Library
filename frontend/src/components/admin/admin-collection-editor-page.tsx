@@ -10,7 +10,7 @@ import {
 } from '@/lib/admin-panel'
 import type { Locale } from '@/lib/i18n'
 import {
-  type AdminStrapiEntry,
+  type AdminEntry,
   getAdminCollectionItem,
   listAdminCollection,
 } from '@/lib/server/admin-content'
@@ -32,7 +32,7 @@ const labels: Record<Locale, { back: string }> = {
 interface RelationSourceConfig {
   collection: AdminCollectionKey
   localized: boolean
-  toOption: (entry: AdminStrapiEntry) => AdminRelationOption
+  toOption: (entry: AdminEntry) => AdminRelationOption
 }
 
 /** 关系选项数据源：relationKey → 拉取配置 */
@@ -115,7 +115,7 @@ async function loadRelationOptions(
       return
     }
 
-    const response = await listAdminCollection<AdminStrapiEntry>(session, source.collection, {
+    const response = await listAdminCollection<AdminEntry>(session, source.collection, {
       locale: source.localized ? locale : undefined,
       page: 1,
       pageSize: 100,

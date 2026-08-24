@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { NextRequest } from 'next/server'
 
-import { STRAPI_API_URL as STRAPI_URL } from '@/lib/config'
+import { API_BASE_URL } from '@/lib/config'
 const INTERNAL_RATE_LIMIT_TIMEOUT_MS = 3000
 
 interface RateLimitOptions {
@@ -48,7 +48,7 @@ export async function checkServerRateLimit({
   const timeoutId = setTimeout(() => controller.abort(), INTERNAL_RATE_LIMIT_TIMEOUT_MS)
 
   try {
-    const response = await fetch(`${STRAPI_URL}/api/panel/internal/rate-limit`, {
+    const response = await fetch(`${API_BASE_URL}/api/panel/internal/rate-limit`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

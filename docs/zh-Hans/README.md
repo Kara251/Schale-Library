@@ -14,19 +14,19 @@ Schale Library 是一个用于整理游戏作品《蔚蓝档案》相关内容�
 
 - **全栈框架:** [React](https://github.com/facebook/react) + [Next.js](https://github.com/vercel/next.js) App Router + [TypeScript](https://github.com/microsoft/TypeScript)
 - **样式:** [Shadcn/UI](https://github.com/shadcn-ui/ui) + [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss)
-- **CMS:** [Strapi](https://github.com/strapi/strapi)
-- **API 通信:** Strapi REST API
-- **数据处理:** Next.js Route Handlers
-- **媒体数据:** [Cloudinary](https://cloudinary.com) + [OpenList](https://github.com/OpenListTeam/OpenList) + OneDrive
+- **后端:** [Hono](https://github.com/honojs/hono) on Cloudflare Workers
+- **数据库:** Cloudflare D1（SQLite）
+- **对象存储:** Cloudflare R2
+- **网盘:** [OpenList](https://github.com/OpenListTeam/OpenList) + OneDrive
 
 ## 本地开发
 
 - 本项目使用 pnpm workspace，不需要 Docker。
 - 安装依赖：`pnpm install`
-- 启动 Strapi：`pnpm dev:backend`
+- 启动后端（Workers 本地）：`pnpm dev:server`
 - 启动前端：`pnpm dev:frontend`
-- B 站 RSS 同步默认优先读取本地 RSSHub：`http://localhost:1200`。如果需要本地 RSSHub，可在 `RSSHub/` 目录按 RSSHub 官方方式安装并启动，然后在 `backend/.env` 中保留 `RSSHUB_URL=http://localhost:1200`。
-- 自研后台位于 `/{locale}/manage`，通过同源 Next.js Route Handlers 与 HttpOnly Cookie 会话访问 Strapi，包含内容维护、B 站订阅同步、上传与同步日志查看。
+- 后端测试：`pnpm test:server`
+- 后台位于 `/{locale}/manage`，通过同源 Next.js Route Handlers 与 HttpOnly Cookie 会话访问后端，包含内容维护、用户管理、上传与审计日志查看。
 
 ## 部署
 
@@ -34,9 +34,7 @@ Schale Library 是一个用于整理游戏作品《蔚蓝档案》相关内容�
 
 安全补偿控制和依赖审计说明见 [安全说明](security.md)。
 
-正式上线验收 gate 见 [生产上线验收](production-readiness.md)。
-
-PostgreSQL/Supabase 性能索引建议见 [PostgreSQL 索引建议](database-indexes.md)。
+数据库索引说明见 [数据库索引说明](database-indexes.md)。
 
 ## 版权声明
 

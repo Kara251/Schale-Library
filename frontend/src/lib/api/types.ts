@@ -1,13 +1,13 @@
 /**
- * Strapi API 跨域基础类型：响应包装、媒体结构与多个域模块共用的实体类型。
+ * 内容 API 跨域基础类型：响应包装、媒体结构与多个域模块共用的实体类型。
  */
 
 export type ContentIdentifier = string | number;
 
 /**
- * Strapi 响应类型定义
+ * 列表 / 单条响应包装
  */
-export interface StrapiResponse<T> {
+export interface ApiListResponse<T> {
   data: T;
   meta: {
     pagination?: {
@@ -19,15 +19,15 @@ export interface StrapiResponse<T> {
   };
 }
 
-export interface StrapiSingleResponse<T> {
+export interface ApiSingleResponse<T> {
   data: T;
   meta: Record<string, never>;
 }
 
 /**
- * Strapi 媒体文件类型
+ * 媒体文件类型
  */
-export interface StrapiMedia {
+export interface MediaAsset {
   id: number;
   documentId: string;
   name: string;
@@ -85,7 +85,7 @@ export interface Announcement {
   documentId: string;
   title: string;
   content: string;
-  coverImage?: StrapiMedia;
+  coverImage?: MediaAsset;
   link?: string;
   priority: number;
   isPinned?: boolean;
@@ -102,7 +102,7 @@ export interface FriendLink {
   title: string;
   description?: string;
   url: string;
-  icon?: StrapiMedia;
+  icon?: MediaAsset;
   priority: number;
   isActive: boolean;
   createdAt: string;
@@ -124,7 +124,7 @@ export interface Student {
   school_ref?: { id: number; documentId: string; name: string; slug: string; color?: string } | null;
   organization?: string;
   wikiUrl?: string;
-  avatar?: StrapiMedia;
+  avatar?: MediaAsset;
   bio?: string;
   createdAt: string;
   updatedAt: string;

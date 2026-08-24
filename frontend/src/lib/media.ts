@@ -1,4 +1,4 @@
-import { STRAPI_API_URL as API_URL } from '@/lib/config'
+import { API_BASE_URL as API_URL } from '@/lib/config'
 
 function trimTrailingSlash(value: string) {
   return value.replace(/\/+$/, '')

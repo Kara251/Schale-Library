@@ -1,7 +1,0 @@
-{
-  "time": "2026/8/23 上午4:35:32",
-  "externalize": {
-    "/Users/kara/Code/Schale-Library/node_modules/.pnpm/@cloudflare+vitest-pool-workers@0.8.71_@cloudflare+workers-types@4.20260702.1_@vitest+r_1b04a2db6146c75ad42aa0c7255605b1/node_modules/@cloudflare/vitest-pool-workers/dist/pool/index.mjs": "/Users/kara/Code/Schale-Library/node_modules/.pnpm/@cloudflare+vitest-pool-workers@0.8.71_@cloudflare+workers-types@4.20260702.1_@vitest+r_1b04a2db6146c75ad42aa0c7255605b1/node_modules/@cloudflare/vitest-pool-workers/dist/pool/index.mjs",
-    "/Users/kara/Code/Schale-Library/node_modules/.pnpm/hono@4.12.26/node_modules/hono/dist/index.js": "/Users/kara/Code/Schale-Library/node_modules/.pnpm/hono@4.12.26/node_modules/hono/dist/index.js"
-  }
-}

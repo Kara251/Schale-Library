@@ -2,7 +2,7 @@
  * 契约兼容层测试：frontend/tests/contracts 冻结快照里前端实际调用、
  * 而 /panel 原生路由没有覆盖的端点。
  * - POST /api/auth/local          → { jwt } （ADMIN_AUTH_CONTRACT.login）
- * - GET  /api/users/me            → 不包装的 user（ADMIN_AUTH_CONTRACT.fetchStrapiCurrentUser）
+ * - GET  /api/users/me            → 不包装的 user（ADMIN_AUTH_CONTRACT.fetchAdminUser）
  * - POST /api/panel/internal/rate-limit → { allowed }（RATE_LIMIT_CONTRACT）
  * - Bearer 与 cookie 两种会话传输等价
  */

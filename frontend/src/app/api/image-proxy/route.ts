@@ -4,7 +4,7 @@
  * 
  * 安全措施：
  * - 白名单验证（只允许 B站 CDN 域名）
- * - Rate Limiting（Strapi 数据库存储，每 IP 每分钟 100 次）
+ * - Rate Limiting（后端 D1 存储，每 IP 每分钟 100 次）
  * - 图片大小限制（5MB）
  */
 

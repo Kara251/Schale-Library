@@ -102,7 +102,7 @@ export const ADMIN_PANEL_CONTRACT = {
 } as const;
 
 export const ADMIN_AUTH_CONTRACT = {
-  fetchStrapiCurrentUser: {
+  fetchAdminUser: {
     method: 'GET',
     endpoint: '/api/users/me?populate=role',
     headers: { Authorization: 'Bearer <token>', 'Content-Type': 'application/json' },

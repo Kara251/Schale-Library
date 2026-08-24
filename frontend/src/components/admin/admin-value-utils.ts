@@ -4,7 +4,7 @@ import {
   type AdminEditorField,
   type AdminMediaAsset,
 } from '@/lib/admin-panel'
-import type { AdminStrapiEntry } from '@/lib/server/admin-content'
+import type { AdminEntry } from '@/lib/server/admin-content'
 import type { Locale } from '@/lib/i18n'
 import {
   getEventLocationLabel,
@@ -123,7 +123,7 @@ export function getInitialFieldValue(field: AdminEditorField, value: unknown): u
   }
 }
 
-export function buildInitialValues(collection: AdminCollectionKey, initialData?: AdminStrapiEntry | null) {
+export function buildInitialValues(collection: AdminCollectionKey, initialData?: AdminEntry | null) {
   const schema = ADMIN_COLLECTION_META[collection]
   const values: Record<string, unknown> = {}
 

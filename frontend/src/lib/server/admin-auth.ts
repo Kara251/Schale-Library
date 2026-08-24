@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 
 import type { User } from '@/lib/auth'
 
-import { STRAPI_API_URL as STRAPI_URL } from '@/lib/config'
+import { API_BASE_URL } from '@/lib/config'
 const DEVELOPMENT_ALLOWED_ROLES = 'authenticated'
 const SESSION_MAX_AGE = 60 * 60 * 8
 
@@ -59,8 +59,8 @@ export function isAllowedAdminUser(user: AdminUser): boolean {
   return roleCandidates.some((role) => allowedRoles.has(role))
 }
 
-export async function fetchStrapiCurrentUser(token: string): Promise<AdminUser | null> {
-  const response = await fetch(`${STRAPI_URL}/api/users/me?populate=role`, {
+export async function fetchAdminUser(token: string): Promise<AdminUser | null> {
+  const response = await fetch(`${API_BASE_URL}/api/users/me?populate=role`, {
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -94,7 +94,7 @@ export const getAdminSession = cache(async (): Promise<AdminSession | null> => {
     return null
   }
 
-  const user = await fetchStrapiCurrentUser(token)
+  const user = await fetchAdminUser(token)
   if (!user) {
     return null
   }

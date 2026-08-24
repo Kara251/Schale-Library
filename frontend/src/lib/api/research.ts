@@ -7,12 +7,12 @@ import {
   fetchAPI,
   fetchLocalizedCollectionWithFallback,
   fetchLocalizedSingleBySlug,
-  toStrapiLocale,
+  toApiLocale,
 } from './core';
 import type {
   SpoilerTier,
-  StrapiMedia,
-  StrapiResponse,
+  MediaAsset,
+  ApiListResponse,
   Student,
 } from './types';
 
@@ -67,7 +67,7 @@ export interface ResearchCitation {
   claim_short: string;
   source_type: CitationSourceType;
   source_ref?: string;
-  source_image?: StrapiMedia;
+  source_image?: MediaAsset;
   source_quote?: string;
   confidence: CitationConfidence;
   createdAt: string;
@@ -97,7 +97,7 @@ export interface ResearchSubject {
   slug: string;
   subject_type: ResearchSubjectType;
   description?: string;
-  cover?: StrapiMedia;
+  cover?: MediaAsset;
   students?: Student[];
   entries?: ResearchEntry[];
   locale: string;
@@ -171,10 +171,10 @@ const RESEARCH_ENTRY_DETAIL_POPULATE = {
 } as const;
 
 export async function getResearchEntries(locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<ResearchEntry[]>>(
+  const apiLocale = toApiLocale(locale);
+  return fetchAPI<ApiListResponse<ResearchEntry[]>>(
     `/research-entries?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       sort: 'updatedAt:desc',
       'pagination[pageSize]': 100,
       ...RESEARCH_ENTRY_LIST_POPULATE,
@@ -183,10 +183,10 @@ export async function getResearchEntries(locale: string = 'zh-Hans') {
 }
 
 export async function getResearchEntryBySlug(slug: string, locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
-  const response = await fetchAPI<StrapiResponse<ResearchEntry[]>>(
+  const apiLocale = toApiLocale(locale);
+  const response = await fetchAPI<ApiListResponse<ResearchEntry[]>>(
     `/research-entries?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       'filters[slug][$eq]': slug,
       ...RESEARCH_ENTRY_DETAIL_POPULATE,
     })}`
@@ -198,10 +198,10 @@ export async function getResearchEntryBySlug(slug: string, locale: string = 'zh-
 }
 
 export async function getResearchThemes(locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<ResearchTheme[]>>(
+  const apiLocale = toApiLocale(locale);
+  return fetchAPI<ApiListResponse<ResearchTheme[]>>(
     `/research-themes?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       sort: 'name:asc',
       'pagination[pageSize]': 100,
     })}`
@@ -209,11 +209,11 @@ export async function getResearchThemes(locale: string = 'zh-Hans') {
 }
 
 export async function getResearchCurator(locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
+  const apiLocale = toApiLocale(locale);
   try {
     return await fetchAPI<{ data: ResearchCuratorData }>(
       `/research-curator?${createCollectionQuery({
-        locale: strapiLocale,
+        locale: apiLocale,
         'populate[featured_entry][populate][themes]': true,
         'populate[path_steps][populate][entry]': true,
       })}`
@@ -237,10 +237,10 @@ export async function getResearchEntriesByThemeSlug(themeSlug: string, locale: s
 }
 
 export async function getRecentResearchEntries(locale: string = 'zh-Hans', limit = 3) {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<ResearchEntry[]>>(
+  const apiLocale = toApiLocale(locale);
+  return fetchAPI<ApiListResponse<ResearchEntry[]>>(
     `/research-entries?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       sort: 'updatedAt:desc',
       'pagination[pageSize]': limit,
       ...RESEARCH_ENTRY_LIST_POPULATE,
@@ -251,10 +251,10 @@ export async function getRecentResearchEntries(locale: string = 'zh-Hans', limit
 // ── 考据对象（实体枢纽）──
 
 export async function getResearchSubjects(locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<ResearchSubject[]>>(
+  const apiLocale = toApiLocale(locale);
+  return fetchAPI<ApiListResponse<ResearchSubject[]>>(
     `/research-subjects?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       sort: 'name:asc',
       'pagination[pageSize]': 100,
       'populate[cover]': true,
@@ -283,10 +283,10 @@ export async function getResearchSubjectsByStudent(
   student: Pick<Student, 'id' | 'documentId'>,
   locale: string = 'zh-Hans'
 ) {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<ResearchSubject[]>>(
+  const apiLocale = toApiLocale(locale);
+  return fetchAPI<ApiListResponse<ResearchSubject[]>>(
     `/research-subjects?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       'filters[$or][0][students][id][$eq]': student.id,
       'filters[$or][1][students][documentId][$eq]': student.documentId,
       sort: 'name:asc',
@@ -306,10 +306,10 @@ const RESEARCH_PATH_POPULATE = {
 } as const;
 
 export async function getResearchPaths(locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<ResearchPath[]>>(
+  const apiLocale = toApiLocale(locale);
+  return fetchAPI<ApiListResponse<ResearchPath[]>>(
     `/research-paths?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       'sort[0]': 'order:asc',
       'sort[1]': 'updatedAt:desc',
       'pagination[pageSize]': 50,
@@ -326,10 +326,10 @@ export async function getResearchPathBySlug(slug: string, locale: string = 'zh-H
 
 /** 条目详情页用：找出包含该条目的所有阅读路径（用于上一篇/下一篇导航） */
 export async function getResearchPathsContainingEntry(entrySlug: string, locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<ResearchPath[]>>(
+  const apiLocale = toApiLocale(locale);
+  return fetchAPI<ApiListResponse<ResearchPath[]>>(
     `/research-paths?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       'filters[steps][entry][slug][$eq]': entrySlug,
       'sort[0]': 'order:asc',
       'pagination[pageSize]': 20,
@@ -340,10 +340,10 @@ export async function getResearchPathsContainingEntry(entrySlug: string, locale:
 
 /** 知识图谱数据：条目（含主题/对象/条目间链接） */
 export async function getResearchGraphEntries(locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<ResearchEntry[]>>(
+  const apiLocale = toApiLocale(locale);
+  return fetchAPI<ApiListResponse<ResearchEntry[]>>(
     `/research-entries?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       sort: 'updatedAt:desc',
       'pagination[pageSize]': 200,
       'fields[0]': 'title',
@@ -366,10 +366,10 @@ export async function getResearchGraphEntries(locale: string = 'zh-Hans') {
  * 同时覆盖结构化的 related_links 与正文中的 [[wiki链接]]。
  */
 export async function getResearchBacklinks(entrySlug: string, locale: string = 'zh-Hans') {
-  const strapiLocale = toStrapiLocale(locale);
-  return fetchAPI<StrapiResponse<ResearchEntry[]>>(
+  const apiLocale = toApiLocale(locale);
+  return fetchAPI<ApiListResponse<ResearchEntry[]>>(
     `/research-entries?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       'filters[$or][0][related_links][target_entry][slug][$eq]': entrySlug,
       'filters[$or][1][body][$contains]': `[[${entrySlug}`,
       'filters[slug][$ne]': entrySlug,
@@ -392,9 +392,9 @@ export async function getEntriesSharingCitations(
   if (citationIds.length === 0) {
     return { data: [] as ResearchEntry[], meta: {} };
   }
-  const strapiLocale = toStrapiLocale(locale);
+  const apiLocale = toApiLocale(locale);
   const params: Record<string, string | number | boolean | undefined> = {
-    locale: strapiLocale,
+    locale: apiLocale,
     'filters[slug][$ne]': excludeEntrySlug,
     sort: 'updatedAt:desc',
     'pagination[pageSize]': 50,
@@ -403,7 +403,7 @@ export async function getEntriesSharingCitations(
   citationIds.forEach((id, index) => {
     params[`filters[citations][id][$in][${index}]`] = id;
   });
-  return fetchAPI<StrapiResponse<ResearchEntry[]>>(
+  return fetchAPI<ApiListResponse<ResearchEntry[]>>(
     `/research-entries?${createCollectionQuery(params)}`
   );
 }

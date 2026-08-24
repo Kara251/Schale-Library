@@ -6,7 +6,7 @@ import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { AdminPagination } from '@/components/admin/admin-pagination'
 import { AdminTable } from '@/components/admin/admin-table'
 import type { Locale } from '@/lib/i18n'
-import { type AdminStrapiEntry, listAdminCollection } from '@/lib/server/admin-content'
+import { type AdminEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
 
 /** 每页条数选项；首项为默认值（不写进 URL）。 */
@@ -15,7 +15,7 @@ const PAGE_SIZE_OPTIONS = [12, 24, 50]
 type AuditStatus = 'success' | 'failed'
 type AuditAction = 'create' | 'update' | 'delete' | 'upload' | 'sync-one' | 'sync-all'
 
-interface AdminAuditLogEntry extends AdminStrapiEntry {
+interface AdminAuditLogEntry extends AdminEntry {
   action: AuditAction
   status: AuditStatus
   actorEmail?: string
@@ -185,6 +185,7 @@ export default async function AdminAuditLogsManagePage({ params, searchParams }:
 
   const response = await listAdminCollection<AdminAuditLogEntry>(session, 'admin-audit-logs', {
     page,
+    pageSize,
     search: query.search,
     status: query.status,
     action: query.action,
@@ -200,6 +201,7 @@ export default async function AdminAuditLogsManagePage({ params, searchParams }:
       if (query[key]) params.set(key, query[key] as string)
     }
     if (nextPage) params.set('page', String(nextPage))
+    if (pageSize !== PAGE_SIZE_OPTIONS[0]) params.set('pageSize', String(pageSize))
     return params
   }
 
@@ -212,8 +214,9 @@ export default async function AdminAuditLogsManagePage({ params, searchParams }:
   // 换每页条数时回到第一页：原页码在新分页下多半越界
   const buildPageSizeHref = (nextPageSize: number) => {
     const params = new URLSearchParams()
-    if (query.search) params.set('search', query.search)
-    if (status !== 'all') params.set('status', status)
+    for (const key of ['search', 'status', 'action', 'collection', 'actor', 'from', 'to'] as const) {
+      if (query[key]) params.set(key, query[key] as string)
+    }
     params.set('page', '1')
     if (nextPageSize !== PAGE_SIZE_OPTIONS[0]) params.set('pageSize', String(nextPageSize))
     const qs = params.toString()
@@ -231,7 +234,7 @@ export default async function AdminAuditLogsManagePage({ params, searchParams }:
           </Button>
         }
       />
-      <form action={`/${locale}/manage/admin-audit-logs`} className="mb-4 grid gap-3 rounded-lg border bg-card p-4 md:grid-cols-4">
+      <form action={`/${locale}/manage/admin-audit-logs`} className="mb-6 grid gap-3 md:grid-cols-4">
         <input name="search" defaultValue={query.search || ''} placeholder={t.searchPlaceholder} className="rounded-md border bg-background px-3 py-2 text-sm" />
         <input name="actor" defaultValue={query.actor || ''} placeholder={t.actor} className="rounded-md border bg-background px-3 py-2 text-sm" />
         <input name="collection" defaultValue={query.collection || ''} placeholder={t.collection} className="rounded-md border bg-background px-3 py-2 text-sm" />
@@ -319,8 +322,18 @@ export default async function AdminAuditLogsManagePage({ params, searchParams }:
       <AdminPagination
         page={response.meta.pagination.page}
         pageCount={response.meta.pagination.pageCount}
+        total={response.meta.pagination.total}
+        pageSize={pageSize}
         buildHref={buildHref}
-        labels={{ previous: t.previous, next: t.next, summary: t.pagination }}
+        buildPageSizeHref={buildPageSizeHref}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        labels={{
+          previous: t.previous,
+          next: t.next,
+          summary: t.pagination,
+          totalSummary: t.totalSummary,
+          perPage: t.perPage,
+        }}
       />
     </div>
   )

@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import {
   ADMIN_SESSION_COOKIE,
-  fetchStrapiCurrentUser,
+  fetchAdminUser,
   getAdminSessionCookieOptions,
 } from '@/lib/server/admin-auth'
 import { checkServerRateLimit, getClientIp } from '@/lib/server/rate-limit'
 import { createForbiddenOriginResponse, verifyTrustedOrigin } from '@/lib/server/request-security'
 
-import { STRAPI_API_URL as STRAPI_URL } from '@/lib/config'
+import { API_BASE_URL } from '@/lib/config'
 const LOGIN_IP_RATE_LIMIT = 30
 const LOGIN_ACCOUNT_RATE_LIMIT = 10
 const LOGIN_RATE_WINDOW = 10 * 60 * 1000
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 
-  const loginResponse = await fetch(`${STRAPI_URL}/api/auth/local`, {
+  const loginResponse = await fetch(`${API_BASE_URL}/api/auth/local`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const user = await fetchStrapiCurrentUser(loginPayload.jwt)
+  const user = await fetchAdminUser(loginPayload.jwt)
   if (!user) {
     return NextResponse.json(
       { error: 'no_access' },

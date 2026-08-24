@@ -7,13 +7,13 @@ import {
   createCollectionQuery,
   fetchAPI,
   isNumericIdentifier,
-  toStrapiLocale,
+  toApiLocale,
 } from './core';
 import type {
   ContentIdentifier,
-  StrapiMedia,
-  StrapiResponse,
-  StrapiSingleResponse,
+  MediaAsset,
+  ApiListResponse,
+  ApiSingleResponse,
 } from './types';
 
 export const COVER_IMAGE_POPULATE_PARAMS = {
@@ -52,7 +52,7 @@ export interface OnlineEvent {
   priceMin?: number | string | null;
   priceMax?: number | string | null;
   currency?: string;
-  coverImage?: StrapiMedia;
+  coverImage?: MediaAsset;
   organizer?: string;
   organizerVerified?: boolean;
   tags?: string;
@@ -94,7 +94,7 @@ export interface OfflineEvent {
   priceMin?: number | string | null;
   priceMax?: number | string | null;
   currency?: string;
-  coverImage?: StrapiMedia;
+  coverImage?: MediaAsset;
   organizer?: string;
   organizerVerified?: boolean;
   tags?: string;
@@ -232,7 +232,7 @@ async function fetchEventPage<T>(
   params: Record<string, string | number | boolean | undefined>,
   populateParams: Record<string, string | number | boolean | undefined> = COVER_IMAGE_POPULATE_PARAMS
 ) {
-  return fetchAPI<StrapiResponse<T[]>>(
+  return fetchAPI<ApiListResponse<T[]>>(
     `/${collection}?${createCollectionQuery({
       ...params,
       ...populateParams,
@@ -245,11 +245,11 @@ async function getHomeRelevantEvents<T>(
   kind: EventKind,
   limit: number,
   locale: string
-): Promise<StrapiResponse<T[]>> {
-  const strapiLocale = toStrapiLocale(locale);
+): Promise<ApiListResponse<T[]>> {
+  const apiLocale = toApiLocale(locale);
   const nowIso = new Date().toISOString();
   const base = {
-    locale: strapiLocale,
+    locale: apiLocale,
   };
 
   const activeParams: Record<string, string | number | boolean | undefined> = {
@@ -288,14 +288,14 @@ async function getRelevantEvents<T>(
   limit: number,
   locale: string,
   options: EventListOptions
-): Promise<StrapiResponse<T[]>> {
-  const strapiLocale = toStrapiLocale(locale);
+): Promise<ApiListResponse<T[]>> {
+  const apiLocale = toApiLocale(locale);
   const nowIso = new Date().toISOString();
   const page = Math.max(1, options.page || 1);
   const pageSize = Math.max(1, options.pageSize || limit);
   const start = (page - 1) * pageSize;
   const base = {
-    locale: strapiLocale,
+    locale: apiLocale,
   };
 
   const activeCountParams: Record<string, string | number | boolean | undefined> = {
@@ -370,12 +370,12 @@ async function getEventsForCollection<T>(
     return getRelevantEvents<T>(collection, kind, limit, locale, options);
   }
 
-  const strapiLocale = toStrapiLocale(locale);
+  const apiLocale = toApiLocale(locale);
   const nowIso = new Date().toISOString();
   const page = Math.max(1, options.page || 1);
   const pageSize = Math.max(1, options.pageSize || limit);
   const params: Record<string, string | number | boolean | undefined> = {
-    locale: strapiLocale,
+    locale: apiLocale,
     sort: sortMode === 'endTime' ? 'endTime:desc' : 'startTime:desc',
     'pagination[pageSize]': pageSize,
     'pagination[page]': page,
@@ -444,14 +444,14 @@ async function fetchAllEventsForCollection<T>(
   options: EventListOptions,
   nowIso: string
 ): Promise<T[]> {
-  const strapiLocale = toStrapiLocale(locale);
+  const apiLocale = toApiLocale(locale);
   const items: T[] = [];
   let page = 1;
   let pageCount = 1;
 
   do {
     const params: Record<string, string | number | boolean | undefined> = {
-      locale: strapiLocale,
+      locale: apiLocale,
       sort: 'startTime:desc',
       'pagination[page]': page,
       'pagination[pageSize]': 100,
@@ -471,7 +471,7 @@ async function fetchEventLocationRecordsForCollection(
   kind: EventKind,
   locale: string
 ): Promise<EventLocationRecord[]> {
-  const strapiLocale = toStrapiLocale(locale);
+  const apiLocale = toApiLocale(locale);
   const records: EventLocationRecord[] = [];
   const seen = new Set<string>();
   const fields = kind === 'offline'
@@ -482,9 +482,9 @@ async function fetchEventLocationRecordsForCollection(
 
   do {
     const fieldParams = Object.fromEntries(fields.map((field, index) => [`fields[${index}]`, field]));
-    const response = await fetchAPI<StrapiResponse<Array<Partial<EventLocationRecord>>>>(
+    const response = await fetchAPI<ApiListResponse<Array<Partial<EventLocationRecord>>>>(
       `/${collection}?${createCollectionQuery({
-        locale: strapiLocale,
+        locale: apiLocale,
         sort: 'startTime:desc',
         'pagination[page]': page,
         'pagination[pageSize]': 100,
@@ -536,7 +536,7 @@ export async function getAllEvents(
   limit: number = 24,
   locale: string = 'zh-Hans',
   options: EventListOptions = {}
-): Promise<StrapiResponse<EventListItem[]>> {
+): Promise<ApiListResponse<EventListItem[]>> {
   const page = Math.max(1, options.page || 1);
   const pageSize = Math.max(1, options.pageSize || limit);
   const nowIso = new Date().toISOString();
@@ -596,7 +596,7 @@ function collectEventLocationRecords(
 export async function getEventsBundle(
   locale: string = 'zh-Hans',
   options: EventListOptions & { limit?: number } = {}
-): Promise<{ response: StrapiResponse<EventListItem[]>; locationRecords: EventLocationRecord[] }> {
+): Promise<{ response: ApiListResponse<EventListItem[]>; locationRecords: EventLocationRecord[] }> {
   const limit = Math.max(1, options.limit || 24);
   const page = Math.max(1, options.page || 1);
   const pageSize = Math.max(1, options.pageSize || limit);
@@ -642,11 +642,11 @@ export async function getOnlineEventById(
   id: ContentIdentifier,
   locale: string = 'zh-Hans'
 ) {
-  const strapiLocale = toStrapiLocale(locale)
+  const apiLocale = toApiLocale(locale)
   const identifier = String(id).trim()
-  const response = await fetchAPI<StrapiResponse<OnlineEvent[]>>(
+  const response = await fetchAPI<ApiListResponse<OnlineEvent[]>>(
     `/online-events?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       [isNumericIdentifier(identifier) ? 'filters[id][$eq]' : 'filters[documentId][$eq]']: identifier,
       ...COVER_IMAGE_POPULATE_PARAMS,
     })}`
@@ -654,7 +654,7 @@ export async function getOnlineEventById(
   return {
     data: response.data?.[0] || null,
     meta: {}
-  } as StrapiSingleResponse<OnlineEvent>;
+  } as ApiSingleResponse<OnlineEvent>;
 }
 
 /**
@@ -664,11 +664,11 @@ export async function getOfflineEventById(
   id: ContentIdentifier,
   locale: string = 'zh-Hans'
 ) {
-  const strapiLocale = toStrapiLocale(locale)
+  const apiLocale = toApiLocale(locale)
   const identifier = String(id).trim()
-  const response = await fetchAPI<StrapiResponse<OfflineEvent[]>>(
+  const response = await fetchAPI<ApiListResponse<OfflineEvent[]>>(
     `/offline-events?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       [isNumericIdentifier(identifier) ? 'filters[id][$eq]' : 'filters[documentId][$eq]']: identifier,
       ...COVER_IMAGE_POPULATE_PARAMS,
     })}`
@@ -676,7 +676,7 @@ export async function getOfflineEventById(
   return {
     data: response.data?.[0] || null,
     meta: {}
-  } as StrapiSingleResponse<OfflineEvent>;
+  } as ApiSingleResponse<OfflineEvent>;
 }
 
 /**
@@ -703,10 +703,10 @@ export async function searchOnlineEvents(
   query: string,
   locale: string = 'zh-Hans'
 ) {
-  const strapiLocale = toStrapiLocale(locale)
-  return fetchAPI<StrapiResponse<OnlineEvent[]>>(
+  const apiLocale = toApiLocale(locale)
+  return fetchAPI<ApiListResponse<OnlineEvent[]>>(
     `/online-events?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       'filters[$or][0][title][$containsi]': query,
       'filters[$or][1][organizer][$containsi]': query,
       'filters[$or][2][description][$containsi]': query,
@@ -732,10 +732,10 @@ export async function searchOfflineEvents(
   query: string,
   locale: string = 'zh-Hans'
 ) {
-  const strapiLocale = toStrapiLocale(locale)
-  return fetchAPI<StrapiResponse<OfflineEvent[]>>(
+  const apiLocale = toApiLocale(locale)
+  return fetchAPI<ApiListResponse<OfflineEvent[]>>(
     `/offline-events?${createCollectionQuery({
-      locale: strapiLocale,
+      locale: apiLocale,
       'filters[$or][0][title][$containsi]': query,
       'filters[$or][1][organizer][$containsi]': query,
       'filters[$or][2][location][$containsi]': query,
