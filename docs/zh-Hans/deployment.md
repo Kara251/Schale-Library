@@ -41,6 +41,15 @@ cd server && wrangler deploy
 
 ### 4. 首个维护者账号
 
+首个账号建出来后角色是 `maintainer`。用户管理需要 `admin`，因此站点所有者需要提一次权：
+
+```bash
+wrangler d1 execute schale_db --remote --command "UPDATE users SET role='admin' WHERE username='<你的用户名>'"
+```
+
+之后新增维护者一律走后台的「用户管理」页，不必再碰数据库。
+
+
 一次性设置环境变量后触发任意请求（bootstrap 幂等）：
 
 ```bash
