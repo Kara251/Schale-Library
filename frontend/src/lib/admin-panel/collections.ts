@@ -44,14 +44,13 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       ja: 'お知らせを編集',
     },
     fields: [
-      { name: 'title', type: 'text', label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
+      { name: 'title', type: 'text', required: true, label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
       { name: 'content', type: 'textarea', label: { 'zh-Hans': '正文', en: 'Content', ja: '本文' } },
       { name: 'link', type: 'url', label: { 'zh-Hans': '跳转链接', en: 'Link', ja: 'リンク' } },
-      { name: 'priority', type: 'number', label: { 'zh-Hans': '优先级', en: 'Priority', ja: '優先度' } },
-      { name: 'isPinned', type: 'boolean', label: { 'zh-Hans': '置顶', en: 'Pinned', ja: '固定表示' } },
-      { name: 'isActive', type: 'boolean', label: { 'zh-Hans': '启用', en: 'Active', ja: '有効' } },
+      { name: 'priority', type: 'number', label: { 'zh-Hans': '优先级', en: 'Priority', ja: '優先度' }, description: { 'zh-Hans': '数字越大越靠前，默认 0', en: 'Higher numbers appear first; default 0', ja: '数値が大きいほど上に表示。既定は 0' } },
+      { name: 'isPinned', type: 'boolean', label: { 'zh-Hans': '置顶', en: 'Pinned', ja: '固定表示' }, description: { 'zh-Hans': '置顶项始终排在列表最前，优先于优先级', en: 'Pinned items always come first, ahead of priority', ja: 'ピン留めは優先度より前に常に先頭表示' } },
       { name: 'coverImage', type: 'media', label: { 'zh-Hans': '封面图', en: 'Cover image', ja: 'カバー画像' } },
-      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+      { name: 'publishedAt', type: 'publish-state', label: { 'zh-Hans': '发布状态', en: 'Publication', ja: '公開状態' } },
     ],
   },
   'friend-links': {
@@ -79,13 +78,12 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       ja: '相互リンクを編集',
     },
     fields: [
-      { name: 'title', type: 'text', label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
+      { name: 'title', type: 'text', required: true, label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
       { name: 'description', type: 'textarea', label: { 'zh-Hans': '简介', en: 'Description', ja: '説明' } },
-      { name: 'url', type: 'url', label: { 'zh-Hans': '跳转链接', en: 'URL', ja: 'URL' } },
-      { name: 'priority', type: 'number', label: { 'zh-Hans': '优先级', en: 'Priority', ja: '優先度' } },
-      { name: 'isActive', type: 'boolean', label: { 'zh-Hans': '启用', en: 'Active', ja: '有効' } },
+      { name: 'url', type: 'url', required: true, label: { 'zh-Hans': '跳转链接', en: 'URL', ja: 'URL' } },
+      { name: 'priority', type: 'number', label: { 'zh-Hans': '优先级', en: 'Priority', ja: '優先度' }, description: { 'zh-Hans': '数字越大越靠前，默认 0', en: 'Higher numbers appear first; default 0', ja: '数値が大きいほど上に表示。既定は 0' } },
       { name: 'icon', type: 'media', label: { 'zh-Hans': '图标', en: 'Icon', ja: 'アイコン' } },
-      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+      { name: 'publishedAt', type: 'publish-state', label: { 'zh-Hans': '发布状态', en: 'Publication', ja: '公開状態' } },
     ],
   },
   creators: {
@@ -113,8 +111,8 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       ja: 'クリエイターを編集',
     },
     fields: [
-      { name: 'name', type: 'text', label: { 'zh-Hans': '名称', en: 'Name', ja: '名前' } },
-      { name: 'slug', type: 'text', label: { 'zh-Hans': 'Slug（URL 标识）', en: 'Slug', ja: 'スラグ' } },
+      { name: 'name', type: 'text', required: true, label: { 'zh-Hans': '名称', en: 'Name', ja: '名前' } },
+      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': 'Slug（URL 标识）', en: 'Slug', ja: 'スラグ' }, description: { 'zh-Hans': 'URL 中的唯一标识，建议用小写字母与连字符', en: 'Unique identifier used in the URL; lowercase and hyphens', ja: 'URL に使う一意の識別子。小文字とハイフン推奨' } },
       { name: 'platform', type: 'select', label: { 'zh-Hans': '平台', en: 'Platform', ja: 'プラットフォーム' }, options: [
         { value: 'bilibili', label: 'bilibili' },
         { value: 'youtube', label: 'youtube' },
@@ -134,7 +132,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
           { name: 'note', kind: 'text', label: { 'zh-Hans': '备注', en: 'Note', ja: 'メモ' } },
         ],
       },
-      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+      { name: 'publishedAt', type: 'publish-state', label: { 'zh-Hans': '发布状态', en: 'Publication', ja: '公開状態' } },
     ],
   },
   'online-events': {
@@ -162,8 +160,8 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       ja: 'オンラインイベントを編集',
     },
     fields: [
-      { name: 'title', type: 'text', label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
-      { name: 'nature', type: 'select', label: { 'zh-Hans': '性质', en: 'Nature', ja: '区分' }, options: commonNatureOptions },
+      { name: 'title', type: 'text', required: true, label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
+      { name: 'nature', type: 'select', required: true, label: { 'zh-Hans': '性质', en: 'Nature', ja: '区分' }, options: commonNatureOptions },
       { name: 'eventFormat', type: 'select', label: { 'zh-Hans': '活动类型', en: 'Event type', ja: 'イベント種別' }, options: eventFormatOptions },
       { name: 'statusOverride', type: 'select', label: { 'zh-Hans': '状态覆盖', en: 'Status override', ja: 'ステータス上書き' }, options: eventStatusOverrideOptions },
       {
@@ -197,7 +195,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       { name: 'lastVerifiedAt', type: 'datetime-local', label: { 'zh-Hans': '最后核验时间', en: 'Last verified at', ja: '最終確認日時' } },
       { name: 'description', type: 'textarea', label: { 'zh-Hans': '活动说明', en: 'Description', ja: '説明' } },
       { name: 'coverImage', type: 'media', label: { 'zh-Hans': '封面图', en: 'Cover image', ja: 'カバー画像' } },
-      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+      { name: 'publishedAt', type: 'publish-state', label: { 'zh-Hans': '发布状态', en: 'Publication', ja: '公開状態' } },
     ],
   },
   'offline-events': {
@@ -225,8 +223,8 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       ja: 'オフラインイベントを編集',
     },
     fields: [
-      { name: 'title', type: 'text', label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
-      { name: 'nature', type: 'select', label: { 'zh-Hans': '性质', en: 'Nature', ja: '区分' }, options: commonNatureOptions },
+      { name: 'title', type: 'text', required: true, label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
+      { name: 'nature', type: 'select', required: true, label: { 'zh-Hans': '性质', en: 'Nature', ja: '区分' }, options: commonNatureOptions },
       { name: 'eventFormat', type: 'select', label: { 'zh-Hans': '活动类型', en: 'Event type', ja: 'イベント種別' }, options: eventFormatOptions },
       { name: 'statusOverride', type: 'select', label: { 'zh-Hans': '状态覆盖', en: 'Status override', ja: 'ステータス上書き' }, options: eventStatusOverrideOptions },
       { name: 'country', type: 'location-select', locationLevel: 'country', label: { 'zh-Hans': '国家（地区）', en: 'Country / region', ja: '国 / 地域' } },
@@ -254,7 +252,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       { name: 'lastVerifiedAt', type: 'datetime-local', label: { 'zh-Hans': '最后核验时间', en: 'Last verified at', ja: '最終確認日時' } },
       { name: 'description', type: 'textarea', label: { 'zh-Hans': '活动说明', en: 'Description', ja: '説明' } },
       { name: 'coverImage', type: 'media', label: { 'zh-Hans': '封面图', en: 'Cover image', ja: 'カバー画像' } },
-      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+      { name: 'publishedAt', type: 'publish-state', label: { 'zh-Hans': '发布状态', en: 'Publication', ja: '公開状態' } },
     ],
   },
   students: {
@@ -282,11 +280,11 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       ja: '生徒を編集',
     },
     fields: [
-      { name: 'name', type: 'text', label: { 'zh-Hans': '姓名', en: 'Name', ja: '名前' } },
+      { name: 'name', type: 'text', required: true, label: { 'zh-Hans': '姓名', en: 'Name', ja: '名前' } },
       { name: 'school_ref', type: 'relation-select', label: { 'zh-Hans': '所属学院', en: 'School', ja: '所属学園' }, relationKey: 'schools' },
       { name: 'organization', type: 'text', label: { 'zh-Hans': '组织', en: 'Organization', ja: '所属' } },
       { name: 'avatar', type: 'media', label: { 'zh-Hans': '头像', en: 'Avatar', ja: 'アイコン' } },
-      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+      { name: 'publishedAt', type: 'publish-state', label: { 'zh-Hans': '发布状态', en: 'Publication', ja: '公開状態' } },
     ],
   },
   schools: {
@@ -314,11 +312,11 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       ja: '学園を編集',
     },
     fields: [
-      { name: 'name', type: 'text', label: { 'zh-Hans': '名称', en: 'Name', ja: '名称' } },
-      { name: 'slug', type: 'text', label: { 'zh-Hans': 'Slug（URL 标识）', en: 'Slug', ja: 'スラグ' } },
+      { name: 'name', type: 'text', required: true, label: { 'zh-Hans': '名称', en: 'Name', ja: '名称' } },
+      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': 'Slug（URL 标识）', en: 'Slug', ja: 'スラグ' }, description: { 'zh-Hans': 'URL 中的唯一标识，建议用小写字母与连字符', en: 'Unique identifier used in the URL; lowercase and hyphens', ja: 'URL に使う一意の識別子。小文字とハイフン推奨' } },
       { name: 'description', type: 'textarea', label: { 'zh-Hans': '简介', en: 'Description', ja: '説明' } },
       { name: 'color', type: 'text', label: { 'zh-Hans': '主题色（如 #2d77c9）', en: 'Theme color (e.g. #2d77c9)', ja: 'テーマカラー（例 #2d77c9）' } },
-      { name: 'order', type: 'number', label: { 'zh-Hans': '排序', en: 'Order', ja: '並び順' } },
+      { name: 'order', type: 'number', label: { 'zh-Hans': '排序', en: 'Order', ja: '並び順' }, description: { 'zh-Hans': '数字越小越靠前', en: 'Lower numbers appear first', ja: '数値が小さいほど先頭' } },
       { name: 'logo', type: 'media', label: { 'zh-Hans': '校徽', en: 'Logo', ja: 'ロゴ' } },
     ],
   },
@@ -373,8 +371,8 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       ja: '記事を編集',
     },
     fields: [
-      { name: 'title', type: 'text', label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
-      { name: 'slug', type: 'text', label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' } },
+      { name: 'title', type: 'text', required: true, label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
+      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' }, description: { 'zh-Hans': 'URL 中的唯一标识，建议用小写字母与连字符', en: 'Unique identifier used in the URL; lowercase and hyphens', ja: 'URL に使う一意の識別子。小文字とハイフン推奨' } },
       { name: 'stance', type: 'select', label: { 'zh-Hans': '立场', en: 'Stance', ja: 'スタンス' }, options: stanceOptions },
       { name: 'media_type', type: 'select', label: { 'zh-Hans': '媒介类型', en: 'Media type', ja: 'メディアタイプ' }, options: mediaTypeOptions },
       { name: 'spoiler_tier', type: 'relation-select', label: { 'zh-Hans': '剧透档位', en: 'Spoiler tier', ja: 'ネタバレ段階' }, relationKey: 'spoiler-tiers' },
@@ -405,7 +403,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
           { name: 'note', kind: 'text', label: { 'zh-Hans': '说明', en: 'Note', ja: 'メモ' } },
         ],
       },
-      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+      { name: 'publishedAt', type: 'publish-state', label: { 'zh-Hans': '发布状态', en: 'Publication', ja: '公開状態' } },
     ],
   },
   'research-subjects': {
@@ -433,13 +431,13 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       ja: '対象を編集',
     },
     fields: [
-      { name: 'name', type: 'text', label: { 'zh-Hans': '名称', en: 'Name', ja: '名称' } },
-      { name: 'slug', type: 'text', label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' } },
+      { name: 'name', type: 'text', required: true, label: { 'zh-Hans': '名称', en: 'Name', ja: '名称' } },
+      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' }, description: { 'zh-Hans': 'URL 中的唯一标识，建议用小写字母与连字符', en: 'Unique identifier used in the URL; lowercase and hyphens', ja: 'URL に使う一意の識別子。小文字とハイフン推奨' } },
       { name: 'subject_type', type: 'select', label: { 'zh-Hans': '对象类型', en: 'Subject type', ja: '対象タイプ' }, options: subjectTypeOptions },
       { name: 'description', type: 'textarea', label: { 'zh-Hans': '简介', en: 'Description', ja: '説明' } },
       { name: 'cover', type: 'media', label: { 'zh-Hans': '封面图', en: 'Cover image', ja: 'カバー画像' } },
       { name: 'students', type: 'relation-multiselect', label: { 'zh-Hans': '相关学生', en: 'Related students', ja: '関連生徒' }, relationKey: 'students' },
-      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+      { name: 'publishedAt', type: 'publish-state', label: { 'zh-Hans': '发布状态', en: 'Publication', ja: '公開状態' } },
     ],
   },
   'research-paths': {
@@ -467,11 +465,11 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       ja: 'パスを編集',
     },
     fields: [
-      { name: 'title', type: 'text', label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
-      { name: 'slug', type: 'text', label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' } },
+      { name: 'title', type: 'text', required: true, label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
+      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' }, description: { 'zh-Hans': 'URL 中的唯一标识，建议用小写字母与连字符', en: 'Unique identifier used in the URL; lowercase and hyphens', ja: 'URL に使う一意の識別子。小文字とハイフン推奨' } },
       { name: 'description', type: 'textarea', label: { 'zh-Hans': '路径简介', en: 'Description', ja: '説明' } },
       { name: 'difficulty', type: 'select', label: { 'zh-Hans': '难度', en: 'Difficulty', ja: '難易度' }, options: difficultyOptions },
-      { name: 'order', type: 'number', label: { 'zh-Hans': '排序', en: 'Order', ja: '並び順' } },
+      { name: 'order', type: 'number', label: { 'zh-Hans': '排序', en: 'Order', ja: '並び順' }, description: { 'zh-Hans': '数字越小越靠前', en: 'Lower numbers appear first', ja: '数値が小さいほど先頭' } },
       {
         name: 'steps', type: 'component-rows', label: { 'zh-Hans': '路径步骤', en: 'Path steps', ja: 'パスステップ' },
         columns: [
@@ -479,7 +477,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
           { name: 'step_note', kind: 'text', label: { 'zh-Hans': '步骤说明', en: 'Step note', ja: 'ステップメモ' } },
         ],
       },
-      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+      { name: 'publishedAt', type: 'publish-state', label: { 'zh-Hans': '发布状态', en: 'Publication', ja: '公開状態' } },
     ],
   },
   'research-themes': {
@@ -507,10 +505,10 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       ja: 'テーマを編集',
     },
     fields: [
-      { name: 'name', type: 'text', label: { 'zh-Hans': '名称', en: 'Name', ja: '名前' } },
-      { name: 'slug', type: 'text', label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' } },
+      { name: 'name', type: 'text', required: true, label: { 'zh-Hans': '名称', en: 'Name', ja: '名前' } },
+      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' }, description: { 'zh-Hans': 'URL 中的唯一标识，建议用小写字母与连字符', en: 'Unique identifier used in the URL; lowercase and hyphens', ja: 'URL に使う一意の識別子。小文字とハイフン推奨' } },
       { name: 'curated_intro', type: 'textarea', label: { 'zh-Hans': '策划简介', en: 'Curated intro', ja: '紹介文' } },
-      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+      { name: 'publishedAt', type: 'publish-state', label: { 'zh-Hans': '发布状态', en: 'Publication', ja: '公開状態' } },
     ],
   },
   'research-citations': {
@@ -544,7 +542,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       { name: 'source_image', type: 'media', label: { 'zh-Hans': '截图', en: 'Source image', ja: 'スクリーンショット' } },
       { name: 'source_quote', type: 'textarea', label: { 'zh-Hans': '引文', en: 'Source quote', ja: '引用文' } },
       { name: 'confidence', type: 'select', label: { 'zh-Hans': '置信度', en: 'Confidence', ja: '信頼度' }, options: confidenceOptions },
-      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+      { name: 'publishedAt', type: 'publish-state', label: { 'zh-Hans': '发布状态', en: 'Publication', ja: '公開状態' } },
     ],
   },
   'spoiler-tiers': {
@@ -572,10 +570,10 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       ja: '段階を編集',
     },
     fields: [
-      { name: 'name', type: 'text', label: { 'zh-Hans': '名称', en: 'Name', ja: '名前' } },
-      { name: 'key', type: 'text', label: { 'zh-Hans': 'Key（稳定标识）', en: 'Key (stable id)', ja: 'キー（識別子）' } },
-      { name: 'order', type: 'number', label: { 'zh-Hans': '排序（剧透由浅到深）', en: 'Order (low to high)', ja: '並び順（浅→深）' } },
-      { name: 'publishedAt', type: 'boolean', label: { 'zh-Hans': '立即发布', en: 'Publish now', ja: 'すぐ公開' } },
+      { name: 'name', type: 'text', required: true, label: { 'zh-Hans': '名称', en: 'Name', ja: '名前' } },
+      { name: 'key', type: 'text', required: true, label: { 'zh-Hans': 'Key（稳定标识）', en: 'Key (stable id)', ja: 'キー（識別子）' } },
+      { name: 'order', type: 'number', label: { 'zh-Hans': '排序（剧透由浅到深）', en: 'Order (low to high)', ja: '並び順（浅→深）' }, description: { 'zh-Hans': '数字越小越靠前', en: 'Lower numbers appear first', ja: '数値が小さいほど先頭' } },
+      { name: 'publishedAt', type: 'publish-state', label: { 'zh-Hans': '发布状态', en: 'Publication', ja: '公開状態' } },
     ],
   },
 }

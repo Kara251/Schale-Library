@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import type { LucideIcon } from 'lucide-react'
 import {
   BookMarked,
   Bell,
@@ -12,6 +13,9 @@ import {
   GraduationCap,
   UserCog,
   UserCircle,
+  UserSquare,
+  Activity,
+  ScrollText,
   HeartPulse,
   LayoutDashboard,
   Quote,
@@ -75,6 +79,12 @@ const navLabels: Record<Locale, Record<string, string>> = {
     spoilerTiers: '剧透档位',
     researchCurator: '策展配置',
     auditLogs: '审计日志',
+    groupOverview: '概览',
+    groupContent: '站点内容',
+    groupCodex: '档案资料',
+    groupResearch: '考据',
+    groupOps: '运维',
+    groupAccount: '账号',
     users: '用户管理',
     profile: '个人设置',
     quality: '内容质量',
@@ -98,6 +108,12 @@ const navLabels: Record<Locale, Record<string, string>> = {
     spoilerTiers: 'Spoiler Tiers',
     researchCurator: 'Curation Settings',
     auditLogs: 'Audit Logs',
+    groupOverview: 'Overview',
+    groupContent: 'Site content',
+    groupCodex: 'Codex',
+    groupResearch: 'Research',
+    groupOps: 'Operations',
+    groupAccount: 'Account',
     users: 'Users',
     profile: 'My account',
     quality: 'Content Quality',
@@ -122,6 +138,12 @@ const navLabels: Record<Locale, Record<string, string>> = {
     spoilerTiers: 'ネタバレ段階',
     researchCurator: 'キュレーション設定',
     auditLogs: '監査ログ',
+    groupOverview: '概要',
+    groupContent: 'サイト コンテンツ',
+    groupCodex: '資料',
+    groupResearch: '考証',
+    groupOps: '運用',
+    groupAccount: 'アカウント',
     users: 'ユーザー管理',
     profile: 'アカウント設定',
     quality: '品質チェック',
@@ -138,30 +160,59 @@ export function AdminShell({ children, locale, user }: AdminShellProps) {
   const t = labels[locale] || labels['zh-Hans']
   const nav = navLabels[locale] || navLabels['zh-Hans']
 
-  const items = [
-    { href: dashboardHref, label: nav.dashboard, icon: LayoutDashboard },
-    { href: `/${locale}/manage/announcements`, label: nav.announcements, icon: Bell },
-    { href: `/${locale}/manage/creators`, label: nav.creators, icon: Users },
-    { href: `/${locale}/manage/friend-links`, label: nav.friendLinks, icon: LinkIcon },
-    { href: `/${locale}/manage/online-events`, label: nav.onlineEvents, icon: Radio },
-    { href: `/${locale}/manage/offline-events`, label: nav.offlineEvents, icon: CalendarDays },
-    { href: `/${locale}/manage/students`, label: nav.students, icon: Users },
-    { href: `/${locale}/manage/schools`, label: nav.schools, icon: GraduationCap },
-    { href: `/${locale}/manage/research-entries`, label: nav.researchEntries, icon: FileSearch },
-    { href: `/${locale}/manage/research-themes`, label: nav.researchThemes, icon: Tags },
-    { href: `/${locale}/manage/research-citations`, label: nav.researchCitations, icon: Quote },
-    { href: `/${locale}/manage/research-subjects`, label: nav.researchSubjects, icon: GitFork },
-    { href: `/${locale}/manage/research-paths`, label: nav.researchPaths, icon: Route },
-    { href: `/${locale}/manage/spoiler-tiers`, label: nav.spoilerTiers, icon: EyeOff },
-    { href: `/${locale}/manage/research-curator`, label: nav.researchCurator, icon: BookMarked },
-    { href: `/${locale}/manage/content-quality`, label: nav.quality, icon: HeartPulse },
-    { href: `/${locale}/manage/bulk-actions`, label: nav.bulk, icon: SlidersHorizontal },
-    { href: `/${locale}/manage/system-health`, label: nav.system, icon: ShieldCheck },
-    { href: `/${locale}/manage/admin-audit-logs`, label: nav.auditLogs, icon: ShieldCheck },
-    // 用户管理仅 admin 可见；maintainer 点进去会看到「需要管理员权限」，
-    // 真正的拦截在 Worker 端，这里只是不给出无效入口
-    ...(isAdmin ? [{ href: `/${locale}/manage/users`, label: nav.users, icon: UserCog }] : []),
-    { href: `/${locale}/manage/profile`, label: nav.profile, icon: UserCircle },
+  // 21 个条目平铺时无从扫读；按职能分组，每组内保持原有顺序。
+  // 分组只是视觉编排，权限仍由服务端强制。
+  const groups: Array<{ label: string; items: Array<{ href: string; label: string; icon: LucideIcon }> }> = [
+    {
+      label: nav.groupOverview,
+      items: [{ href: dashboardHref, label: nav.dashboard, icon: LayoutDashboard }],
+    },
+    {
+      label: nav.groupContent,
+      items: [
+        { href: `/${locale}/manage/announcements`, label: nav.announcements, icon: Bell },
+        { href: `/${locale}/manage/creators`, label: nav.creators, icon: Users },
+        { href: `/${locale}/manage/friend-links`, label: nav.friendLinks, icon: LinkIcon },
+        { href: `/${locale}/manage/online-events`, label: nav.onlineEvents, icon: Radio },
+        { href: `/${locale}/manage/offline-events`, label: nav.offlineEvents, icon: CalendarDays },
+      ],
+    },
+    {
+      label: nav.groupCodex,
+      items: [
+        { href: `/${locale}/manage/students`, label: nav.students, icon: UserSquare },
+        { href: `/${locale}/manage/schools`, label: nav.schools, icon: GraduationCap },
+      ],
+    },
+    {
+      label: nav.groupResearch,
+      items: [
+        { href: `/${locale}/manage/research-entries`, label: nav.researchEntries, icon: FileSearch },
+        { href: `/${locale}/manage/research-themes`, label: nav.researchThemes, icon: Tags },
+        { href: `/${locale}/manage/research-citations`, label: nav.researchCitations, icon: Quote },
+        { href: `/${locale}/manage/research-subjects`, label: nav.researchSubjects, icon: GitFork },
+        { href: `/${locale}/manage/research-paths`, label: nav.researchPaths, icon: Route },
+        { href: `/${locale}/manage/spoiler-tiers`, label: nav.spoilerTiers, icon: EyeOff },
+        { href: `/${locale}/manage/research-curator`, label: nav.researchCurator, icon: BookMarked },
+      ],
+    },
+    {
+      label: nav.groupOps,
+      items: [
+        { href: `/${locale}/manage/content-quality`, label: nav.quality, icon: HeartPulse },
+        { href: `/${locale}/manage/bulk-actions`, label: nav.bulk, icon: SlidersHorizontal },
+        { href: `/${locale}/manage/system-health`, label: nav.system, icon: Activity },
+        { href: `/${locale}/manage/admin-audit-logs`, label: nav.auditLogs, icon: ScrollText },
+      ],
+    },
+    {
+      label: nav.groupAccount,
+      items: [
+        // 用户管理仅 admin 可见；真正的拦截在 Worker 端，这里只是不给出无效入口
+        ...(isAdmin ? [{ href: `/${locale}/manage/users`, label: nav.users, icon: UserCog }] : []),
+        { href: `/${locale}/manage/profile`, label: nav.profile, icon: UserCircle },
+      ],
+    },
   ]
 
   return (
@@ -189,32 +240,40 @@ export function AdminShell({ children, locale, user }: AdminShellProps) {
                   )}
                 </div>
 
-                <nav className="space-y-2">
-                  {items.map((item) => {
-                    const Icon = item.icon
-                    // 仪表盘的 href 是 /manage 本身，而所有后台页面都以它开头 ——
-                    // 用 startsWith 会让它永远处于选中态。仪表盘只在路径完全相等时高亮。
-                    const isActive =
-                      item.href === dashboardHref
-                        ? pathname === item.href
-                        : pathname === item.href || pathname.startsWith(`${item.href}/`)
+                <nav className="space-y-5">
+                  {groups.map((group) => (
+                    <div key={group.label} className="space-y-1">
+                      <p className="px-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        {group.label}
+                      </p>
+                      {group.items.map((item) => {
+                        const Icon = item.icon
+                        // 仪表盘的 href 是 /manage 本身，而所有后台页面都以它开头 ——
+                        // 用 startsWith 会让它永远处于选中态。仪表盘只在路径完全相等时高亮。
+                        const isActive =
+                          item.href === dashboardHref
+                            ? pathname === item.href
+                            : pathname === item.href || pathname.startsWith(`${item.href}/`)
 
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                          'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                          isActive
-                            ? 'bg-primary text-primary-foreground'
-                            : 'hover:bg-secondary text-foreground'
-                        )}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </Link>
-                    )
-                  })}
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            aria-current={isActive ? 'page' : undefined}
+                            className={cn(
+                              'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+                              isActive
+                                ? 'bg-primary text-primary-foreground'
+                                : 'hover:bg-secondary text-foreground'
+                            )}
+                          >
+                            <Icon className="h-4 w-4" />
+                            <span>{item.label}</span>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  ))}
                 </nav>
 
                 <Button

@@ -20,6 +20,9 @@ export interface AdminEditorLabels {
   moveDown: string
   emptyRows: string
   emptyLocation: string
+  booleanOn: string
+  missingFields: string
+  booleanOff: string
 }
 
 export const labels: Record<Locale, AdminEditorLabels> = {
@@ -42,6 +45,9 @@ export const labels: Record<Locale, AdminEditorLabels> = {
     moveDown: '下移',
     emptyRows: '尚未添加内容',
     emptyLocation: '不填写',
+    booleanOn: '已开启',
+    missingFields: '以下必填项还没填：',
+    booleanOff: '未开启',
   },
   en: {
     save: 'Save',
@@ -62,6 +68,9 @@ export const labels: Record<Locale, AdminEditorLabels> = {
     moveDown: 'Move down',
     emptyRows: 'Nothing added yet',
     emptyLocation: 'Leave empty',
+    booleanOn: 'On',
+    missingFields: 'These required fields are still empty: ',
+    booleanOff: 'Off',
   },
   ja: {
     save: '保存',
@@ -82,5 +91,8 @@ export const labels: Record<Locale, AdminEditorLabels> = {
     moveDown: '下へ',
     emptyRows: 'まだ何も追加されていません',
     emptyLocation: '空欄',
+    booleanOn: 'オン',
+    missingFields: '次の必須項目が未入力です：',
+    booleanOff: 'オフ',
   },
 }

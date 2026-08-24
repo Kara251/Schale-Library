@@ -18,6 +18,7 @@ import { Hono } from 'hono'
 import type { Env } from '../index'
 import { pickLocale } from '../lib/i18n'
 import { ok, okPaginated, fail, paginationOf } from '../lib/respond'
+import { publishedSql } from '../lib/published'
 
 type Bindings = { Bindings: Env }
 
@@ -90,7 +91,8 @@ interface CitationRow {
   published_at: number | null
 }
 
-const PUBLISHED = 'published_at IS NOT NULL'
+/** 公开可见性片段：草稿与未到点的排期都不公开（见 lib/published.ts）。 */
+const PUBLISHED = publishedSql()
 
 function iso(ms: number | null): string {
   return ms === null ? '' : new Date(ms).toISOString()

@@ -18,6 +18,7 @@ import { cond, andAll, orAny, limitOffset, camelToSnake } from './sql'
 import type { SqlCond } from './sql'
 import type { ParsedContentQuery } from './query'
 import { buildOrderBy } from '../lib/sort'
+import { publishedCondition, publishedSql } from '../lib/published'
 
 type Row = Record<string, unknown>
 
@@ -135,7 +136,7 @@ function orderByOf(sorts: Array<{ field: string; dir: 'asc' | 'desc' }>): string
 }
 
 function buildWhere(q: ParsedContentQuery): SqlCond {
-  const conds = [{ sql: 'w.published_at IS NOT NULL', params: [] } as SqlCond]
+  const conds = [publishedCondition('w.') as SqlCond]
   // 默认只展示在架作品（is_active=1）；显式 isActive 过滤时由叶子覆盖
   const hasIsActiveFilter =
     q.leaves.some((l) => l.path[0] === 'is_active' || l.path[0] === 'isActive') ||
@@ -275,7 +276,7 @@ worksRoutes.get('/works/:key', async (c) => {
   const key = c.req.param('key').trim()
   const numeric = /^\d+$/.test(key)
   const whereSql = andAll([
-    { sql: 'w.published_at IS NOT NULL', params: [] },
+    publishedCondition('w.'),
     numeric ? cond('w.id', 'eq', parseInt(key, 10)) : cond('w.document_id', 'eq', key),
   ])
   const rows = await fetchWorkRows(c.env.DB, whereSql, 'w.published_at DESC', limitOffset(50, 0))

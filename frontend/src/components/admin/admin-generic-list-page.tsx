@@ -22,6 +22,7 @@ const commonLabels: Record<Locale, {
   reset: string
   statusAll: string
   statusPublished: string
+  statusScheduled: string
   statusDraft: string
   empty: string
   previous: string
@@ -39,6 +40,7 @@ const commonLabels: Record<Locale, {
     reset: '重置',
     statusAll: '全部状态',
     statusPublished: '已发布',
+    statusScheduled: '已排期',
     statusDraft: '草稿',
     empty: '暂无符合条件的内容。',
     previous: '上一页',
@@ -56,6 +58,7 @@ const commonLabels: Record<Locale, {
     reset: 'Reset',
     statusAll: 'All statuses',
     statusPublished: 'Published',
+    statusScheduled: 'Scheduled',
     statusDraft: 'Draft',
     empty: 'Nothing matched the current filters.',
     previous: 'Previous',
@@ -73,6 +76,7 @@ const commonLabels: Record<Locale, {
     reset: 'リセット',
     statusAll: 'すべての状態',
     statusPublished: '公開済み',
+    statusScheduled: '予約済み',
     statusDraft: '下書き',
     empty: '条件に一致する内容がありません。',
     previous: '前へ',
@@ -133,7 +137,7 @@ export async function AdminGenericListPage({
   const pageSize = PAGE_SIZE_OPTIONS.includes(Number(searchParams.pageSize))
     ? Number(searchParams.pageSize)
     : PAGE_SIZE_OPTIONS[0]!
-  const status = searchParams.status === 'published' || searchParams.status === 'draft' ? searchParams.status : 'all'
+  const status = searchParams.status === 'published' || searchParams.status === 'scheduled' || searchParams.status === 'draft' ? searchParams.status : 'all'
 
   const response = await listAdminCollection<AdminStrapiEntry>(session, collection, {
     locale,
@@ -189,6 +193,7 @@ export async function AdminGenericListPage({
           search: t.search,
           statusAll: t.statusAll,
           statusPublished: t.statusPublished,
+          statusScheduled: t.statusScheduled,
           statusDraft: t.statusDraft,
           reset: t.reset,
         }}

@@ -6,6 +6,7 @@
 import type { HonoPanel } from './types'
 import { fail, ok, okPaginated, paginationOf } from '../lib/respond'
 import { pickLocale } from '../lib/i18n'
+import { publishStatusOf } from '../lib/published'
 import { COLLECTIONS, isPanelCollection } from './collections'
 import type { CollectionDef } from './collections'
 import { FieldValidationError, mapLocale, pickAllowedFields } from './input-schema'
@@ -36,7 +37,8 @@ function serializeRow(
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
     publishedAt: row.published_at ? new Date(row.published_at).toISOString() : null,
-    status: row.published_at ? 'published' : 'draft',
+    // 三态：草稿 / 已排期（时间未到）/ 已发布
+    status: publishStatusOf(row.published_at),
   }
 
   const allFields = { ...def.fields, ...(def.sideTable?.fields ?? {}) }
@@ -185,8 +187,15 @@ export function registerCrudRoutes(panel: HonoPanel): void {
     }
 
     const status = c.req.query('status')
-    if (status === 'published') where.push(`${q('published_at')} IS NOT NULL`)
-    else if (status === 'draft') where.push(`${q('published_at')} IS NULL`)
+    if (status === 'published') {
+      binds.push(Date.now())
+      where.push(`${q('published_at')} IS NOT NULL AND ${q('published_at')} <= ?${binds.length}`)
+    } else if (status === 'scheduled') {
+      binds.push(Date.now())
+      where.push(`${q('published_at')} IS NOT NULL AND ${q('published_at')} > ?${binds.length}`)
+    } else if (status === 'draft') {
+      where.push(`${q('published_at')} IS NULL`)
+    }
 
     const search = c.req.query('search')?.trim()
     if (search) {
@@ -243,6 +252,7 @@ export function registerCrudRoutes(panel: HonoPanel): void {
       const now = Date.now()
       const { values, sideValues } = pickAllowedFields(key, payload, localeQuery)
       await resolveRelationColumns(c.env.DB, def, values)
+      syncActiveColumn(def, values, payload)
       const documentId = generateDocumentId()
       await fillAutoSlug(c.env.DB, def, values, payload, documentId)
       const columns = ['document_id', 'created_at', 'updated_at']
@@ -310,6 +320,7 @@ export function registerCrudRoutes(panel: HonoPanel): void {
     try {
       const { values, sideValues } = pickAllowedFields(key, payload, localeQuery)
       await resolveRelationColumns(c.env.DB, def, values)
+      syncActiveColumn(def, values, payload)
       const sets = ['updated_at = ?1']
       const binds: unknown[] = [Date.now()]
       for (const [column, value] of Object.entries(values)) {
@@ -357,6 +368,23 @@ export function registerCrudRoutes(panel: HonoPanel): void {
     await recordAuditLog(c, { action: 'delete', targetCollection: key, targetDocumentId: documentId })
     return ok({ success: true })
   })
+}
+
+/**
+ * 「启用」列跟随发布状态写入。
+ * 两者对维护者是同一件事（内容是否对外可见），面板只暴露一个发布控件，
+ * 这里保证底层两列不会走岔 —— 否则会出现「已发布但站点上看不到」。
+ */
+function syncActiveColumn(
+  def: CollectionDef,
+  values: Record<string, string | number | null>,
+  payload: Record<string, unknown>
+): void {
+  if (!def.activeColumn) return
+  // 本次没有触碰发布状态就不动它
+  if (!('publishedAt' in payload)) return
+  const publishedAt = values.published_at
+  values[def.activeColumn] = publishedAt === null || publishedAt === undefined ? 0 : 1
 }
 
 /**

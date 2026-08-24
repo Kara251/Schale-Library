@@ -6,9 +6,10 @@ import { useRouter } from 'next/navigation'
 import { LoaderCircle, Upload } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/contexts/toast-context'
+import { AdminPublishStateField } from '@/components/admin/admin-publish-state-field'
 import {
   ADMIN_COLLECTION_META,
   resolveOptionLabel,
@@ -178,6 +179,20 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
       return
     }
 
+    // 必填项在提交前一次性校验完，避免填了一长串才被后端逐条拒回
+    const missing = schema.fields
+      .filter((field) => field.required)
+      .filter((field) => {
+        const value = formValues[field.name]
+        return value === undefined || value === null || String(value).trim() === ''
+      })
+      .map((field) => getDisplayLabel(field, locale))
+
+    if (missing.length > 0) {
+      setError(`${t.missingFields}${missing.join('、')}`)
+      return
+    }
+
     setError(null)
     setIsSaving(true)
 
@@ -218,12 +233,9 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
+      {/* 标题与说明由页面头（AdminPageHeader）承载，此处不再重复一遍 */}
       <Card>
-        <CardHeader>
-          <CardTitle>{initialData?.id ? schema.editLabel[locale] : schema.createLabel[locale]}</CardTitle>
-          <CardDescription>{schema.description[locale]}</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-5 md:grid-cols-2">
+        <CardContent className="grid gap-5 pt-6 md:grid-cols-2">
           {schema.fields.map((field) => {
             const value = formValues[field.name]
             const label = getDisplayLabel(field, locale)
@@ -231,7 +243,10 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
 
             return (
               <div key={field.name} className={cn('space-y-2', isFullWidth && 'md:col-span-2')}>
-                <label className="text-sm font-medium" htmlFor={field.name}>{label}</label>
+                <label className="text-sm font-medium" htmlFor={field.name}>
+                  {label}
+                  {field.required ? <span className="ml-1 text-destructive" aria-hidden="true">*</span> : null}
+                </label>
                 {field.description ? (
                   <p className="text-xs text-muted-foreground">{field.description[locale] || field.description['zh-Hans']}</p>
                 ) : null}
@@ -284,14 +299,24 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
                   </select>
                 ) : null}
 
+                {/* 外层已渲染字段名，这里只给开关本体与状态文案，避免同一标签出现两次 */}
+                {field.type === 'publish-state' ? (
+                  <AdminPublishStateField
+                    locale={locale}
+                    value={value}
+                    onChange={(next) => updateField(field.name, next)}
+                  />
+                ) : null}
+
                 {field.type === 'boolean' ? (
                   <label className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm">
                     <input
+                      id={field.name}
                       type="checkbox"
                       checked={Boolean(value)}
                       onChange={(event) => updateField(field.name, event.target.checked)}
                     />
-                    <span>{label}</span>
+                    <span className="text-muted-foreground">{Boolean(value) ? t.booleanOn : t.booleanOff}</span>
                   </label>
                 ) : null}
 

@@ -19,6 +19,7 @@ import type { ParsedContentQuery } from './query'
 import { cond, andAll, orAny, limitOffset } from './sql'
 import type { SqlCond } from './sql'
 import { buildOrderBy } from '../lib/sort'
+import { publishedCondition, publishedSql } from '../lib/published'
 
 type Row = Record<string, unknown>
 
@@ -78,7 +79,7 @@ miscRoutes.get('/announcements', async (c) => {
   const q = parseContentQuery(new URL(c.req.url))
   const conds: SqlCond[] = [
     { sql: 'is_active = 1', params: [] },
-    { sql: 'published_at IS NOT NULL', params: [] },
+    publishedCondition(''),
   ]
 
   // Strapi 语义：$or[i] 组间为 OR（任一组命中即可），组内字段亦 OR
@@ -116,7 +117,7 @@ miscRoutes.get('/announcements/:key', async (c) => {
   const numeric = /^\d+$/.test(key)
   const whereSql = andAll([
     { sql: 'is_active = 1', params: [] },
-    { sql: 'published_at IS NOT NULL', params: [] },
+    publishedCondition(''),
     numeric ? cond('id', 'eq', parseInt(key, 10)) : cond('document_id', 'eq', key),
   ])
   const row = await c.env.DB.prepare(`SELECT * FROM announcements WHERE ${whereSql.sql} LIMIT 1`).bind(...whereSql.params).first<AnnouncementRow>()
@@ -143,7 +144,7 @@ interface FriendLinkRow {
 
 miscRoutes.get('/friend-links', async (c) => {
   const q = parseContentQuery(new URL(c.req.url))
-  const whereSql = andAll([{ sql: 'is_active = 1', params: [] }, { sql: 'published_at IS NOT NULL', params: [] }])
+  const whereSql = andAll([{ sql: 'is_active = 1', params: [] }, publishedCondition('')])
   const totalRow = await c.env.DB.prepare(`SELECT COUNT(*) AS n FROM friend_links WHERE ${whereSql.sql}`)
     .bind(...whereSql.params)
     .first<{ n: number }>()
@@ -185,7 +186,7 @@ interface SchoolRow {
 
 miscRoutes.get('/schools', async (c) => {
   const q = parseContentQuery(new URL(c.req.url))
-  const whereSql = andAll([{ sql: 'published_at IS NOT NULL', params: [] }])
+  const whereSql = andAll([publishedCondition('')])
   const totalRow = await c.env.DB.prepare(`SELECT COUNT(*) AS n FROM schools WHERE ${whereSql.sql}`)
     .bind(...whereSql.params)
     .first<{ n: number }>()
@@ -221,10 +222,10 @@ miscRoutes.get('/spoiler-tiers', async (c) => {
   const q = parseContentQuery(new URL(c.req.url))
   // 草稿不进公开 API：面板可以取消发布，此前这里从不过滤，取消发布等于无效
   const totalRow = await c.env.DB.prepare(
-    'SELECT COUNT(*) AS n FROM spoiler_tiers WHERE published_at IS NOT NULL'
+    `SELECT COUNT(*) AS n FROM spoiler_tiers WHERE ${publishedSql()}`
   ).first<{ n: number }>()
   const out = await c.env.DB.prepare(
-    'SELECT * FROM spoiler_tiers WHERE published_at IS NOT NULL ORDER BY sort_order ASC LIMIT ? OFFSET ?'
+    `SELECT * FROM spoiler_tiers WHERE ${publishedSql()} ORDER BY sort_order ASC LIMIT ? OFFSET ?`
   )
     .bind(q.pageSize, (q.page - 1) * q.pageSize)
     .all<SpoilerTierRow>()

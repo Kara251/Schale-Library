@@ -20,6 +20,7 @@ import type { ParsedContentQuery } from './query'
 import { studentToJson } from './students'
 import type { StudentRow } from './students'
 import { buildOrderBy } from '../lib/sort'
+import { publishedCondition, publishedSql } from '../lib/published'
 
 type Row = Record<string, unknown>
 
@@ -106,7 +107,7 @@ function orderByOf(sorts: Array<{ field: string; dir: 'asc' | 'desc' }>): string
  * 其余未知字段静默忽略（Strapi 宽容语义）。
  */
 function buildWhere(q: ParsedContentQuery): SqlCond {
-  const conds: SqlCond[] = [{ sql: 'cr.published_at IS NOT NULL', params: [] }]
+  const conds: SqlCond[] = [publishedCondition('cr.')]
 
   for (const leaf of q.leaves) {
     const [head] = leaf.path
@@ -144,7 +145,7 @@ async function fetchCreatorStudents(db: D1Database, creatorId: number): Promise<
 FROM creator_students cs
 JOIN students st ON st.id = cs.student_id
 LEFT JOIN schools sc ON sc.id = st.school_id
-WHERE cs.creator_id = ? AND st.published_at IS NOT NULL
+WHERE cs.creator_id = ? AND ${publishedSql('st.')}
 ORDER BY st.name ASC`
     )
     .bind(creatorId)
@@ -182,7 +183,7 @@ creatorsRoutes.get('/creators/:slug', async (c) => {
   const q = parseContentQuery(new URL(c.req.url))
   const numeric = /^\d+$/.test(key)
   const whereSql = andAll([
-    { sql: 'cr.published_at IS NOT NULL', params: [] },
+    publishedCondition('cr.'),
     numeric
       ? cond('cr.id', 'eq', parseInt(key, 10))
       : { sql: '(cr.slug = ? OR cr.document_id = ?)', params: [key, key] },

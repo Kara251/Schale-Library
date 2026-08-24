@@ -18,6 +18,7 @@ import type { SqlCond } from './sql'
 import { parseContentQuery } from './query'
 import type { ParsedContentQuery } from './query'
 import { buildOrderBy } from '../lib/sort'
+import { publishedCondition, publishedSql } from '../lib/published'
 
 type Row = Record<string, unknown>
 
@@ -137,7 +138,7 @@ function orderByOf(sorts: Array<{ field: string; dir: 'asc' | 'desc' }>): string
 function buildEventWhere(q: ParsedContentQuery, kind: 'online' | 'offline', nowMs: number): SqlCond {
   const conds: SqlCond[] = [
     { sql: 'e.kind = ?', params: [kind] },
-    { sql: 'e.published_at IS NOT NULL', params: [] },
+    publishedCondition('e.'),
   ]
 
   for (const leaf of q.leaves) {
@@ -266,7 +267,7 @@ for (const kind of ['online', 'offline'] as const) {
     const numeric = /^\d+$/.test(key)
     const where = andAll([
       { sql: 'e.kind = ?', params: [kind] },
-      { sql: 'e.published_at IS NOT NULL', params: [] },
+      publishedCondition('e.'),
       numeric ? cond('e.id', 'eq', parseInt(key, 10)) : cond('e.document_id', 'eq', key),
     ])
     const rows = await fetchRows(c.env.DB, where, 'e.start_time DESC', limitOffset(1, 0))
@@ -279,7 +280,7 @@ for (const kind of ['online', 'offline'] as const) {
 function buildBaseWhere(kind: 'online' | 'offline'): SqlCond {
   return andAll([
     { sql: 'e.kind = ?', params: [kind] },
-    { sql: 'e.published_at IS NOT NULL', params: [] },
+    publishedCondition('e.'),
   ])
 }
 

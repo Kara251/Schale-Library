@@ -36,6 +36,7 @@ const labels: Record<Locale, {
   reset: string
   statusAll: string
   statusPublished: string
+  statusScheduled: string
   statusDraft: string
   empty: string
   platform: string
@@ -58,6 +59,7 @@ const labels: Record<Locale, {
     reset: '重置',
     statusAll: '全部状态',
     statusPublished: '已发布',
+    statusScheduled: '已排期',
     statusDraft: '草稿',
     empty: '暂无符合条件的创作者。',
     platform: '平台',
@@ -80,6 +82,7 @@ const labels: Record<Locale, {
     reset: 'Reset',
     statusAll: 'All statuses',
     statusPublished: 'Published',
+    statusScheduled: 'Scheduled',
     statusDraft: 'Draft',
     empty: 'No creators matched the current filters.',
     platform: 'Platform',
@@ -102,6 +105,7 @@ const labels: Record<Locale, {
     reset: 'リセット',
     statusAll: 'すべての状態',
     statusPublished: '公開済み',
+    statusScheduled: '予約済み',
     statusDraft: '下書き',
     empty: '条件に一致するクリエイターはありません。',
     platform: 'プラットフォーム',
@@ -134,7 +138,7 @@ export default async function CreatorsManagePage({ params, searchParams }: Creat
   const pageSize = PAGE_SIZE_OPTIONS.includes(Number(query.pageSize))
     ? Number(query.pageSize)
     : PAGE_SIZE_OPTIONS[0]!
-  const status = query.status === 'published' || query.status === 'draft' ? query.status : 'all'
+  const status = query.status === 'published' || query.status === 'scheduled' || query.status === 'draft' ? query.status : 'all'
 
   const response = await listAdminCollection<CreatorAdminEntry>(session, 'creators', {
     locale,
@@ -184,6 +188,7 @@ export default async function CreatorsManagePage({ params, searchParams }: Creat
           search: t.search,
           statusAll: t.statusAll,
           statusPublished: t.statusPublished,
+          statusScheduled: t.statusScheduled,
           statusDraft: t.statusDraft,
           reset: t.reset,
         }}

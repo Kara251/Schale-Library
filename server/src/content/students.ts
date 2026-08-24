@@ -18,6 +18,7 @@ import type { ParsedContentQuery } from './query'
 import { cond, andAll, orAny, limitOffset } from './sql'
 import type { SqlCond } from './sql'
 import { buildOrderBy } from '../lib/sort'
+import { publishedCondition, publishedSql } from '../lib/published'
 
 type Row = Record<string, unknown>
 
@@ -78,7 +79,7 @@ function orderByOf(sorts: Array<{ field: string; dir: 'asc' | 'desc' }>): string
 }
 
 function buildWhere(q: ParsedContentQuery): SqlCond {
-  const conds: SqlCond[] = [{ sql: 'st.published_at IS NOT NULL', params: [] }]
+  const conds: SqlCond[] = [publishedCondition('st.')]
 
   for (const leaf of q.leaves) {
     const [head] = leaf.path
@@ -176,7 +177,7 @@ studentsRoutes.get('/students/:key', async (c) => {
   const key = c.req.param('key').trim()
   const numeric = /^\d+$/.test(key)
   const whereSql = andAll([
-    { sql: 'st.published_at IS NOT NULL', params: [] },
+    publishedCondition('st.'),
     numeric ? cond('st.id', 'eq', parseInt(key, 10)) : cond('st.document_id', 'eq', key),
   ])
   const rows = await fetchStudentRows(c.env.DB, whereSql, 'st.name ASC', limitOffset(1, 0))

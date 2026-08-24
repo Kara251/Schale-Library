@@ -53,6 +53,12 @@ export interface CollectionDef {
    * from 是字段白名单里的字段名，取其值转写；转写为空（如纯中文）时回退 documentId。
    */
   autoSlug?: { column: string; from: string }
+  /**
+   * 与发布状态联动的「启用」列。
+   * 这两个字段对维护者是同一个意思（内容是否对外可见），分开暴露只会造成
+   * 「勾了一个却不显示」。面板只给一个发布控件，此列由服务端跟随写入。
+   */
+  activeColumn?: string
   searchColumns: string[]
   defaultSort: Array<[string, 'asc' | 'desc']>
   labelColumn: string
@@ -248,6 +254,8 @@ export const COLLECTIONS: Record<string, CollectionDef> = {
       ['updated_at', 'desc'],
     ],
     labelColumn: 'title_json',
+    // is_active 由发布状态联动写入，不作为独立字段暴露
+    activeColumn: 'is_active',
     fields: {
       title: f('title_json', 'text', true),
       content: f('content_json', 'text', true),
@@ -255,7 +263,6 @@ export const COLLECTIONS: Record<string, CollectionDef> = {
       coverImage: f('cover_image_url', 'media'),
       priority: f('priority', 'number'),
       isPinned: f('is_pinned', 'boolean'),
-      isActive: f('is_active', 'boolean'),
       publishedAt: f('published_at', 'published-at'),
     },
   },
@@ -269,13 +276,14 @@ export const COLLECTIONS: Record<string, CollectionDef> = {
       ['updated_at', 'desc'],
     ],
     labelColumn: 'title_json',
+    // is_active 由发布状态联动写入，不作为独立字段暴露
+    activeColumn: 'is_active',
     fields: {
       title: f('title_json', 'text', true),
       description: f('description_json', 'text', true),
       url: f('url', 'text'),
       icon: f('icon_url', 'media'),
       priority: f('priority', 'number'),
-      isActive: f('is_active', 'boolean'),
       publishedAt: f('published_at', 'published-at'),
     },
   },

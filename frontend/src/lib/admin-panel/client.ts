@@ -12,7 +12,8 @@ import { STRAPI_API_URL as STRAPI_URL } from '@/lib/config'
 const DEFAULT_PAGE_SIZE = 12
 
 export const ADMIN_COLLECTION_CONFIG = ADMIN_COLLECTION_META
-export type AdminPublishStatus = 'all' | 'published' | 'draft'
+/** scheduled：已设发布时间但尚未到点 —— 公开 API 不返回，面板可单独筛选 */
+export type AdminPublishStatus = 'all' | 'published' | 'scheduled' | 'draft'
 
 export interface AdminListQuery {
   locale?: string

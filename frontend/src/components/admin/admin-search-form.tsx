@@ -14,6 +14,7 @@ interface AdminSearchFormProps {
     search: string
     statusAll: string
     statusPublished: string
+    statusScheduled?: string
     statusDraft: string
     reset: string
   }
@@ -42,6 +43,9 @@ export function AdminSearchForm({
         >
           <option value="all">{labels.statusAll}</option>
           <option value="published">{labels.statusPublished}</option>
+          {labels.statusScheduled ? (
+            <option value="scheduled">{labels.statusScheduled}</option>
+          ) : null}
           <option value="draft">{labels.statusDraft}</option>
         </select>
       ) : (

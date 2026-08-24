@@ -35,6 +35,8 @@ export type AdminFieldType =
   | 'relation-select'
   | 'component-rows'
   | 'json-csv'
+  /** 发布状态三态控件：草稿 / 立即发布 / 定时发布（带时间选择） */
+  | 'publish-state'
 
 export interface AdminFieldOption {
   value: string
@@ -60,6 +62,8 @@ export interface AdminEditorField {
   name: string
   type: AdminFieldType
   label: Record<Locale, string>
+  /** 必填：界面加星号标记，提交前做非空校验（服务端仍会强制） */
+  required?: boolean
   placeholder?: Record<Locale, string>
   description?: Record<Locale, string>
   options?: AdminFieldOption[]

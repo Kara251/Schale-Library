@@ -35,6 +35,7 @@ const labels: Record<Locale, {
   reset: string
   statusAll: string
   statusPublished: string
+  statusScheduled: string
   statusDraft: string
   empty: string
   previous: string
@@ -57,6 +58,7 @@ const labels: Record<Locale, {
     reset: '重置',
     statusAll: '全部状态',
     statusPublished: '已发布',
+    statusScheduled: '已排期',
     statusDraft: '草稿',
     empty: '暂无符合条件的公告。',
     previous: '上一页',
@@ -79,6 +81,7 @@ const labels: Record<Locale, {
     reset: 'Reset',
     statusAll: 'All statuses',
     statusPublished: 'Published',
+    statusScheduled: 'Scheduled',
     statusDraft: 'Draft',
     empty: 'No announcements matched the current filters.',
     previous: 'Previous',
@@ -101,6 +104,7 @@ const labels: Record<Locale, {
     reset: 'リセット',
     statusAll: 'すべての状態',
     statusPublished: '公開済み',
+    statusScheduled: '予約済み',
     statusDraft: '下書き',
     empty: '条件に一致するお知らせがありません。',
     previous: '前へ',
@@ -142,7 +146,7 @@ export default async function AnnouncementsManagePage({ params, searchParams }: 
   const pageSize = PAGE_SIZE_OPTIONS.includes(Number(query.pageSize))
     ? Number(query.pageSize)
     : PAGE_SIZE_OPTIONS[0]!
-  const status = query.status === 'published' || query.status === 'draft' ? query.status : 'all'
+  const status = query.status === 'published' || query.status === 'scheduled' || query.status === 'draft' ? query.status : 'all'
 
   const response = await listAdminCollection<AnnouncementAdminEntry>(session, 'announcements', {
     locale,
@@ -192,6 +196,7 @@ export default async function AnnouncementsManagePage({ params, searchParams }: 
           search: t.search,
           statusAll: t.statusAll,
           statusPublished: t.statusPublished,
+          statusScheduled: t.statusScheduled,
           statusDraft: t.statusDraft,
           reset: t.reset,
         }}
