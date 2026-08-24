@@ -81,18 +81,6 @@ export const ADMIN_PANEL_CONTRACT = {
     body: 'multipart/form-data: files, fieldName?, collection?',
     consume: ['data[] (AdminMediaAsset)'],
   },
-  syncBilibiliSubscription: {
-    method: 'POST',
-    endpoint: '/api/bilibili-subscriptions/<id>/sync',
-    body: {},
-    consume: ['success', 'message', 'total', 'created', 'skipped', 'failed', 'errors[]'],
-  },
-  syncAllBilibiliSubscriptions: {
-    method: 'POST',
-    endpoint: '/api/bilibili-subscriptions/sync-all',
-    body: {},
-    consume: ['success', 'total', 'created', 'skipped', 'failed'],
-  },
   getCuratorAdmin: {
     method: 'GET',
     endpoint: '/api/panel/research-curator',

@@ -18,7 +18,7 @@ const labels: Record<Locale, {
 }> = {
   'zh-Hans': {
     title: '系统自检',
-    description: '检查部署变量、数据库、上传服务、维护角色、公开权限和 RSSHub 连通性。',
+    description: '检查数据库连通性与各内容集合的记录数。',
     generatedAt: '检查时间',
     ok: '正常',
     warning: '注意',
@@ -26,7 +26,7 @@ const labels: Record<Locale, {
   },
   en: {
     title: 'System Health',
-    description: 'Check deploy variables, database, uploads, maintainer roles, public permissions, and RSSHub.',
+    description: 'Check database connectivity and record counts per content collection.',
     generatedAt: 'Generated at',
     ok: 'OK',
     warning: 'Warning',
@@ -34,7 +34,7 @@ const labels: Record<Locale, {
   },
   ja: {
     title: 'システム確認',
-    description: 'デプロイ変数、データベース、アップロード、管理ロール、公開権限、RSSHub を確認します。',
+    description: 'データベースの接続性と各コンテンツ コレクションの件数を確認します。',
     generatedAt: '確認日時',
     ok: '正常',
     warning: '注意',

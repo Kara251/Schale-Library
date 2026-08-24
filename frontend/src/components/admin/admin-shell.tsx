@@ -133,12 +133,13 @@ const navLabels: Record<Locale, Record<string, string>> = {
 export function AdminShell({ children, locale, user }: AdminShellProps) {
   const pathname = usePathname()
   const isAdmin = (user.role?.type || '').toLowerCase() === 'admin'
+  const dashboardHref = `/${locale}/manage`
   const { logout } = useAuth()
   const t = labels[locale] || labels['zh-Hans']
   const nav = navLabels[locale] || navLabels['zh-Hans']
 
   const items = [
-    { href: `/${locale}/manage`, label: nav.dashboard, icon: LayoutDashboard },
+    { href: dashboardHref, label: nav.dashboard, icon: LayoutDashboard },
     { href: `/${locale}/manage/announcements`, label: nav.announcements, icon: Bell },
     { href: `/${locale}/manage/creators`, label: nav.creators, icon: Users },
     { href: `/${locale}/manage/friend-links`, label: nav.friendLinks, icon: LinkIcon },
@@ -191,7 +192,12 @@ export function AdminShell({ children, locale, user }: AdminShellProps) {
                 <nav className="space-y-2">
                   {items.map((item) => {
                     const Icon = item.icon
-                    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+                    // 仪表盘的 href 是 /manage 本身，而所有后台页面都以它开头 ——
+                    // 用 startsWith 会让它永远处于选中态。仪表盘只在路径完全相等时高亮。
+                    const isActive =
+                      item.href === dashboardHref
+                        ? pathname === item.href
+                        : pathname === item.href || pathname.startsWith(`${item.href}/`)
 
                     return (
                       <Link
