@@ -67,6 +67,7 @@ beforeAll(async () => {
   }
   await applyMigration(env.DB, 'migrations/0002_works.sql')
   await applyMigration(env.DB, 'migrations/0003_spoiler_tiers_timestamps.sql')
+  await applyMigration(env.DB, 'migrations/0004_citation_source_image.sql')
 
   const passwordHash = await hashPassword(ADMIN.password)
   await env.DB.prepare(

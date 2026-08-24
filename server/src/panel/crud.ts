@@ -8,7 +8,7 @@ import { fail, ok, okPaginated, paginationOf } from '../lib/respond'
 import { pickLocale } from '../lib/i18n'
 import { publishStatusOf } from '../lib/published'
 import { COLLECTIONS, isPanelCollection } from './collections'
-import type { CollectionDef } from './collections'
+import type { CollectionDef, FieldDef } from './collections'
 import { FieldValidationError, mapLocale, pickAllowedFields } from './input-schema'
 import { recordAuditLog } from './audit'
 
@@ -229,7 +229,13 @@ export function registerCrudRoutes(panel: HonoPanel): void {
     const def = COLLECTIONS[key]
     const row = await findByDocumentId(c.env.DB, def, c.req.param('documentId'))
     if (!row) return fail(404, 'not_found')
-    return ok(serializeRow(key, row, mapLocale(c.req.query('locale'))))
+    const locale = mapLocale(c.req.query('locale'))
+    // 关联数据只在单条读取时加载：列表页不展示它们，逐行加载会退化成 N+1
+    return ok({
+      ...serializeRow(key, row, locale),
+      ...(await loadJoins(c.env.DB, def, row.id)),
+      ...(await loadChildren(c.env.DB, def, row.id, locale)),
+    })
   })
 
   // ===== 新建 =====
@@ -250,7 +256,8 @@ export function registerCrudRoutes(panel: HonoPanel): void {
 
     try {
       const now = Date.now()
-      const { values, sideValues } = pickAllowedFields(key, payload, localeQuery)
+      const { columnPayload, relationalPayload } = splitRelationalPayload(def, payload)
+      const { values, sideValues } = pickAllowedFields(key, columnPayload, localeQuery)
       await resolveRelationColumns(c.env.DB, def, values)
       syncActiveColumn(def, values, payload)
       const documentId = generateDocumentId()
@@ -276,16 +283,28 @@ export function registerCrudRoutes(panel: HonoPanel): void {
         .run()
       if (!result.meta.changes) return fail(500, 'insert_failed')
 
-      await upsertSideRow(c.env.DB, def, result.meta.last_row_id as number, sideValues)
+      const newRowId = result.meta.last_row_id as number
+      await upsertSideRow(c.env.DB, def, newRowId, sideValues)
+      await replaceJoins(c.env.DB, def, newRowId, relationalPayload)
+      await replaceChildren(c.env.DB, def, newRowId, relationalPayload)
 
       const row = await findByDocumentId(c.env.DB, def, binds[0] as string)
+      const createdLocale = mapLocale(localeQuery)
       await recordAuditLog(c, {
         action: 'create',
         targetCollection: key,
         targetDocumentId: binds[0] as string,
         payloadSummary: summarizePayload(payload),
       })
-      return ok(row ? serializeRow(key, row, mapLocale(localeQuery)) : {})
+      return ok(
+        row
+          ? {
+              ...serializeRow(key, row, createdLocale),
+              ...(await loadJoins(c.env.DB, def, row.id)),
+              ...(await loadChildren(c.env.DB, def, row.id, createdLocale)),
+            }
+          : {}
+      )
     } catch (error) {
       if (error instanceof FieldValidationError) {
         return fail(400, error.field ? `unknown_field:${error.field}` : error.message)
@@ -318,7 +337,8 @@ export function registerCrudRoutes(panel: HonoPanel): void {
     if (!existing) return fail(404, 'not_found')
 
     try {
-      const { values, sideValues } = pickAllowedFields(key, payload, localeQuery)
+      const { columnPayload, relationalPayload } = splitRelationalPayload(def, payload)
+      const { values, sideValues } = pickAllowedFields(key, columnPayload, localeQuery)
       await resolveRelationColumns(c.env.DB, def, values)
       syncActiveColumn(def, values, payload)
       const sets = ['updated_at = ?1']
@@ -333,15 +353,26 @@ export function registerCrudRoutes(panel: HonoPanel): void {
         .run()
 
       await upsertSideRow(c.env.DB, def, existing.id, sideValues)
+      await replaceJoins(c.env.DB, def, existing.id, relationalPayload)
+      await replaceChildren(c.env.DB, def, existing.id, relationalPayload)
 
       const row = await findByDocumentId(c.env.DB, def, documentId)
+      const updatedLocale = mapLocale(localeQuery)
       await recordAuditLog(c, {
         action: 'update',
         targetCollection: key,
         targetDocumentId: documentId,
         payloadSummary: summarizePayload(payload),
       })
-      return ok(row ? serializeRow(key, row, mapLocale(localeQuery)) : {})
+      return ok(
+        row
+          ? {
+              ...serializeRow(key, row, updatedLocale),
+              ...(await loadJoins(c.env.DB, def, row.id)),
+              ...(await loadChildren(c.env.DB, def, row.id, updatedLocale)),
+            }
+          : {}
+      )
     } catch (error) {
       if (error instanceof FieldValidationError) {
         return fail(400, error.field ? `unknown_field:${error.field}` : error.message)
@@ -388,6 +419,25 @@ function syncActiveColumn(
 }
 
 /**
+ * 把 joins / children 字段从主表 payload 里摘出来。
+ * 它们不是主表的列，留在 payload 里会被字段白名单判为未登记字段直接 400 ——
+ * 考据域整域存不进去就是卡在这一步。
+ */
+function splitRelationalPayload(
+  def: CollectionDef,
+  payload: Record<string, unknown>
+): { columnPayload: Record<string, unknown>; relationalPayload: Record<string, unknown> } {
+  const relationalKeys = new Set([...Object.keys(def.joins ?? {}), ...Object.keys(def.children ?? {})])
+  const columnPayload: Record<string, unknown> = {}
+  const relationalPayload: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (relationalKeys.has(key)) relationalPayload[key] = value
+    else columnPayload[key] = value
+  }
+  return { columnPayload, relationalPayload }
+}
+
+/**
  * 关联字段：把 documentId 解析成目标表的数字外键。
  * 面板对外只有 documentId 一种 ID，而外键指向的是数字主键。
  * 已经是数字的原样保留（直接传内部 id 的调用方仍可用）。
@@ -412,6 +462,145 @@ async function resolveRelationColumns(
     }
     values[field.column] = row.id
   }
+}
+
+/**
+ * 读取多对多连接：返回目标行的 documentId 数组。
+ * 面板对外只认 documentId，连接表里存的是数字主键。
+ */
+async function loadJoins(
+  db: D1Database,
+  def: CollectionDef,
+  rowId: number
+): Promise<Record<string, string[]>> {
+  const out: Record<string, string[]> = {}
+  for (const [fieldName, join] of Object.entries(def.joins ?? {})) {
+    const { results } = await db
+      .prepare(
+        `SELECT t.document_id AS doc FROM ${join.table} j
+         JOIN ${join.targetTable} t ON t.id = j.${join.targetKey}
+         WHERE j.${join.selfKey} = ?1
+         ORDER BY t.id`
+      )
+      .bind(rowId)
+      .all<{ doc: string }>()
+    out[fieldName] = (results ?? []).map((r) => r.doc)
+  }
+  return out
+}
+
+/** 读取有序子行：返回面板字段名形态的对象数组。 */
+async function loadChildren(
+  db: D1Database,
+  def: CollectionDef,
+  rowId: number,
+  locale: string
+): Promise<Record<string, Array<Record<string, unknown>>>> {
+  const out: Record<string, Array<Record<string, unknown>>> = {}
+  for (const [fieldName, child] of Object.entries(def.children ?? {})) {
+    const order = child.orderColumn ? `ORDER BY ${child.orderColumn} ASC, id ASC` : 'ORDER BY id ASC'
+    const { results } = await db
+      .prepare(`SELECT * FROM ${child.table} WHERE ${child.fk} = ?1 ${order}`)
+      .bind(rowId)
+      .all<Record<string, unknown>>()
+
+    out[fieldName] = (results ?? []).map((row) => {
+      const item: Record<string, unknown> = {}
+      for (const [name, field] of Object.entries(child.fields)) {
+        const raw = row[field.column]
+        item[name] = field.localized && typeof raw === 'string' ? pickLocale(raw, locale) : (raw ?? null)
+      }
+      return item
+    })
+  }
+  return out
+}
+
+/**
+ * 整体替换连接行。面板提交的是完整集合，不是增量 —— 先删后插最直观，
+ * 也避免「界面上取消勾选但库里还留着」这类不一致。
+ */
+async function replaceJoins(
+  db: D1Database,
+  def: CollectionDef,
+  rowId: number,
+  payload: Record<string, unknown>
+): Promise<void> {
+  for (const [fieldName, join] of Object.entries(def.joins ?? {})) {
+    if (!(fieldName in payload)) continue
+    const raw = payload[fieldName]
+    const documentIds = Array.isArray(raw) ? raw.map(String).filter(Boolean) : []
+
+    await db.prepare(`DELETE FROM ${join.table} WHERE ${join.selfKey} = ?1`).bind(rowId).run()
+    if (documentIds.length === 0) continue
+
+    const placeholders = documentIds.map((_, i) => `?${i + 1}`).join(',')
+    const { results } = await db
+      .prepare(`SELECT id FROM ${join.targetTable} WHERE document_id IN (${placeholders})`)
+      .bind(...documentIds)
+      .all<{ id: number }>()
+
+    if ((results ?? []).length !== documentIds.length) {
+      throw new FieldValidationError(`关联对象不存在`, fieldName)
+    }
+    for (const target of results ?? []) {
+      await db
+        .prepare(`INSERT INTO ${join.table} (${join.selfKey}, ${join.targetKey}) VALUES (?1, ?2)`)
+        .bind(rowId, target.id)
+        .run()
+    }
+  }
+}
+
+/** 整体替换子行；顺序按数组下标写入排序列。 */
+async function replaceChildren(
+  db: D1Database,
+  def: CollectionDef,
+  rowId: number,
+  payload: Record<string, unknown>
+): Promise<void> {
+  for (const [fieldName, child] of Object.entries(def.children ?? {})) {
+    if (!(fieldName in payload)) continue
+    const rows = Array.isArray(payload[fieldName]) ? (payload[fieldName] as unknown[]) : []
+
+    await db.prepare(`DELETE FROM ${child.table} WHERE ${child.fk} = ?1`).bind(rowId).run()
+
+    for (const [index, entry] of rows.entries()) {
+      if (!entry || typeof entry !== 'object') continue
+      const source = entry as Record<string, unknown>
+
+      const columns = [child.fk]
+      const binds: unknown[] = [rowId]
+      for (const [name, field] of Object.entries(child.fields)) {
+        if (!(name in source)) continue
+        columns.push(field.column)
+        binds.push(normalizeChildValue(field, source[name]))
+      }
+      if (child.orderColumn) {
+        columns.push(child.orderColumn)
+        binds.push(index)
+      }
+      // 只有外键与排序列时说明该行没有任何内容，跳过
+      if (columns.length <= (child.orderColumn ? 2 : 1)) continue
+
+      const placeholders = columns.map((_, i) => `?${i + 1}`).join(', ')
+      await db
+        .prepare(`INSERT INTO ${child.table} (${columns.join(', ')}) VALUES (${placeholders})`)
+        .bind(...binds)
+        .run()
+    }
+  }
+}
+
+/** 子行字段的值归一化：localized 文本包成 i18n JSON，其余原样。 */
+function normalizeChildValue(field: FieldDef, value: unknown): string | number | null {
+  if (value === null || value === undefined || value === '') return null
+  if (field.localized) return JSON.stringify({ 'zh-Hans': String(value) })
+  if (field.kind === 'number') {
+    const n = Number(value)
+    return Number.isFinite(n) ? n : null
+  }
+  return String(value)
 }
 
 /** 1:1 副表 upsert；没有副表或本次没有副表字段时是 no-op。 */

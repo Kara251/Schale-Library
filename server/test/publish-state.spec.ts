@@ -127,6 +127,32 @@ describe('定时发布', () => {
   })
 })
 
+describe('可见性判定不能在模块加载时固定', () => {
+  it('publishedSql 每次调用都取当前时间', async () => {
+    const { publishedSql } = await import('../src/lib/published')
+    const first = publishedSql()
+    // 跨过至少 1ms，确保时间戳确实会变
+    await new Promise((resolve) => setTimeout(resolve, 2))
+    const second = publishedSql()
+    expect(first).not.toBe(second)
+  })
+
+  it('刚发布的内容立刻能被公开 API 查到', async () => {
+    // 模块级常量会把时间戳固定在 isolate 启动那一刻，
+    // 导致「之后」发布的内容在该 isolate 存活期间一律查不出来（线上复现过）。
+    await new Promise((resolve) => setTimeout(resolve, 5))
+
+    await authed('/panel/announcements', {
+      method: 'POST',
+      body: JSON.stringify({ data: { title: '刚刚发布', publishedAt: true } }),
+    })
+
+    const res = await app.request('https://test.local/api/announcements', {}, env)
+    const body = (await res.json()) as { data: Array<{ title: string }> }
+    expect(body.data.map((d) => d.title)).toContain('刚刚发布')
+  })
+})
+
 describe('is_active 跟随发布状态', () => {
   it('发布时置 1，转草稿时置 0', async () => {
     const created = (await (

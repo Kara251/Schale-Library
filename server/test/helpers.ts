@@ -38,6 +38,7 @@ const BASELINE_STATEMENTS = splitSqlStatements(baselineSql as string).map((state
 // 追加迁移（0002_works.sql）：同样以 ?raw 内联；新迁移文件加入此处
 import worksMigrationSql from '../migrations/0002_works.sql?raw'
 import spoilerTiersMigrationSql from '../migrations/0003_spoiler_tiers_timestamps.sql?raw'
+import citationImageMigrationSql from '../migrations/0004_citation_source_image.sql?raw'
 
 export async function applyBaseline(db: D1Database): Promise<void> {
   for (const statement of BASELINE_STATEMENTS) {
@@ -48,6 +49,7 @@ const MIGRATIONS: Record<string, string> = {
   'migrations/0001_baseline.sql': baselineSql as string,
   'migrations/0002_works.sql': worksMigrationSql as string,
   'migrations/0003_spoiler_tiers_timestamps.sql': spoilerTiersMigrationSql as string,
+  'migrations/0004_citation_source_image.sql': citationImageMigrationSql as string,
 }
 
 /** 与 BASELINE_STATEMENTS 相同的幂等化：多 spec 共享 D1 存储时防 "table already exists" */

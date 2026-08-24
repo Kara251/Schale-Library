@@ -91,8 +91,13 @@ interface CitationRow {
   published_at: number | null
 }
 
-/** 公开可见性片段：草稿与未到点的排期都不公开（见 lib/published.ts）。 */
-const PUBLISHED = publishedSql()
+/**
+ * 公开可见性片段：草稿与未到点的排期都不公开（见 lib/published.ts）。
+ *
+ * 必须每次调用时求值。写成模块级常量的话，时间戳在 Worker isolate 启动那一刻
+ * 就固定了 —— isolate 存活期间新发布的内容一律查不出来（已在线上复现）。
+ */
+const PUBLISHED = () => publishedSql()
 
 function iso(ms: number | null): string {
   return ms === null ? '' : new Date(ms).toISOString()
@@ -244,7 +249,7 @@ async function attachThemes(db: D1Database, entries: EntryJson[], locale: string
       `SELECT et.entry_id, t.id, t.document_id, t.slug, t.title_json, t.curated_intro_json,
               t.created_at, t.updated_at, t.published_at
        FROM entry_themes et JOIN research_themes t ON t.id = et.theme_id
-       WHERE t.${PUBLISHED} AND et.entry_id IN (${marks}) ORDER BY et.entry_id, t.id`
+       WHERE t.${PUBLISHED()} AND et.entry_id IN (${marks}) ORDER BY et.entry_id, t.id`
     )
     .bind(...ids)
     .all<ThemeRow & { entry_id: number }>()
@@ -266,7 +271,7 @@ async function attachSubjects(db: D1Database, entries: EntryJson[], locale: stri
       `SELECT es.entry_id, s.id, s.document_id, s.slug, s.title_json, s.description_json,
               s.subject_type, s.cover_url, s.created_at, s.updated_at, s.published_at
        FROM entry_subjects es JOIN research_subjects s ON s.id = es.subject_id
-       WHERE s.${PUBLISHED} AND es.entry_id IN (${marks}) ORDER BY es.entry_id, s.id`
+       WHERE s.${PUBLISHED()} AND es.entry_id IN (${marks}) ORDER BY es.entry_id, s.id`
     )
     .bind(...ids)
     .all<SubjectRow & { entry_id: number }>()
@@ -284,7 +289,7 @@ async function attachSpoilerTiers(db: D1Database, entries: EntryJson[]) {
   const idsMarks = entries.map(() => '?').join(',')
   const linkRows = await db
     .prepare(
-      `SELECT id, spoiler_tier_id FROM research_entries WHERE ${PUBLISHED} AND id IN (${idsMarks})`
+      `SELECT id, spoiler_tier_id FROM research_entries WHERE ${PUBLISHED()} AND id IN (${idsMarks})`
     )
     .bind(...entries.map((e) => e.id))
     .all<{ id: number; spoiler_tier_id: number | null }>()
@@ -321,7 +326,7 @@ async function attachCitations(db: D1Database, entry: EntryJson, locale: string)
   const rows = await db
     .prepare(
       `SELECT c.* FROM entry_citations ec JOIN research_citations c ON c.id = ec.citation_id
-       WHERE c.${PUBLISHED} AND ec.entry_id = ?1 ORDER BY c.id`
+       WHERE c.${PUBLISHED()} AND ec.entry_id = ?1 ORDER BY c.id`
     )
     .bind(entry.id)
     .all<CitationRow>()
@@ -349,7 +354,7 @@ async function attachRelatedLinks(db: D1Database, entry: EntryJson) {
     const targetRows = await db
       .prepare(
         `SELECT id, document_id, slug, title_json FROM research_entries
-         WHERE document_id IN (${targets.map(() => '?').join(',')}) AND ${PUBLISHED}`
+         WHERE document_id IN (${targets.map(() => '?').join(',')}) AND ${PUBLISHED()}`
       )
       .bind(...targets)
       .all<EntryRow>()
@@ -412,7 +417,7 @@ function parseListParams(url: URL): ListParams {
 
 async function countEntries(db: D1Database, where: string, binds: unknown[]): Promise<number> {
   const row = await db
-    .prepare(`SELECT COUNT(*) AS n FROM research_entries WHERE ${PUBLISHED}${where}`)
+    .prepare(`SELECT COUNT(*) AS n FROM research_entries WHERE ${PUBLISHED()}${where}`)
     .bind(...binds)
     .first<{ n: number }>()
   return row?.n ?? 0
@@ -428,7 +433,7 @@ async function queryEntries(
   const offset = (params.page - 1) * params.pageSize
   const rows = await db
     .prepare(
-      `SELECT * FROM research_entries WHERE ${PUBLISHED}${where}
+      `SELECT * FROM research_entries WHERE ${PUBLISHED()}${where}
        ORDER BY ${orderBy} LIMIT ?${binds.length + 1} OFFSET ?${binds.length + 2}`
     )
     .bind(...binds, params.pageSize, offset)
@@ -459,20 +464,20 @@ researchRoutes.get('/research-entries', async (c) => {
   if (themeSlug !== null) {
     where += ` AND id IN (SELECT et.entry_id FROM entry_themes et
                JOIN research_themes t ON t.id = et.theme_id
-               WHERE t.${PUBLISHED} AND t.slug = ?)`
+               WHERE t.${PUBLISHED()} AND t.slug = ?)`
     binds.push(themeSlug)
   }
   if (subjectSlug !== null) {
     where += ` AND id IN (SELECT es.entry_id FROM entry_subjects es
                JOIN research_subjects s ON s.id = es.subject_id
-               WHERE s.${PUBLISHED} AND s.slug = ?)`
+               WHERE s.${PUBLISHED()} AND s.slug = ?)`
     binds.push(subjectSlug)
   }
   if (citationIdsIn.length > 0) {
     const marks = citationIdsIn.map(() => '?').join(',')
     where += ` AND id IN (SELECT ec.entry_id FROM entry_citations ec
                JOIN research_citations cit ON cit.id = ec.citation_id
-               WHERE cit.${PUBLISHED} AND cit.id IN (${marks}))`
+               WHERE cit.${PUBLISHED()} AND cit.id IN (${marks}))`
     binds.push(...citationIdsIn.map(Number).filter((n) => !Number.isNaN(n)))
   }
 
@@ -493,7 +498,7 @@ researchRoutes.get('/research-entries/:slug', async (c) => {
   const db = c.env.DB
 
   const row = await db
-    .prepare(`SELECT * FROM research_entries WHERE slug = ?1 AND ${PUBLISHED}`)
+    .prepare(`SELECT * FROM research_entries WHERE slug = ?1 AND ${PUBLISHED()}`)
     .bind(slug)
     .first<EntryRow>()
   if (!row) return fail(404, 'not_found')
@@ -526,7 +531,7 @@ researchRoutes.get('/research-entries/:documentId/backlinks', async (c) => {
   const rows = await db
     .prepare(
       `SELECT DISTINCT e.* FROM research_entries e
-       WHERE e.${PUBLISHED}
+       WHERE e.${PUBLISHED()}
          AND e.slug != ?2
          AND (
            e.id IN (SELECT rl.entry_id FROM entry_related_links rl WHERE rl.target_document_id = ?1)
@@ -547,7 +552,7 @@ researchRoutes.get('/research-entries/:documentId/backlinks', async (c) => {
     const linkRows = await db
       .prepare(
         `SELECT rl.entry_id, rl.sort_order, te.slug FROM entry_related_links rl
-         JOIN research_entries te ON te.document_id = rl.target_document_id AND te.${PUBLISHED}
+         JOIN research_entries te ON te.document_id = rl.target_document_id AND te.${PUBLISHED()}
          WHERE rl.entry_id IN (${entryIds.map(() => '?').join(',')})
          ORDER BY rl.entry_id, rl.sort_order`
       )
@@ -574,7 +579,7 @@ researchRoutes.get('/research-citations/:documentId/also-cited', async (c) => {
   const db = c.env.DB
 
   const citation = await db
-    .prepare(`SELECT id FROM research_citations WHERE document_id = ?1 AND ${PUBLISHED}`)
+    .prepare(`SELECT id FROM research_citations WHERE document_id = ?1 AND ${PUBLISHED()}`)
     .bind(documentId)
     .first<{ id: number }>()
   if (!citation) return fail(404, 'not_found')
@@ -584,7 +589,7 @@ researchRoutes.get('/research-citations/:documentId/also-cited', async (c) => {
     .prepare(
       `SELECT e.*, ec.entry_id FROM research_entries e
        JOIN entry_citations ec ON ec.entry_id = e.id AND ec.citation_id = ?1
-       WHERE e.${PUBLISHED} AND (?2 IS NULL OR e.slug != ?2)
+       WHERE e.${PUBLISHED()} AND (?2 IS NULL OR e.slug != ?2)
        ORDER BY e.updated_at DESC`
     )
     .bind(citation.id, excludeSlug)
@@ -636,7 +641,7 @@ async function pathStepsFor(
     const entry = await db
       .prepare(
         `SELECT id, document_id, slug, title_json, summary_json FROM research_entries
-         WHERE document_id = ?1 AND ${PUBLISHED}`
+         WHERE document_id = ?1 AND ${PUBLISHED()}`
       )
       .bind(step.target_document_id)
       .first<EntryRow>()
@@ -672,19 +677,19 @@ researchRoutes.get('/research-paths', async (c) => {
   if (entrySlug !== null) {
     where = ` AND id IN (
       SELECT ps.path_id FROM path_steps ps
-      JOIN research_entries e ON e.document_id = ps.target_document_id AND e.${PUBLISHED}
+      JOIN research_entries e ON e.document_id = ps.target_document_id AND e.${PUBLISHED()}
       WHERE e.slug = ?)`
     binds.push(entrySlug)
   }
 
   const totalRow = await db
-    .prepare(`SELECT COUNT(*) AS n FROM research_paths WHERE ${PUBLISHED}${where}`)
+    .prepare(`SELECT COUNT(*) AS n FROM research_paths WHERE ${PUBLISHED()}${where}`)
     .bind(...binds)
     .first<{ n: number }>()
   const total = totalRow?.n ?? 0
   const rows = await db
     .prepare(
-      `SELECT * FROM research_paths WHERE ${PUBLISHED}${where}
+      `SELECT * FROM research_paths WHERE ${PUBLISHED()}${where}
        ORDER BY sort_order ASC, updated_at DESC LIMIT ?${binds.length + 1} OFFSET ?${binds.length + 2}`
     )
     .bind(...binds, params.pageSize, (params.page - 1) * params.pageSize)
@@ -706,7 +711,7 @@ researchRoutes.get('/research-paths/:slug', async (c) => {
   const db = c.env.DB
 
   const row = await db
-    .prepare(`SELECT * FROM research_paths WHERE slug = ?1 AND ${PUBLISHED}`)
+    .prepare(`SELECT * FROM research_paths WHERE slug = ?1 AND ${PUBLISHED()}`)
     .bind(slug)
     .first<PathRow>()
   if (!row) return fail(404, 'not_found')
@@ -724,7 +729,7 @@ researchRoutes.get('/research-paths/:slug/neighbors/:entryDocumentId', async (c)
   const db = c.env.DB
 
   const path = await db
-    .prepare(`SELECT id FROM research_paths WHERE slug = ?1 AND ${PUBLISHED}`)
+    .prepare(`SELECT id FROM research_paths WHERE slug = ?1 AND ${PUBLISHED()}`)
     .bind(slug)
     .first<{ id: number }>()
   if (!path) return fail(404, 'path_not_found')
@@ -751,11 +756,11 @@ researchRoutes.get('/research-themes', async (c) => {
   const db = c.env.DB
 
   const totalRow = await db
-    .prepare(`SELECT COUNT(*) AS n FROM research_themes WHERE ${PUBLISHED}`)
+    .prepare(`SELECT COUNT(*) AS n FROM research_themes WHERE ${PUBLISHED()}`)
     .first<{ n: number }>()
   const rows = await db
     .prepare(
-      `SELECT * FROM research_themes WHERE ${PUBLISHED}
+      `SELECT * FROM research_themes WHERE ${PUBLISHED()}
        ORDER BY title_json ASC, id ASC LIMIT ?1 OFFSET ?2`
     )
     .bind(params.pageSize, (params.page - 1) * params.pageSize)
@@ -771,7 +776,7 @@ researchRoutes.get('/research-themes/:slug', async (c) => {
   const url = new URL(c.req.url)
   const params = parseListParams(url)
   const row = await c.env.DB
-    .prepare(`SELECT * FROM research_themes WHERE slug = ?1 AND ${PUBLISHED}`)
+    .prepare(`SELECT * FROM research_themes WHERE slug = ?1 AND ${PUBLISHED()}`)
     .bind(slug)
     .first<ThemeRow>()
   if (!row) return fail(404, 'not_found')
@@ -803,16 +808,16 @@ researchRoutes.get('/research-subjects', async (c) => {
     where = ` AND id IN (
       SELECT ss.subject_id FROM subject_students ss
       JOIN students st ON st.id = ss.student_id
-      WHERE st.${PUBLISHED} AND (${conds.join(' OR ')}))`
+      WHERE st.${PUBLISHED()} AND (${conds.join(' OR ')}))`
   }
 
   const totalRow = await db
-    .prepare(`SELECT COUNT(*) AS n FROM research_subjects WHERE ${PUBLISHED}${where}`)
+    .prepare(`SELECT COUNT(*) AS n FROM research_subjects WHERE ${PUBLISHED()}${where}`)
     .bind(...binds)
     .first<{ n: number }>()
   const rows = await db
     .prepare(
-      `SELECT * FROM research_subjects WHERE ${PUBLISHED}${where}
+      `SELECT * FROM research_subjects WHERE ${PUBLISHED()}${where}
        ORDER BY title_json ASC, id ASC LIMIT ?${binds.length + 1} OFFSET ?${binds.length + 2}`
     )
     .bind(...binds, params.pageSize, (params.page - 1) * params.pageSize)
@@ -825,7 +830,7 @@ researchRoutes.get('/research-subjects', async (c) => {
       const entries = await db
         .prepare(
           `SELECT e.id, e.document_id, e.slug, e.title_json FROM entry_subjects es
-           JOIN research_entries e ON e.id = es.entry_id AND e.${PUBLISHED}
+           JOIN research_entries e ON e.id = es.entry_id AND e.${PUBLISHED()}
            WHERE es.subject_id = ?1 ORDER BY e.updated_at DESC`
         )
         .bind(s.id)
@@ -848,7 +853,7 @@ researchRoutes.get('/research-subjects/:slug', async (c) => {
   const db = c.env.DB
 
   const row = await db
-    .prepare(`SELECT * FROM research_subjects WHERE slug = ?1 AND ${PUBLISHED}`)
+    .prepare(`SELECT * FROM research_subjects WHERE slug = ?1 AND ${PUBLISHED()}`)
     .bind(slug)
     .first<SubjectRow>()
   if (!row) return fail(404, 'not_found')
@@ -858,7 +863,7 @@ researchRoutes.get('/research-subjects/:slug', async (c) => {
   const students = await db
     .prepare(
       `SELECT st.* FROM subject_students ss
-       JOIN students st ON st.id = ss.student_id AND st.${PUBLISHED}
+       JOIN students st ON st.id = ss.student_id AND st.${PUBLISHED()}
        WHERE ss.subject_id = ?1 ORDER BY st.name ASC`
     )
     .bind(row.id)
@@ -901,7 +906,7 @@ researchRoutes.get('/research-graph', async (c) => {
 
   const rows = await db
     .prepare(
-      `SELECT * FROM research_entries WHERE ${PUBLISHED} ORDER BY updated_at DESC LIMIT 200`
+      `SELECT * FROM research_entries WHERE ${PUBLISHED()} ORDER BY updated_at DESC LIMIT 200`
     )
     .all<EntryRow>()
   const entries = (rows.results ?? []).map((r) => entryJson(r, params.locale))
@@ -915,7 +920,7 @@ researchRoutes.get('/research-graph', async (c) => {
       `SELECT rl.entry_id, rl.target_document_id, rl.relation_type,
               te.document_id AS target_doc
        FROM entry_related_links rl
-       JOIN research_entries te ON te.document_id = rl.target_document_id AND te.${PUBLISHED}
+       JOIN research_entries te ON te.document_id = rl.target_document_id AND te.${PUBLISHED()}
        WHERE rl.entry_id IN (${entries.map(() => '?').join(',') || 'NULL'})`
     )
     .bind(...entries.map((e) => e.id))

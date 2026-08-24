@@ -59,6 +59,20 @@ export interface CollectionDef {
    * 「勾了一个却不显示」。面板只给一个发布控件，此列由服务端跟随写入。
    */
   activeColumn?: string
+  /**
+   * 多对多连接表。面板字段值是目标 documentId 数组，写入时整体替换连接行。
+   * 例：research-entries.themes → entry_themes(entry_id, theme_id)
+   */
+  joins?: Record<string, { table: string; selfKey: string; targetKey: string; targetTable: string }>
+  /**
+   * 有序子行表（自增 id + 父外键 + 内容列 + 排序列）。
+   * 面板字段值是对象数组，写入时整体替换该父行的全部子行。
+   * 例：research-entries.related_links → entry_related_links
+   */
+  children?: Record<
+    string,
+    { table: string; fk: string; orderColumn?: string; fields: Record<string, FieldDef> }
+  >
   searchColumns: string[]
   defaultSort: Array<[string, 'asc' | 'desc']>
   labelColumn: string
@@ -321,6 +335,32 @@ export const COLLECTIONS: Record<string, CollectionDef> = {
       spoilerTier: rel('spoiler_tier_id', 'spoiler_tiers'),
       publishedAt: f('published_at', 'published-at'),
     },
+    joins: {
+      themes: { table: 'entry_themes', selfKey: 'entry_id', targetKey: 'theme_id', targetTable: 'research_themes' },
+      subjects: { table: 'entry_subjects', selfKey: 'entry_id', targetKey: 'subject_id', targetTable: 'research_subjects' },
+      citations: { table: 'entry_citations', selfKey: 'entry_id', targetKey: 'citation_id', targetTable: 'research_citations' },
+    },
+    children: {
+      related_links: {
+        table: 'entry_related_links',
+        fk: 'entry_id',
+        orderColumn: 'sort_order',
+        fields: {
+          target_entry: f('target_document_id', 'text'),
+          relation_type: f('relation_type', 'text'),
+          curate_note: f('curate_note_json', 'text', true),
+        },
+      },
+      revisions: {
+        table: 'entry_revisions',
+        fk: 'entry_id',
+        fields: {
+          date: f('revised_at', 'text'),
+          revision_type: f('revision_type', 'text'),
+          note: f('note_json', 'text', true),
+        },
+      },
+    },
   },
   'research-themes': {
     table: 'research_themes',
@@ -351,6 +391,9 @@ export const COLLECTIONS: Record<string, CollectionDef> = {
       cover: f('cover_url', 'media'),
       publishedAt: f('published_at', 'published-at'),
     },
+    joins: {
+      students: { table: 'subject_students', selfKey: 'subject_id', targetKey: 'student_id', targetTable: 'students' },
+    },
   },
   'research-paths': {
     table: 'research_paths',
@@ -370,6 +413,17 @@ export const COLLECTIONS: Record<string, CollectionDef> = {
       order: f('sort_order', 'number'),
       publishedAt: f('published_at', 'published-at'),
     },
+    children: {
+      steps: {
+        table: 'path_steps',
+        fk: 'path_id',
+        orderColumn: 'sort_order',
+        fields: {
+          target_entry: f('target_document_id', 'text'),
+          step_note: f('step_note_json', 'text', true),
+        },
+      },
+    },
   },
   'research-citations': {
     table: 'research_citations',
@@ -383,6 +437,7 @@ export const COLLECTIONS: Record<string, CollectionDef> = {
       sourceType: f('source_type', 'text'),
       sourceRef: f('source_ref', 'text'),
       sourceQuote: f('source_quote_json', 'text', true),
+      sourceImage: f('source_image_url', 'media'),
       confidence: f('confidence', 'text'),
       publishedAt: f('published_at', 'published-at'),
     },

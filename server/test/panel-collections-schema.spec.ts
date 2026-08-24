@@ -54,6 +54,7 @@ beforeAll(async () => {
   }
   await applyMigration(env.DB, 'migrations/0002_works.sql')
   await applyMigration(env.DB, 'migrations/0003_spoiler_tiers_timestamps.sql')
+  await applyMigration(env.DB, 'migrations/0004_citation_source_image.sql')
 })
 
 describe('集合注册表与表结构一致', () => {
