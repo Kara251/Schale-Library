@@ -1,7 +1,6 @@
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { AdminRowActions } from '@/components/admin/admin-row-actions'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { AdminPagination } from '@/components/admin/admin-pagination'
@@ -12,7 +11,7 @@ import { ADMIN_COLLECTION_META, type AdminCollectionKey } from '@/lib/admin-pane
 import { getAdminActionLabels } from '@/lib/admin-panel-labels'
 import { type AdminEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
-import { AdminPublishStatusBadge } from '@/components/admin/admin-publish-status-badge'
+import { AdminPublishStatusText } from '@/components/admin/admin-publish-status'
 
 /** 每页条数选项；首项为默认值（不写进 URL）。上限受 client 端 50 约束。 */
 const PAGE_SIZE_OPTIONS = [12, 24, 50]
@@ -51,7 +50,7 @@ const commonLabels: Record<Locale, {
     perPage: '每页',
     updatedAt: '更新时间',
     publishStatus: '发布状态',
-    slug: 'Slug',
+    slug: '网址标识',
   },
   en: {
     search: 'Filter',
@@ -69,7 +68,7 @@ const commonLabels: Record<Locale, {
     perPage: 'Per page',
     updatedAt: 'Updated',
     publishStatus: 'Publication',
-    slug: 'Slug',
+    slug: 'Web address',
   },
   ja: {
     search: '絞り込み',
@@ -87,7 +86,7 @@ const commonLabels: Record<Locale, {
     perPage: '1 ページ',
     updatedAt: '更新日時',
     publishStatus: '公開状態',
-    slug: 'スラッグ',
+    slug: 'ウェブアドレス',
   },
 }
 
@@ -166,6 +165,15 @@ export async function AdminGenericListPage({
   const getPrimary = (item: AdminEntry) =>
     String(item[primaryField] || item.name || item.title || `#${item.id}`)
 
+  // badgeField 传的是后端列名（subject_type），表单字段名是 camelCase（subjectType），
+  // 两边对齐后取表单标签作列头
+  const badgeFieldLabel = (field: string) => {
+    const camel = field.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())
+    const definition = meta.fields.find((item) => item.name === camel || item.name === field)
+    if (!definition) return field
+    return definition.label[locale as Locale] || definition.label['zh-Hans']
+  }
+
   const getFieldValue = (item: AdminEntry, field: string) => {
     const value = field.split('.').reduce<unknown>((current, key) => {
       if (!current || typeof current !== 'object') return undefined
@@ -178,7 +186,7 @@ export async function AdminGenericListPage({
     <div>
       <AdminPageHeader
         title={meta.title[locale as Locale] || meta.title['zh-Hans']}
-        description={meta.description[locale as Locale] || meta.description['zh-Hans']}
+        description={meta.description?.[locale as Locale] || meta.description?.['zh-Hans']}
         actions={
           <Button asChild>
             <Link href={`/${locale}/manage/${collection}/new`}>{actionLabels.create}</Link>
@@ -216,10 +224,11 @@ export async function AdminGenericListPage({
           },
           ...(badgeField ? [{
             key: badgeField,
-            header: badgeField,
+            // 列头用表单里的中文标签，不是后端字段名（subject_type 之类没人看得懂）
+            header: badgeFieldLabel(badgeField),
             className: 'w-28',
             render: (item: AdminEntry) => (
-              <Badge variant="outline">{String(item[badgeField] || '-')}</Badge>
+              <span className="text-sm">{String(item[badgeField] || '-')}</span>
             ),
           }] : []),
           ...extraTextFields.map((field) => ({
@@ -235,7 +244,7 @@ export async function AdminGenericListPage({
             header: t.publishStatus,
             className: 'w-28',
             render: (item: AdminEntry) => (
-              <AdminPublishStatusBadge
+              <AdminPublishStatusText
                 status={typeof item.status === 'string' ? item.status : undefined}
                 labels={{ published: t.statusPublished, scheduled: t.statusScheduled, draft: t.statusDraft }}
               />

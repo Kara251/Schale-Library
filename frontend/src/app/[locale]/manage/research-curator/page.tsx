@@ -8,18 +8,15 @@ interface ResearchCuratorManagePageProps {
   params: Promise<{ locale: string }>
 }
 
-const labels: Record<Locale, { title: string; description: string }> = {
+const labels: Record<Locale, { title: string }> = {
   'zh-Hans': {
     title: '策展配置',
-    description: '管理考据档案侧边栏的主编精选与推荐路径说明。',
   },
   en: {
     title: 'Curation Settings',
-    description: 'Manage the research archive sidebar featured pick and recommended path.',
   },
   ja: {
     title: 'キュレーション設定',
-    description: '考察アーカイブのサイドバーおすすめ設定を管理します。',
   },
 }
 
@@ -42,7 +39,7 @@ export default async function ResearchCuratorManagePage({ params }: ResearchCura
 
   return (
     <div>
-      <AdminPageHeader title={t.title} description={t.description} />
+      <AdminPageHeader title={t.title} />
       <ResearchCuratorForm
         initialData={curatorRes.data}
         entries={entries}

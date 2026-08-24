@@ -19,6 +19,7 @@ import {
   type AdminRowColumn,
 } from '@/lib/admin-panel'
 import type { AdminEntry } from '@/lib/server/admin-content'
+import { adminErrorMessage } from '@/lib/admin-panel/error-message'
 import { labels as ADMIN_EDITOR_LABELS } from './admin-editor-labels'
 import {
   buildInitialValues,
@@ -122,7 +123,7 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
 
       const data = (await response.json().catch(() => null)) as { data?: AdminMediaAsset[]; error?: string } | null
       if (!response.ok || !data?.data?.[0]) {
-        throw new Error(data?.error || t.saveFailed)
+        throw new Error(adminErrorMessage(data?.error, locale, fieldLabels))
       }
 
       const uploaded = data.data[0]
@@ -138,11 +139,19 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
     }
   }
 
+  // unknown_field:<name> 报的是后端字段名；换成表单上的中文标签才有意义
+  const fieldLabels = Object.fromEntries(
+    schema.fields.map((field) => [field.name, getDisplayLabel(field, locale)])
+  )
+
   const serializeValue = (field: AdminEditorField, value: unknown) => {
     switch (field.type) {
       case 'media': {
+        // 写库的是可直接访问的路径（/media/panel/xxx.png）。
+        // 此前写的是 R2 对象键（panel/xxx.png），前台 <img src> 拿到相对路径
+        // 会去请求当前页面所在目录，图片必然 404。
         const media = value as MediaState
-        return media?.id ?? null
+        return media?.url ?? null
       }
       case 'multiselect':
       case 'relation-multiselect':
@@ -211,7 +220,7 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
 
       const payload = (await response.json().catch(() => null)) as { error?: string } | null
       if (!response.ok) {
-        throw new Error(payload?.error || t.saveFailed)
+        throw new Error(adminErrorMessage(payload?.error, locale, fieldLabels))
       }
 
       showToast({ message: t.saveSuccess, variant: 'success' })
@@ -417,14 +426,16 @@ export function AdminEditorForm({ collection, locale, returnPath, initialData, r
                 ) : null}
 
                 {field.type === 'media' ? (
-                  <div className="rounded-md border p-3">
+                  <div>
                     {(() => {
                       const media = value as MediaState
                       return (
                         <div className="space-y-3">
                           {media?.url ? (
-                            <div className="relative h-48 overflow-hidden rounded-md border bg-secondary/20">
-                              <Image src={getMediaUrl(media.url)} alt={media.name || label} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
+                            // 定宽方框 + contain：图标、头像、封面的比例各不相同，
+                            // 此前是通栏高度 192px 再 cover 裁切，方形图标被拉成一条横带
+                            <div className="relative h-32 w-32 overflow-hidden rounded bg-secondary/30">
+                              <Image src={getMediaUrl(media.url)} alt={media.name || label} fill sizes="128px" className="object-contain" />
                             </div>
                           ) : null}
                           <div className="flex flex-wrap items-center gap-3">

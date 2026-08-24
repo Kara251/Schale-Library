@@ -149,7 +149,7 @@ export async function AdminCollectionEditorPage({ collection, locale, id }: Admi
     <div>
       <AdminPageHeader
         title={id ? meta.editLabel[locale] : meta.createLabel[locale]}
-        description={meta.description[locale]}
+        description={meta.description?.[locale]}
         actions={
           <Button asChild variant="outline">
             <Link href={returnPath}>{t.back}</Link>

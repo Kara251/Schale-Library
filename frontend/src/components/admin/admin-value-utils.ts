@@ -14,7 +14,8 @@ import {
 } from '@/lib/utils/event-location'
 
 export interface MediaState {
-  id: number | null
+  /** R2 对象键；仅用于判断「有没有图」，写库用的是 url */
+  id: string | null
   url: string | null
   name?: string | null
 }
@@ -34,13 +35,20 @@ export function toDateTimeLocal(value: string | null | undefined) {
 }
 
 export function getInitialMedia(value: unknown): MediaState {
+  // 后端读回来的媒体字段就是一个字符串路径（/media/panel/xxx.png），
+  // 不是对象。此前只认对象，导致编辑已有内容时图片被判成「没有」，
+  // 一保存就把原图抹掉。
+  if (typeof value === 'string') {
+    return value ? { id: value, url: value } : { id: null, url: null }
+  }
+
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return { id: null, url: null }
   }
 
   const media = value as AdminMediaAsset
   return {
-    id: typeof media.id === 'number' ? media.id : null,
+    id: typeof media.id === 'string' ? media.id : null,
     url: typeof media.url === 'string' ? media.url : null,
     name: media.name,
   }

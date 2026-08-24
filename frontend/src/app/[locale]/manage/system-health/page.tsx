@@ -1,4 +1,3 @@
-import { Badge } from '@/components/ui/badge'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { getSystemHealth } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
@@ -10,7 +9,6 @@ interface SystemHealthPageProps {
 
 const labels: Record<Locale, {
   title: string
-  description: string
   generatedAt: string
   ok: string
   warning: string
@@ -18,7 +16,6 @@ const labels: Record<Locale, {
 }> = {
   'zh-Hans': {
     title: '系统自检',
-    description: '检查数据库连通性与各内容集合的记录数。',
     generatedAt: '检查时间',
     ok: '正常',
     warning: '注意',
@@ -26,7 +23,6 @@ const labels: Record<Locale, {
   },
   en: {
     title: 'System Health',
-    description: 'Check database connectivity and record counts per content collection.',
     generatedAt: 'Generated at',
     ok: 'OK',
     warning: 'Warning',
@@ -34,7 +30,6 @@ const labels: Record<Locale, {
   },
   ja: {
     title: 'システム確認',
-    description: 'データベースの接続性と各コンテンツ コレクションの件数を確認します。',
     generatedAt: '確認日時',
     ok: '正常',
     warning: '注意',
@@ -48,10 +43,10 @@ function statusLabel(status: 'ok' | 'warning' | 'error', t: typeof labels['zh-Ha
   return t.error
 }
 
-function statusVariant(status: 'ok' | 'warning' | 'error') {
-  if (status === 'ok') return 'default' as const
-  if (status === 'warning') return 'secondary' as const
-  return 'destructive' as const
+function statusClass(status: 'ok' | 'warning' | 'error') {
+  if (status === 'ok') return 'text-sm font-medium text-primary'
+  if (status === 'warning') return 'text-sm font-medium text-foreground'
+  return 'text-sm font-medium text-destructive'
 }
 
 export default async function SystemHealthPage({ params }: SystemHealthPageProps) {
@@ -62,7 +57,7 @@ export default async function SystemHealthPage({ params }: SystemHealthPageProps
 
   return (
     <div>
-      <AdminPageHeader title={t.title} description={t.description} />
+      <AdminPageHeader title={t.title} />
 
       <div className="mb-6 text-sm text-muted-foreground">
         {t.generatedAt}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'medium' }).format(new Date(health.generatedAt))}
@@ -76,7 +71,7 @@ export default async function SystemHealthPage({ params }: SystemHealthPageProps
                 <h2 className="font-bold">{check.label}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">{check.message}</p>
               </div>
-              <Badge variant={statusVariant(check.status)}>{statusLabel(check.status, t)}</Badge>
+              <span className={statusClass(check.status)}>{statusLabel(check.status, t)}</span>
             </div>
           </div>
         ))}

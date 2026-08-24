@@ -102,6 +102,22 @@ export const COLLECTIONS: Record<string, CollectionDef> = {
       needsReview: f('needs_review', 'boolean'),
       publishedAt: f('published_at', 'published-at'),
     },
+    joins: {
+      students: { table: 'creator_students', selfKey: 'creator_id', targetKey: 'student_id', targetTable: 'students' },
+    },
+    children: {
+      representativeWorks: {
+        table: 'representative_works',
+        fk: 'creator_id',
+        orderColumn: 'sort_order',
+        fields: {
+          title: f('title', 'text'),
+          url: f('url', 'text'),
+          coverUrl: f('cover_url', 'text'),
+          note: f('note_json', 'text', true),
+        },
+      },
+    },
   },
   students: {
     table: 'students',

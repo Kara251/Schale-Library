@@ -12,7 +12,6 @@ interface ManageDashboardPageProps {
 
 const labels: Record<Locale, {
   title: string
-  description: string
   view: string
   configTitle: string
   curatorTitle: string
@@ -20,7 +19,6 @@ const labels: Record<Locale, {
 }> = {
   'zh-Hans': {
     title: '仪表盘',
-    description: '查看内容总量、快速进入各个维护模块。',
     view: '进入列表',
     configTitle: '配置项',
     curatorTitle: '策展配置',
@@ -28,7 +26,6 @@ const labels: Record<Locale, {
   },
   en: {
     title: 'Dashboard',
-    description: 'Overview of content totals and quick entry points.',
     view: 'Open list',
     configTitle: 'Settings',
     curatorTitle: 'Curation settings',
@@ -36,7 +33,6 @@ const labels: Record<Locale, {
   },
   ja: {
     title: 'ダッシュボード',
-    description: 'コンテンツ総数と管理モジュールへの入口を確認します。',
     view: '一覧を開く',
     configTitle: '設定',
     curatorTitle: 'キュレーション設定',
@@ -52,7 +48,7 @@ export default async function ManageDashboardPage({ params }: ManageDashboardPag
 
   return (
     <div>
-      <AdminPageHeader title={t.title} description={t.description} />
+      <AdminPageHeader title={t.title} />
 
       <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 xl:grid-cols-3">
         {dashboardItems.map((item) => (

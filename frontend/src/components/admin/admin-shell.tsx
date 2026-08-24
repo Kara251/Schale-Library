@@ -42,22 +42,10 @@ interface AdminShellProps {
   user: AdminUser
 }
 
-const labels: Record<Locale, { title: string; subtitle: string; signOut: string }> = {
-  'zh-Hans': {
-    title: '维护者面板',
-    subtitle: '内容维护与发布控制台',
-    signOut: '退出登录',
-  },
-  en: {
-    title: 'Maintainer Panel',
-    subtitle: 'Content maintenance console',
-    signOut: 'Sign out',
-  },
-  ja: {
-    title: '管理パネル',
-    subtitle: 'コンテンツ管理コンソール',
-    signOut: 'ログアウト',
-  },
+const labels: Record<Locale, { title: string; signOut: string }> = {
+  'zh-Hans': { title: '维护者面板', signOut: '退出登录' },
+  en: { title: 'Maintainer Panel', signOut: 'Sign out' },
+  ja: { title: '管理パネル', signOut: 'ログアウト' },
 }
 
 const navLabels: Record<Locale, Record<string, string>> = {
@@ -224,20 +212,13 @@ export function AdminShell({ children, locale, user }: AdminShellProps) {
       <main className="relative flex-1 container mx-auto px-4 pt-6 pb-12">
         <div className="content-panel">
           <div className="flex flex-col gap-6 lg:flex-row">
-            <aside className="lg:w-72 xl:w-80">
+            {/* 最长的一项也只有五个字 —— 288px 宽的侧栏一半是空白 */}
+            <aside className="lg:w-48 xl:w-52">
               {/* 侧栏不再自成一个卡片：它已在 content-panel 内，靠右侧一条竖线与内容区分隔 */}
               <div className="lg:border-r lg:pr-4">
-                <div className="mb-4 border-b pb-4">
-                  <p className="text-xl font-bold">{t.title}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{t.subtitle}</p>
-                </div>
-
-                <div className="mb-4 rounded-md bg-secondary/40 p-3 text-sm">
-                  <p className="font-medium">{user.username}</p>
-                  <p className="mt-1 break-all text-muted-foreground">{user.email}</p>
-                  {user.role?.name && (
-                    <p className="mt-2 text-xs text-muted-foreground">{user.role.name}</p>
-                  )}
+                <div className="mb-4">
+                  <p className="text-lg font-bold">{t.title}</p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{user.username}</p>
                 </div>
 
                 <nav className="space-y-5">

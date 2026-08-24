@@ -10,7 +10,7 @@ import { getAdminActionLabels } from '@/lib/admin-panel-labels'
 import type { Locale } from '@/lib/i18n'
 import { type AdminEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
-import { AdminPublishStatusBadge } from '@/components/admin/admin-publish-status-badge'
+import { AdminPublishStatusText } from '@/components/admin/admin-publish-status'
 
 /** 每页条数选项；首项为默认值（不写进 URL）。 */
 const PAGE_SIZE_OPTIONS = [12, 24, 50]
@@ -31,7 +31,6 @@ interface OfflineEventsManagePageProps {
 
 const labels: Record<Locale, {
   title: string
-  description: string
   search: string
   searchPlaceholder: string
   reset: string
@@ -53,7 +52,6 @@ const labels: Record<Locale, {
 }> = {
   'zh-Hans': {
     title: '线下活动管理',
-    description: '查看线下活动时间、地点与发布状态。',
     search: '筛选',
     searchPlaceholder: '搜索活动标题、主办方或地点',
     reset: '重置',
@@ -75,7 +73,6 @@ const labels: Record<Locale, {
   },
   en: {
     title: 'Offline Event Management',
-    description: 'Review schedule, location, and publication state.',
     search: 'Filter',
     searchPlaceholder: 'Search event titles, organizers, or places',
     reset: 'Reset',
@@ -97,7 +94,6 @@ const labels: Record<Locale, {
   },
   ja: {
     title: 'オフラインイベント管理',
-    description: '開催時間、場所、公開状態を確認します。',
     search: '絞り込み',
     searchPlaceholder: 'イベント名、主催、場所を検索',
     reset: 'リセット',
@@ -177,7 +173,7 @@ export default async function OfflineEventsManagePage({ params, searchParams }: 
     <div>
       <AdminPageHeader
         title={t.title}
-        description={t.description}
+       
         actions={
           <Button asChild>
             <Link href={`/${locale}/manage/offline-events/new`}>{actionLabels.create}</Link>
@@ -228,7 +224,7 @@ export default async function OfflineEventsManagePage({ params, searchParams }: 
             header: t.publication,
             className: 'w-28',
             render: (item) => (
-              <AdminPublishStatusBadge
+              <AdminPublishStatusText
                 status={typeof item.status === 'string' ? item.status : undefined}
                 labels={{ published: t.statusPublished, scheduled: t.statusScheduled, draft: t.statusDraft }}
               />

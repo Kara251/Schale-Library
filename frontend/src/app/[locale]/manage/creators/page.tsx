@@ -5,13 +5,12 @@ import { AdminPagination } from '@/components/admin/admin-pagination'
 import { AdminRowActions } from '@/components/admin/admin-row-actions'
 import { AdminSearchForm } from '@/components/admin/admin-search-form'
 import { AdminTable } from '@/components/admin/admin-table'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getAdminActionLabels } from '@/lib/admin-panel-labels'
 import type { Locale } from '@/lib/i18n'
 import { type AdminEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
-import { AdminPublishStatusBadge } from '@/components/admin/admin-publish-status-badge'
+import { AdminPublishStatusText } from '@/components/admin/admin-publish-status'
 
 /** 每页条数选项；首项为默认值（不写进 URL）。 */
 const PAGE_SIZE_OPTIONS = [12, 24, 50]
@@ -31,7 +30,6 @@ interface CreatorsManagePageProps {
 
 const labels: Record<Locale, {
   title: string
-  description: string
   search: string
   searchPlaceholder: string
   reset: string
@@ -54,9 +52,8 @@ const labels: Record<Locale, {
 }> = {
   'zh-Hans': {
     title: '创作者',
-    description: '维护创作者档案与代表作。',
     search: '筛选',
-    searchPlaceholder: '搜索创作者名称或 Slug',
+    searchPlaceholder: '搜索创作者名称或网址标识',
     reset: '重置',
     statusAll: '全部状态',
     statusPublished: '已发布',
@@ -77,9 +74,8 @@ const labels: Record<Locale, {
   },
   en: {
     title: 'Creators',
-    description: 'Manage creator profiles, featured picks, and representative works.',
     search: 'Filter',
-    searchPlaceholder: 'Search creators by name or slug',
+    searchPlaceholder: 'Search creators by name or web address',
     reset: 'Reset',
     statusAll: 'All statuses',
     statusPublished: 'Published',
@@ -100,9 +96,8 @@ const labels: Record<Locale, {
   },
   ja: {
     title: 'クリエイター',
-    description: 'クリエイター情報、おすすめ設定、代表作品を管理します。',
     search: '絞り込み',
-    searchPlaceholder: 'クリエイター名またはスラグで検索',
+    searchPlaceholder: 'クリエイター名またはウェブアドレスで検索',
     reset: 'リセット',
     statusAll: 'すべての状態',
     statusPublished: '公開済み',
@@ -175,7 +170,7 @@ export default async function CreatorsManagePage({ params, searchParams }: Creat
     <div>
       <AdminPageHeader
         title={t.title}
-        description={t.description}
+       
         actions={
           <Button asChild>
             <Link href={`/${locale}/manage/creators/new`}>{actionLabels.create}</Link>
@@ -214,11 +209,12 @@ export default async function CreatorsManagePage({ params, searchParams }: Creat
             key: 'isFeatured',
             header: t.featured,
             className: 'w-28',
-            render: (item) => (
-              <Badge variant={item.isFeatured ? 'default' : 'secondary'}>
-                {item.isFeatured ? t.featured : t.notFeatured}
-              </Badge>
-            ),
+            render: (item) =>
+              item.isFeatured ? (
+                <span className="text-sm font-medium text-primary">{t.featured}</span>
+              ) : (
+                <span className="text-sm text-muted-foreground">{t.notFeatured}</span>
+              ),
           },
           {
             key: 'featuredPriority',
@@ -231,7 +227,7 @@ export default async function CreatorsManagePage({ params, searchParams }: Creat
             header: t.publishStatus,
             className: 'w-28',
             render: (item) => (
-              <AdminPublishStatusBadge
+              <AdminPublishStatusText
                 status={typeof item.status === 'string' ? item.status : undefined}
                 labels={{ published: t.statusPublished, scheduled: t.statusScheduled, draft: t.statusDraft }}
               />

@@ -35,41 +35,41 @@ export function FriendLinksSection({ links, locale }: FriendLinksSectionProps) {
       </div>
 
       {links.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        // 每项按内容宽度排布，不铺满整行 ——
+        // 此前是等宽栅格，只有一两个友链时就是一个横贯整屏、右半边全空的方块
+        <div className="flex flex-wrap gap-x-10 gap-y-6">
           {links.map((link) => (
             <a
               key={link.id}
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group block rounded p-3 transition-colors hover:bg-muted/50"
+              className="group flex max-w-sm items-center gap-3"
             >
-              <div className="flex items-start gap-4">
-                <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded bg-secondary">
-                  {link.icon ? (
-                    <Image
-                      src={getMediaUrl(link.icon.url)}
-                      alt={link.icon.alternativeText || link.title}
-                      fill
-                      sizes="56px"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <LinkIcon className="h-6 w-6 text-muted-foreground/50" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="ba-title line-clamp-1 group-hover:text-primary">{link.title}</h3>
-                    <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  </div>
-                  {link.description ? (
-                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
-                      {link.description}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
+              <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded">
+                {link.icon ? (
+                  <Image
+                    src={getMediaUrl(link.icon.url)}
+                    alt={link.icon.alternativeText || link.title}
+                    fill
+                    sizes="40px"
+                    className="object-contain"
+                  />
+                ) : (
+                  <LinkIcon className="h-5 w-5 text-muted-foreground/50" />
+                )}
+              </span>
+              <span className="min-w-0">
+                <span className="flex items-center gap-1.5">
+                  <span className="ba-title truncate group-hover:text-primary">{link.title}</span>
+                  <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                </span>
+                {link.description ? (
+                  <span className="mt-0.5 block truncate text-sm text-muted-foreground">
+                    {link.description}
+                  </span>
+                ) : null}
+              </span>
             </a>
           ))}
         </div>

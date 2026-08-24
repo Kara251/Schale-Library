@@ -1,7 +1,6 @@
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { AdminRowActions } from '@/components/admin/admin-row-actions'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { AdminPagination } from '@/components/admin/admin-pagination'
@@ -11,7 +10,7 @@ import type { Locale } from '@/lib/i18n'
 import { getAdminActionLabels } from '@/lib/admin-panel-labels'
 import { type AdminEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
-import { AdminPublishStatusBadge } from '@/components/admin/admin-publish-status-badge'
+import { AdminPublishStatusText } from '@/components/admin/admin-publish-status'
 
 /** 每页条数选项；首项为默认值（不写进 URL）。 */
 const PAGE_SIZE_OPTIONS = [12, 24, 50]
@@ -29,7 +28,6 @@ interface AnnouncementsManagePageProps {
 
 const labels: Record<Locale, {
   title: string
-  description: string
   search: string
   searchPlaceholder: string
   reset: string
@@ -52,7 +50,6 @@ const labels: Record<Locale, {
 }> = {
   'zh-Hans': {
     title: '公告管理',
-    description: '查看公告标题、优先级与发布状态。',
     search: '筛选',
     searchPlaceholder: '搜索公告标题',
     reset: '重置',
@@ -75,7 +72,6 @@ const labels: Record<Locale, {
   },
   en: {
     title: 'Announcement Management',
-    description: 'Review titles, priority, and publication state.',
     search: 'Filter',
     searchPlaceholder: 'Search announcement titles',
     reset: 'Reset',
@@ -98,7 +94,6 @@ const labels: Record<Locale, {
   },
   ja: {
     title: 'お知らせ管理',
-    description: 'タイトル、優先度、公開状態を確認します。',
     search: '絞り込み',
     searchPlaceholder: 'お知らせタイトルを検索',
     reset: 'リセット',
@@ -182,7 +177,7 @@ export default async function AnnouncementsManagePage({ params, searchParams }: 
     <div>
       <AdminPageHeader
         title={t.title}
-        description={t.description}
+       
         actions={
           <Button asChild>
             <Link href={`/${locale}/manage/announcements/new`}>{actionLabels.create}</Link>
@@ -222,14 +217,15 @@ export default async function AnnouncementsManagePage({ params, searchParams }: 
             key: 'isPinned',
             header: t.pinned,
             className: 'w-24',
-            render: (item) => item.isPinned ? <Badge variant="default">{t.pinned}</Badge> : '-',
+            render: (item) =>
+              item.isPinned ? <span className="text-sm font-medium text-primary">{t.pinned}</span> : '-',
           },
           {
             key: 'publishedAt',
             header: t.publishStatus,
             className: 'w-28',
             render: (item) => (
-              <AdminPublishStatusBadge
+              <AdminPublishStatusText
                 status={typeof item.status === 'string' ? item.status : undefined}
                 labels={{ published: t.statusPublished, scheduled: t.statusScheduled, draft: t.statusDraft }}
               />

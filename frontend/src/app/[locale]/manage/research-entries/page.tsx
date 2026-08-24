@@ -10,7 +10,7 @@ import type { Locale } from '@/lib/i18n'
 import { getAdminActionLabels } from '@/lib/admin-panel-labels'
 import { type AdminEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
-import { AdminPublishStatusBadge } from '@/components/admin/admin-publish-status-badge'
+import { AdminPublishStatusText } from '@/components/admin/admin-publish-status'
 
 /** 每页条数选项；首项为默认值（不写进 URL）。 */
 const PAGE_SIZE_OPTIONS = [12, 24, 50]
@@ -28,7 +28,6 @@ interface ResearchEntriesManagePageProps {
 
 const labels: Record<Locale, {
   title: string
-  description: string
   search: string
   searchPlaceholder: string
   reset: string
@@ -49,7 +48,6 @@ const labels: Record<Locale, {
 }> = {
   'zh-Hans': {
     title: '考据条目管理',
-    description: '维护考据档案的主体内容与发布状态。',
     search: '筛选',
     searchPlaceholder: '搜索标题或摘要',
     reset: '重置',
@@ -70,7 +68,6 @@ const labels: Record<Locale, {
   },
   en: {
     title: 'Research Entry Management',
-    description: 'Manage research archive entries and publication state.',
     search: 'Filter',
     searchPlaceholder: 'Search title or summary',
     reset: 'Reset',
@@ -91,7 +88,6 @@ const labels: Record<Locale, {
   },
   ja: {
     title: '考察記事管理',
-    description: '考察アーカイブの記事と公開状態を管理します。',
     search: '絞り込み',
     searchPlaceholder: 'タイトルまたは要約を検索',
     reset: 'リセット',
@@ -170,7 +166,7 @@ export default async function ResearchEntriesManagePage({ params, searchParams }
     <div>
       <AdminPageHeader
         title={t.title}
-        description={t.description}
+       
         actions={
           <Button asChild>
             <Link href={`/${locale}/manage/research-entries/new`}>{actionLabels.create}</Link>
@@ -217,7 +213,7 @@ export default async function ResearchEntriesManagePage({ params, searchParams }
             header: t.publishStatus,
             className: 'w-28',
             render: (item) => (
-              <AdminPublishStatusBadge
+              <AdminPublishStatusText
                 status={typeof item.status === 'string' ? item.status : undefined}
                 labels={{ published: t.statusPublished, scheduled: t.statusScheduled, draft: t.statusDraft }}
               />

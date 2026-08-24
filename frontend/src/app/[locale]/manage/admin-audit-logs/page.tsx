@@ -1,6 +1,5 @@
 import Link from 'next/link'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { AdminPagination } from '@/components/admin/admin-pagination'
@@ -168,10 +167,6 @@ function formatDate(value: string | undefined, locale: string) {
   }).format(date)
 }
 
-function getStatusVariant(status: AuditStatus): 'destructive' | 'default' {
-  return status === 'failed' ? 'destructive' : 'default'
-}
-
 export default async function AdminAuditLogsManagePage({ params, searchParams }: AuditLogsManagePageProps) {
   const { locale } = await params
   const query = await searchParams
@@ -265,9 +260,9 @@ export default async function AdminAuditLogsManagePage({ params, searchParams }:
             header: t.result,
             className: 'w-28',
             render: (item) => (
-              <Badge variant={getStatusVariant(item.status)}>
+              <span className={item.status === 'failed' ? 'text-sm font-medium text-destructive' : 'text-sm text-muted-foreground'}>
                 {item.status === 'failed' ? t.failed : t.success}
-              </Badge>
+              </span>
             ),
           },
           {

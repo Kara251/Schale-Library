@@ -1,4 +1,3 @@
-import { Badge } from '@/components/ui/badge'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { AdminPagination } from '@/components/admin/admin-pagination'
 import { AdminTable } from '@/components/admin/admin-table'
@@ -254,9 +253,7 @@ export default async function UsersPage({ params, searchParams }: UsersPageProps
                 <p className="font-medium">
                   {item.username}
                   {item.id === session.user.id ? (
-                    <Badge variant="secondary" className="ml-2">
-                      {t.you}
-                    </Badge>
+                    <span className="ml-2 text-xs text-muted-foreground">{t.you}</span>
                   ) : null}
                 </p>
                 <p className="text-xs text-muted-foreground">{item.email || '—'}</p>
@@ -266,15 +263,15 @@ export default async function UsersPage({ params, searchParams }: UsersPageProps
           {
             key: 'role',
             header: t.columnRole,
-            render: (item) => <Badge variant="outline">{item.role?.type}</Badge>,
+            render: (item) => <span className="text-sm">{item.role?.type}</span>,
           },
           {
             key: 'status',
             header: t.columnStatus,
             render: (item) => (
-              <Badge variant={item.blocked ? 'destructive' : 'secondary'}>
+              <span className={item.blocked ? 'text-sm font-medium text-destructive' : 'text-sm text-muted-foreground'}>
                 {item.blocked ? t.blocked : t.active}
-              </Badge>
+              </span>
             ),
           },
           {

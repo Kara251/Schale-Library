@@ -2,6 +2,9 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+
+import { adminErrorMessage } from '@/lib/admin-panel/error-message'
+import type { Locale } from '@/lib/i18n'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -46,7 +49,7 @@ export function AdminRowActions({ locale, collection, id, labels }: AdminRowActi
 
       if (!response.ok) {
         const data = (await response.json().catch(() => null)) as { error?: string } | null
-        throw new Error(data?.error || labels.failed)
+        throw new Error(adminErrorMessage(data?.error, locale as Locale))
       }
 
       showToast({ message: labels.deleted || labels.delete, variant: 'success' })

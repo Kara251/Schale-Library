@@ -77,14 +77,17 @@ export interface AdminCollectionMeta {
   localized: boolean
   supportsDraft: boolean
   title: Record<Locale, string>
-  description: Record<Locale, string>
+  /** 只在能补充标题以外的信息时才写 */
+  description?: Record<Locale, string>
   createLabel: Record<Locale, string>
   editLabel: Record<Locale, string>
   fields: AdminEditorField[]
 }
 
 export interface AdminMediaAsset {
-  id: number
+  /** 上传返回的 R2 对象键，形如 panel/xxx.png —— 不是数字 id */
+  id: string
+  /** 可直接放进 <img src> 的站内路径，形如 /media/panel/xxx.png */
   url: string
   alternativeText?: string | null
   name?: string | null

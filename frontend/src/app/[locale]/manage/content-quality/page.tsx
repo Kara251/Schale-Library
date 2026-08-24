@@ -1,6 +1,5 @@
 import { revalidatePath } from 'next/cache'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { AdminPagination } from '@/components/admin/admin-pagination'
@@ -92,10 +91,10 @@ function formatDate(locale: string, value?: string) {
   return value ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '-'
 }
 
-function severityVariant(severity: string) {
-  if (severity === 'error') return 'destructive' as const
-  if (severity === 'warning') return 'secondary' as const
-  return 'outline' as const
+function severityClass(severity: string) {
+  if (severity === 'error') return 'text-sm font-medium text-destructive'
+  if (severity === 'warning') return 'text-sm font-medium text-foreground'
+  return 'text-sm text-muted-foreground'
 }
 
 export default async function ContentQualityPage({ params, searchParams }: ContentQualityPageProps) {
@@ -178,7 +177,9 @@ export default async function ContentQualityPage({ params, searchParams }: Conte
             key: 'severity',
             header: t.severity,
             className: 'w-28',
-            render: (item) => <Badge variant={severityVariant(item.severity)}>{item.severity}</Badge>,
+            render: (item) => (
+              <span className={severityClass(item.severity)}>{item.severity}</span>
+            ),
           },
           {
             key: 'collection',

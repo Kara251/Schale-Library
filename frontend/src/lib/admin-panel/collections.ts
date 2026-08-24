@@ -28,11 +28,6 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       en: 'Announcements',
       ja: 'お知らせ',
     },
-    description: {
-      'zh-Hans': '创建、编辑和发布站内公告。',
-      en: 'Create, edit, and publish announcements.',
-      ja: 'お知らせを作成・編集・公開します。',
-    },
     createLabel: {
       'zh-Hans': '新建公告',
       en: 'New announcement',
@@ -95,11 +90,6 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       en: 'Creators',
       ja: 'クリエイター',
     },
-    description: {
-      'zh-Hans': '维护创作者档案与代表作。',
-      en: 'Manage creator profiles and representative works.',
-      ja: 'クリエイター情報、おすすめ設定、代表作品を管理します。',
-    },
     createLabel: {
       'zh-Hans': '新建创作者',
       en: 'New creator',
@@ -112,7 +102,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
     },
     fields: [
       { name: 'name', type: 'text', required: true, label: { 'zh-Hans': '名称', en: 'Name', ja: '名前' } },
-      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': 'Slug（URL 标识）', en: 'Slug', ja: 'スラグ' }, description: { 'zh-Hans': 'URL 中的唯一标识，建议用小写字母与连字符', en: 'Unique identifier used in the URL; lowercase and hyphens', ja: 'URL に使う一意の識別子。小文字とハイフン推奨' } },
+      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': '网址标识', en: 'Web address', ja: 'ウェブアドレス' }, description: { 'zh-Hans': '访问地址将是 bakivo.com/creators/你填的内容；只能用小写字母、数字和连字符', en: 'The public address will be bakivo.com/creators/<what you type>; lowercase letters, digits, and hyphens only', ja: '公開アドレスは bakivo.com/creators/入力した文字列 になります。半角英小文字・数字・ハイフンのみ' } },
       { name: 'platform', type: 'select', label: { 'zh-Hans': '平台', en: 'Platform', ja: 'プラットフォーム' }, options: [
         { value: 'bilibili', label: 'bilibili' },
         { value: 'youtube', label: 'youtube' },
@@ -143,11 +133,6 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       'zh-Hans': '线上活动',
       en: 'Online events',
       ja: 'オンラインイベント',
-    },
-    description: {
-      'zh-Hans': '维护线上活动时间、主办和封面。',
-      en: 'Manage online event schedule, organizer, and artwork.',
-      ja: 'オンラインイベントの時間、主催、画像を管理します。',
     },
     createLabel: {
       'zh-Hans': '新建线上活动',
@@ -207,11 +192,6 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       en: 'Offline events',
       ja: 'オフラインイベント',
     },
-    description: {
-      'zh-Hans': '维护线下活动的地点、嘉宾和排期。',
-      en: 'Manage venue, guests, and schedule for offline events.',
-      ja: 'オフラインイベントの場所、ゲスト、日程を管理します。',
-    },
     createLabel: {
       'zh-Hans': '新建线下活动',
       en: 'New offline event',
@@ -264,11 +244,6 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       en: 'Students',
       ja: '生徒',
     },
-    description: {
-      'zh-Hans': '维护学生基础信息和头像。',
-      en: 'Manage student basics and avatar.',
-      ja: '生徒の基本情報とアイコンを管理します。',
-    },
     createLabel: {
       'zh-Hans': '新建学生',
       en: 'New student',
@@ -313,7 +288,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
     },
     fields: [
       { name: 'name', type: 'text', required: true, label: { 'zh-Hans': '名称', en: 'Name', ja: '名称' } },
-      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': 'Slug（URL 标识）', en: 'Slug', ja: 'スラグ' }, description: { 'zh-Hans': 'URL 中的唯一标识，建议用小写字母与连字符', en: 'Unique identifier used in the URL; lowercase and hyphens', ja: 'URL に使う一意の識別子。小文字とハイフン推奨' } },
+      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': '标识', en: 'Identifier', ja: '識別子' }, description: { 'zh-Hans': '内部唯一标识，只能用小写字母、数字和连字符', en: 'Internal unique identifier; lowercase letters, digits, and hyphens only', ja: '内部の一意な識別子。半角英小文字・数字・ハイフンのみ' } },
       { name: 'description', type: 'textarea', label: { 'zh-Hans': '简介', en: 'Description', ja: '説明' } },
       { name: 'color', type: 'text', label: { 'zh-Hans': '主题色（如 #2d77c9）', en: 'Theme color (e.g. #2d77c9)', ja: 'テーマカラー（例 #2d77c9）' } },
       { name: 'order', type: 'number', label: { 'zh-Hans': '排序', en: 'Order', ja: '並び順' }, description: { 'zh-Hans': '数字越小越靠前', en: 'Lower numbers appear first', ja: '数値が小さいほど先頭' } },
@@ -355,11 +330,6 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
       en: 'Research Entries',
       ja: '考察記事',
     },
-    description: {
-      'zh-Hans': '维护考据档案主体内容与元数据。',
-      en: 'Manage research archive entries and metadata.',
-      ja: '考察アーカイブの記事とメタデータを管理します。',
-    },
     createLabel: {
       'zh-Hans': '新建条目',
       en: 'New entry',
@@ -372,7 +342,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
     },
     fields: [
       { name: 'title', type: 'text', required: true, label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
-      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' }, description: { 'zh-Hans': 'URL 中的唯一标识，建议用小写字母与连字符', en: 'Unique identifier used in the URL; lowercase and hyphens', ja: 'URL に使う一意の識別子。小文字とハイフン推奨' } },
+      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': '网址标识', en: 'Web address', ja: 'ウェブアドレス' }, description: { 'zh-Hans': '访问地址将是 bakivo.com/research-archives/你填的内容；只能用小写字母、数字和连字符', en: 'The public address will be bakivo.com/research-archives/<what you type>; lowercase letters, digits, and hyphens only', ja: '公開アドレスは bakivo.com/research-archives/入力した文字列 になります。半角英小文字・数字・ハイフンのみ' } },
       { name: 'stance', type: 'select', label: { 'zh-Hans': '立场', en: 'Stance', ja: 'スタンス' }, options: stanceOptions },
       { name: 'mediaType', type: 'select', label: { 'zh-Hans': '媒介类型', en: 'Media type', ja: 'メディアタイプ' }, options: mediaTypeOptions },
       { name: 'spoilerTier', type: 'relation-select', label: { 'zh-Hans': '剧透档位', en: 'Spoiler tier', ja: 'ネタバレ段階' }, relationKey: 'spoiler-tiers' },
@@ -432,7 +402,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
     },
     fields: [
       { name: 'title', type: 'text', required: true, label: { 'zh-Hans': '名称', en: 'Name', ja: '名称' } },
-      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' }, description: { 'zh-Hans': 'URL 中的唯一标识，建议用小写字母与连字符', en: 'Unique identifier used in the URL; lowercase and hyphens', ja: 'URL に使う一意の識別子。小文字とハイフン推奨' } },
+      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': '网址标识', en: 'Web address', ja: 'ウェブアドレス' }, description: { 'zh-Hans': '访问地址将是 bakivo.com/research-archives/subjects/你填的内容；只能用小写字母、数字和连字符', en: 'The public address will be bakivo.com/research-archives/subjects/<what you type>; lowercase letters, digits, and hyphens only', ja: '公開アドレスは bakivo.com/research-archives/subjects/入力した文字列 になります。半角英小文字・数字・ハイフンのみ' } },
       { name: 'subjectType', type: 'select', label: { 'zh-Hans': '对象类型', en: 'Subject type', ja: '対象タイプ' }, options: subjectTypeOptions },
       { name: 'description', type: 'textarea', label: { 'zh-Hans': '简介', en: 'Description', ja: '説明' } },
       { name: 'cover', type: 'media', label: { 'zh-Hans': '封面图', en: 'Cover image', ja: 'カバー画像' } },
@@ -466,7 +436,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
     },
     fields: [
       { name: 'title', type: 'text', required: true, label: { 'zh-Hans': '标题', en: 'Title', ja: 'タイトル' } },
-      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' }, description: { 'zh-Hans': 'URL 中的唯一标识，建议用小写字母与连字符', en: 'Unique identifier used in the URL; lowercase and hyphens', ja: 'URL に使う一意の識別子。小文字とハイフン推奨' } },
+      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': '网址标识', en: 'Web address', ja: 'ウェブアドレス' }, description: { 'zh-Hans': '访问地址将是 bakivo.com/research-archives/paths/你填的内容；只能用小写字母、数字和连字符', en: 'The public address will be bakivo.com/research-archives/paths/<what you type>; lowercase letters, digits, and hyphens only', ja: '公開アドレスは bakivo.com/research-archives/paths/入力した文字列 になります。半角英小文字・数字・ハイフンのみ' } },
       { name: 'description', type: 'textarea', label: { 'zh-Hans': '路径简介', en: 'Description', ja: '説明' } },
       { name: 'difficulty', type: 'select', label: { 'zh-Hans': '难度', en: 'Difficulty', ja: '難易度' }, options: difficultyOptions },
       { name: 'order', type: 'number', label: { 'zh-Hans': '排序', en: 'Order', ja: '並び順' }, description: { 'zh-Hans': '数字越小越靠前', en: 'Lower numbers appear first', ja: '数値が小さいほど先頭' } },
@@ -506,7 +476,7 @@ export const ADMIN_COLLECTION_META: Record<AdminCollectionKey, AdminCollectionMe
     },
     fields: [
       { name: 'title', type: 'text', required: true, label: { 'zh-Hans': '名称', en: 'Name', ja: '名前' } },
-      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': 'Slug（URL 路径）', en: 'Slug (URL path)', ja: 'スラグ（URL）' }, description: { 'zh-Hans': 'URL 中的唯一标识，建议用小写字母与连字符', en: 'Unique identifier used in the URL; lowercase and hyphens', ja: 'URL に使う一意の識別子。小文字とハイフン推奨' } },
+      { name: 'slug', type: 'text', required: true, label: { 'zh-Hans': '网址标识', en: 'Web address', ja: 'ウェブアドレス' }, description: { 'zh-Hans': '访问地址将是 bakivo.com/research-archives/themes/你填的内容；只能用小写字母、数字和连字符', en: 'The public address will be bakivo.com/research-archives/themes/<what you type>; lowercase letters, digits, and hyphens only', ja: '公開アドレスは bakivo.com/research-archives/themes/入力した文字列 になります。半角英小文字・数字・ハイフンのみ' } },
       { name: 'curatedIntro', type: 'textarea', label: { 'zh-Hans': '策划简介', en: 'Curated intro', ja: '紹介文' } },
       { name: 'publishedAt', type: 'publish-state', label: { 'zh-Hans': '发布状态', en: 'Publication', ja: '公開状態' } },
     ],

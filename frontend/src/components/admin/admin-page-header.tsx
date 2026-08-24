@@ -1,6 +1,7 @@
 interface AdminPageHeaderProps {
   title: string
-  description: string
+  /** 只在真的能告诉维护者一些标题以外的信息时才写；复述标题的句子一律不写 */
+  description?: string
   actions?: React.ReactNode
 }
 
@@ -15,7 +16,9 @@ export function AdminPageHeader({ title, description, actions }: AdminPageHeader
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <h1 className="text-2xl font-bold">{title}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        {description ? (
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        ) : null}
       </div>
       {actions ? <div className="shrink-0">{actions}</div> : null}
     </div>

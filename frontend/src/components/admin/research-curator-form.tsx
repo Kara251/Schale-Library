@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/contexts/toast-context'
+import { adminErrorMessage } from '@/lib/admin-panel/error-message'
 import type { CuratorAdminData } from '@/lib/server/admin-content'
 import type { Locale } from '@/lib/i18n'
 
@@ -112,7 +113,7 @@ export function ResearchCuratorForm({ initialData, entries, locale }: ResearchCu
       })
 
       const payload = (await response.json().catch(() => null)) as { error?: string } | null
-      if (!response.ok) throw new Error(payload?.error || t.saveFailed)
+      if (!response.ok) throw new Error(adminErrorMessage(payload?.error, locale))
 
       showToast({ message: t.saveSuccess, variant: 'success' })
       router.refresh()

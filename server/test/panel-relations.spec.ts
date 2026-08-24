@@ -214,3 +214,92 @@ describe('关联字段以 documentId 读写', () => {
     expect(created.data.school).toBeNull()
   })
 })
+
+/**
+ * 创作者的「关联学生」与「代表作」此前只存在于前端表单：
+ * 面板集合注册表里既没有 joins.students 也没有 children.representativeWorks，
+ * 提交必然 400 unknown_field:students —— 也就是说创作者根本存不下来。
+ */
+describe('创作者的关联学生与代表作', () => {
+  beforeEach(async () => {
+    await env.DB.prepare('DELETE FROM creators').run()
+  })
+
+  it('不填关联学生也能新建', async () => {
+    const res = await authed('/panel/creator', {
+      method: 'POST',
+      body: JSON.stringify({ data: { name: '某位创作者', slug: 'someone', students: [] } }),
+    })
+    expect(res.status).toBe(200)
+  })
+
+  it('关联学生用 documentId 写入，落库是数字外键', async () => {
+    const created = (await (
+      await authed('/panel/students', {
+        method: 'POST',
+        body: JSON.stringify({ data: { name: 'Aris' } }),
+      })
+    ).json()) as { data: { documentId: string } }
+
+    const res = await authed('/panel/creator', {
+      method: 'POST',
+      body: JSON.stringify({
+        data: { name: '画师甲', slug: 'artist-a', students: [created.data.documentId] },
+      }),
+    })
+    expect(res.status).toBe(200)
+
+    const row = await env.DB.prepare(
+      `SELECT s.name AS name FROM creator_students cs
+       JOIN students s ON s.id = cs.student_id
+       JOIN creators c ON c.id = cs.creator_id
+       WHERE c.slug = 'artist-a'`
+    ).first<{ name: string }>()
+    expect(row!.name).toBe('Aris')
+  })
+
+  it('代表作按顺序写入子表', async () => {
+    const res = await authed('/panel/creator', {
+      method: 'POST',
+      body: JSON.stringify({
+        data: {
+          name: '画师乙',
+          slug: 'artist-b',
+          representativeWorks: [
+            { title: '第二幅', url: 'https://example.com/2' },
+            { title: '第一幅', url: 'https://example.com/1' },
+          ],
+        },
+      }),
+    })
+    expect(res.status).toBe(200)
+
+    const rows = await env.DB.prepare(
+      `SELECT w.title AS title FROM representative_works w
+       JOIN creators c ON c.id = w.creator_id
+       WHERE c.slug = 'artist-b' ORDER BY w.sort_order`
+    ).all<{ title: string }>()
+    expect(rows.results.map((r) => r.title)).toEqual(['第二幅', '第一幅'])
+  })
+
+  it('点了「添加一行」却没填内容的空行被跳过，不会撞 NOT NULL', async () => {
+    // title / url 都是 NOT NULL：空行如果照写，整次保存会崩在约束上
+    const res = await authed('/panel/creator', {
+      method: 'POST',
+      body: JSON.stringify({
+        data: {
+          name: '画师丙',
+          slug: 'artist-c',
+          representativeWorks: [{ title: '', url: '', coverUrl: '', note: '' }],
+        },
+      }),
+    })
+    expect(res.status).toBe(200)
+
+    const rows = await env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM representative_works w
+       JOIN creators c ON c.id = w.creator_id WHERE c.slug = 'artist-c'`
+    ).first<{ n: number }>()
+    expect(rows!.n).toBe(0)
+  })
+})

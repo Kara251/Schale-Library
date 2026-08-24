@@ -8,18 +8,15 @@ interface ProfilePageProps {
   params: Promise<{ locale: string }>
 }
 
-const labels: Record<Locale, { title: string; description: string }> = {
+const labels: Record<Locale, { title: string }> = {
   'zh-Hans': {
     title: '个人设置',
-    description: '维护你自己的账号资料与登录密码。',
   },
   en: {
     title: 'My account',
-    description: 'Manage your own account details and sign-in password.',
   },
   ja: {
     title: 'アカウント設定',
-    description: '自分のアカウント情報とログインパスワードを管理します。',
   },
 }
 
@@ -33,7 +30,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   return (
     <>
-      <AdminPageHeader title={t.title} description={t.description} />
+      <AdminPageHeader title={t.title} />
       <AdminProfileForm
         locale={locale as Locale}
         user={{

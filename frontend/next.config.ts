@@ -9,20 +9,13 @@ function getApiUploadPatterns() {
       return null;
     }
 
-    // Worker 从 R2 提供图片的路径是 /media/**（server/src/content/media.ts）；
-    // /uploads/** 是 Strapi 时代的路径，保留以兼容存量地址。
+    // Worker 从 R2 提供图片的路径是 /media/**（server/src/content/media.ts）
     return [
       {
         protocol: parsed.protocol.replace(':', '') as 'http' | 'https',
         hostname: parsed.hostname,
         port: parsed.port,
         pathname: '/media/**',
-      },
-      {
-        protocol: parsed.protocol.replace(':', '') as 'http' | 'https',
-        hostname: parsed.hostname,
-        port: parsed.port,
-        pathname: '/uploads/**',
       },
     ];
   } catch {
@@ -54,7 +47,7 @@ function getSecurityHeaders() {
     // unsafe-inline 暂时保留：Next 会内联 bootstrap 脚本，移除需改用 nonce。
     `script-src 'self' 'unsafe-inline'${isProduction ? '' : " 'unsafe-eval'"} https://static.cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms`,
     "style-src 'self' 'unsafe-inline' https://fonts.loli.net",
-    `img-src 'self' data: blob: ${apiOrigin} http://localhost:8083 https://res.cloudinary.com https://i0.hdslb.com https://i1.hdslb.com https://i2.hdslb.com`,
+    `img-src 'self' data: blob: ${apiOrigin} https://i0.hdslb.com https://i1.hdslb.com https://i2.hdslb.com`,
     `connect-src 'self' ${apiOrigin} https://cloudflareinsights.com https://www.google-analytics.com https://region1.google-analytics.com https://www.clarity.ms https://*.clarity.ms`,
     // fonts.loli.net 只提供 CSS，字体文件实际托管在 gstatic.loli.net；
     // 漏掉后者会让日文字体在浏览器里被 CSP 全部拦下
@@ -100,18 +93,6 @@ const nextConfig: NextConfig = {
     // 远程图片域名（仅允许可信来源）
     remotePatterns: [
       ...(apiUploadPatterns ?? []),
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '8083',
-        pathname: '/uploads/**',
-      },
-      {
-        // Cloudinary - 生产环境图片托管
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-        pathname: '/**',
-      },
       {
         // B站图片 CDN
         protocol: 'https',

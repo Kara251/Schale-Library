@@ -571,17 +571,21 @@ async function replaceChildren(
 
       const columns = [child.fk]
       const binds: unknown[] = [rowId]
+      let hasValue = false
       for (const [name, field] of Object.entries(child.fields)) {
         if (!(name in source)) continue
+        const value = normalizeChildValue(field, source[name])
+        if (value !== null) hasValue = true
         columns.push(field.column)
-        binds.push(normalizeChildValue(field, source[name]))
+        binds.push(value)
       }
+      // 表单里点了「添加一行」却什么都没填 —— 整行为空就跳过。
+      // 不跳的话，子表的 NOT NULL 列会拿到 null，整次保存崩在约束上。
+      if (!hasValue) continue
       if (child.orderColumn) {
         columns.push(child.orderColumn)
         binds.push(index)
       }
-      // 只有外键与排序列时说明该行没有任何内容，跳过
-      if (columns.length <= (child.orderColumn ? 2 : 1)) continue
 
       const placeholders = columns.map((_, i) => `?${i + 1}`).join(', ')
       await db
