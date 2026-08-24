@@ -16,6 +16,7 @@ import { handleSystemHealth } from './system-health'
 import { handleAuditLogList, handleAuditLogExport } from './audit-routes'
 import { handleUpload } from './upload'
 import { handleCuratorGet, handleCuratorPut } from './curator'
+import { handleDashboard } from './dashboard'
 import {
   handleMeGet,
   handleMeUpdate,
@@ -72,6 +73,9 @@ export function createPanelRoutes(): HonoPanel {
   panel.get('/panel/admin-audit-logs/export', (c) => handleAuditLogExport(c as never))
   panel.get('/panel/admin-audit-logs', (c) => handleAuditLogList(c as never))
   panel.post('/panel/upload', (c) => handleUpload(c as never))
+
+  // 仪表盘计数：一次请求取回全部集合总数（此前是每集合一次列表请求）
+  panel.get('/panel/dashboard', (c) => handleDashboard(c as never))
 
   // 个人设置：任何已登录维护者都可用
   panel.get('/panel/users/me', (c) => handleMeGet(c as never))

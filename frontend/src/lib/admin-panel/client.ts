@@ -380,12 +380,25 @@ export async function updateCuratorAdmin(
 
 export async function getAdminDashboardItems(session: AdminSession, locale: string): Promise<AdminDashboardItem[]> {
   const keys = Object.keys(ADMIN_COLLECTION_CONFIG) as AdminCollectionKey[]
-  const totals = await Promise.all(keys.map((key) => getCollectionTotal(session, key, locale)))
+
+  // 一次请求取回全部集合总数。此前是每个集合各打一次列表接口（pageSize=1）只为拿
+  // total —— 13 次 HTTP 往返。端点不可用时回退逐个取，保证仪表盘不至于整页失败。
+  let totals: Record<string, number> | null = null
+  try {
+    const res = await adminFetchJson<{ data: Record<string, number> }>(session, '/api/panel/dashboard')
+    totals = res.data
+  } catch {
+    totals = null
+  }
+
+  const fallback = totals
+    ? []
+    : await Promise.all(keys.map((key) => getCollectionTotal(session, key, locale)))
 
   return keys.map((key, index) => ({
     key,
     title: ADMIN_COLLECTION_CONFIG[key].title[locale as 'zh-Hans' | 'en' | 'ja'] || ADMIN_COLLECTION_CONFIG[key].title['zh-Hans'],
-    total: totals[index],
+    total: totals ? (totals[key] ?? 0) : (fallback[index] ?? 0),
     href: `/${locale}/manage/${key}`,
   }))
 }
