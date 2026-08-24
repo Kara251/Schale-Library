@@ -13,6 +13,9 @@ import { getAdminActionLabels } from '@/lib/admin-panel-labels'
 import { type AdminStrapiEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
 
+/** 每页条数选项；首项为默认值（不写进 URL）。上限受 client 端 50 约束。 */
+const PAGE_SIZE_OPTIONS = [12, 24, 50]
+
 const commonLabels: Record<Locale, {
   search: string
   searchPlaceholder: string
@@ -24,6 +27,8 @@ const commonLabels: Record<Locale, {
   previous: string
   next: string
   pagination: string
+  totalSummary: string
+  perPage: string
   updatedAt: string
   publishStatus: string
   slug: string
@@ -39,6 +44,8 @@ const commonLabels: Record<Locale, {
     previous: '上一页',
     next: '下一页',
     pagination: '第 {page} / {pageCount} 页',
+    totalSummary: '共 {total} 条',
+    perPage: '每页',
     updatedAt: '更新时间',
     publishStatus: '发布状态',
     slug: 'Slug',
@@ -54,6 +61,8 @@ const commonLabels: Record<Locale, {
     previous: 'Previous',
     next: 'Next',
     pagination: 'Page {page} / {pageCount}',
+    totalSummary: '{total} items',
+    perPage: 'Per page',
     updatedAt: 'Updated',
     publishStatus: 'Publication',
     slug: 'Slug',
@@ -69,6 +78,8 @@ const commonLabels: Record<Locale, {
     previous: '前へ',
     next: '次へ',
     pagination: '{page} / {pageCount} ページ',
+    totalSummary: '全 {total} 件',
+    perPage: '1 ページ',
     updatedAt: '更新日時',
     publishStatus: '公開状態',
     slug: 'スラッグ',
@@ -89,7 +100,7 @@ function formatDate(value?: string) {
 interface AdminGenericListPageProps {
   collection: AdminCollectionKey
   locale: string
-  searchParams: { search?: string; page?: string; status?: string }
+  searchParams: { search?: string; page?: string; pageSize?: string; status?: string }
   /** 主标题列取哪个字段（默认 name，回退 title） */
   primaryField?: string
   /** 额外的徽章列字段，如 subject_type / difficulty */
@@ -117,24 +128,35 @@ export async function AdminGenericListPage({
   const meta = ADMIN_COLLECTION_META[collection]
   const t = commonLabels[locale as Locale] || commonLabels['zh-Hans']
   const actionLabels = getAdminActionLabels(locale as Locale)
-  const page = Number(searchParams.page || '1')
+  // 钳制：?page=abc 会变成 NaN，界面上就成了「第 NaN 页」
+  const page = Math.max(1, Number(searchParams.page || '1') || 1)
+  const pageSize = PAGE_SIZE_OPTIONS.includes(Number(searchParams.pageSize))
+    ? Number(searchParams.pageSize)
+    : PAGE_SIZE_OPTIONS[0]!
   const status = searchParams.status === 'published' || searchParams.status === 'draft' ? searchParams.status : 'all'
 
   const response = await listAdminCollection<AdminStrapiEntry>(session, collection, {
     locale,
     page,
+    pageSize,
     search: searchParams.search,
     status,
   })
 
-  const buildHref = (nextPage: number) => {
+  const buildQuery = (overrides: { page?: number; pageSize?: number }) => {
     const p = new URLSearchParams()
     if (searchParams.search) p.set('search', searchParams.search)
     if (status !== 'all') p.set('status', status)
-    p.set('page', String(nextPage))
+    p.set('page', String(overrides.page ?? page))
+    const nextPageSize = overrides.pageSize ?? pageSize
+    if (nextPageSize !== PAGE_SIZE_OPTIONS[0]) p.set('pageSize', String(nextPageSize))
     const qs = p.toString()
     return `/${locale}/manage/${collection}${qs ? `?${qs}` : ''}`
   }
+
+  const buildHref = (nextPage: number) => buildQuery({ page: nextPage })
+  // 换每页条数时回到第一页：原页码在新分页下多半越界
+  const buildPageSizeHref = (nextPageSize: number) => buildQuery({ page: 1, pageSize: nextPageSize })
 
   const getPrimary = (item: AdminStrapiEntry) =>
     String(item[primaryField] || item.name || item.title || `#${item.id}`)
@@ -245,11 +267,17 @@ export async function AdminGenericListPage({
       <AdminPagination
         page={response.meta.pagination.page}
         pageCount={response.meta.pagination.pageCount}
+        total={response.meta.pagination.total}
+        pageSize={pageSize}
         buildHref={buildHref}
+        buildPageSizeHref={buildPageSizeHref}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
         labels={{
           previous: t.previous,
           next: t.next,
           summary: t.pagination,
+          totalSummary: t.totalSummary,
+          perPage: t.perPage,
         }}
       />
     </div>

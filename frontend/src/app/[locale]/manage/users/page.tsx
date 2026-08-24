@@ -32,6 +32,7 @@ const labels: Record<Locale, {
   previous: string
   next: string
   pagination: string
+  totalSummary: string
   create: Parameters<typeof AdminUserCreateForm>[0]['labels']
   actions: Parameters<typeof AdminUserActions>[0]['labels']
 }> = {
@@ -52,6 +53,7 @@ const labels: Record<Locale, {
     previous: '上一页',
     next: '下一页',
     pagination: '第 {page} / {pageCount} 页',
+    totalSummary: '共 {total} 条',
     create: {
       title: '新建用户',
       description: '新建的用户可立即用所设密码登录。',
@@ -107,6 +109,7 @@ const labels: Record<Locale, {
     previous: 'Previous',
     next: 'Next',
     pagination: 'Page {page} / {pageCount}',
+    totalSummary: '{total} items',
     create: {
       title: 'New user',
       description: 'The new account can sign in immediately with the password you set.',
@@ -162,6 +165,7 @@ const labels: Record<Locale, {
     previous: '前へ',
     next: '次へ',
     pagination: '{page} / {pageCount} ページ',
+    totalSummary: '全 {total} 件',
     create: {
       title: '新規ユーザー',
       description: '作成したアカウントは設定したパスワードで直ちにログインできます。',
@@ -305,8 +309,9 @@ export default async function UsersPage({ params, searchParams }: UsersPageProps
       <AdminPagination
         page={response.meta.pagination.page}
         pageCount={response.meta.pagination.pageCount}
+        total={response.meta.pagination.total}
         buildHref={buildHref}
-        labels={{ previous: t.previous, next: t.next, summary: t.pagination }}
+        labels={{ previous: t.previous, next: t.next, summary: t.pagination, totalSummary: t.totalSummary }}
       />
     </>
   )

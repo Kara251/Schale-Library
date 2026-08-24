@@ -9,6 +9,9 @@ import type { Locale } from '@/lib/i18n'
 import { type AdminStrapiEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
 
+/** 每页条数选项；首项为默认值（不写进 URL）。 */
+const PAGE_SIZE_OPTIONS = [12, 24, 50]
+
 type AuditStatus = 'success' | 'failed'
 type AuditAction = 'create' | 'update' | 'delete' | 'upload' | 'sync-one' | 'sync-all'
 
@@ -29,7 +32,7 @@ interface AdminAuditLogEntry extends AdminStrapiEntry {
 
 interface AuditLogsManagePageProps {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ search?: string; page?: string; status?: string; action?: string; collection?: string; actor?: string; from?: string; to?: string }>
+  searchParams: Promise<{ search?: string; page?: string; pageSize?: string; status?: string; action?: string; collection?: string; actor?: string; from?: string; to?: string }>
 }
 
 const labels: Record<Locale, {
@@ -45,6 +48,8 @@ const labels: Record<Locale, {
   previous: string
   next: string
   pagination: string
+  totalSummary: string
+  perPage: string
   result: string
   action: string
   actor: string
@@ -71,6 +76,8 @@ const labels: Record<Locale, {
     previous: '上一页',
     next: '下一页',
     pagination: '第 {page} / {pageCount} 页',
+    totalSummary: '共 {total} 条',
+    perPage: '每页',
     result: '结果',
     action: '操作',
     actor: '操作者',
@@ -97,6 +104,8 @@ const labels: Record<Locale, {
     previous: 'Previous',
     next: 'Next',
     pagination: 'Page {page} / {pageCount}',
+    totalSummary: '{total} items',
+    perPage: 'Per page',
     result: 'Result',
     action: 'Action',
     actor: 'Actor',
@@ -123,6 +132,8 @@ const labels: Record<Locale, {
     previous: '前へ',
     next: '次へ',
     pagination: '{page} / {pageCount} ページ',
+    totalSummary: '全 {total} 件',
+    perPage: '1 ページ',
     result: '結果',
     action: '操作',
     actor: '実行者',
@@ -166,7 +177,11 @@ export default async function AdminAuditLogsManagePage({ params, searchParams }:
   const query = await searchParams
   const session = await requireAdminSession(locale, `/${locale}/manage/admin-audit-logs`)
   const t = labels[locale as Locale] || labels['zh-Hans']
-  const page = Number(query.page || '1')
+  // 钳制：?page=abc 会变成 NaN，界面上就成了「第 NaN 页」
+  const page = Math.max(1, Number(query.page || '1') || 1)
+  const pageSize = PAGE_SIZE_OPTIONS.includes(Number(query.pageSize))
+    ? Number(query.pageSize)
+    : PAGE_SIZE_OPTIONS[0]!
 
   const response = await listAdminCollection<AdminAuditLogEntry>(session, 'admin-audit-logs', {
     page,
@@ -190,6 +205,17 @@ export default async function AdminAuditLogsManagePage({ params, searchParams }:
 
   const buildHref = (nextPage: number) => {
     const params = buildParams(nextPage)
+    const qs = params.toString()
+    return `/${locale}/manage/admin-audit-logs${qs ? `?${qs}` : ''}`
+  }
+
+  // 换每页条数时回到第一页：原页码在新分页下多半越界
+  const buildPageSizeHref = (nextPageSize: number) => {
+    const params = new URLSearchParams()
+    if (query.search) params.set('search', query.search)
+    if (status !== 'all') params.set('status', status)
+    params.set('page', '1')
+    if (nextPageSize !== PAGE_SIZE_OPTIONS[0]) params.set('pageSize', String(nextPageSize))
     const qs = params.toString()
     return `/${locale}/manage/admin-audit-logs${qs ? `?${qs}` : ''}`
   }

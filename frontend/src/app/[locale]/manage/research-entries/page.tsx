@@ -12,6 +12,9 @@ import { getAdminActionLabels } from '@/lib/admin-panel-labels'
 import { type AdminStrapiEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
 
+/** 每页条数选项；首项为默认值（不写进 URL）。 */
+const PAGE_SIZE_OPTIONS = [12, 24, 50]
+
 interface ResearchEntryAdminEntry extends AdminStrapiEntry {
   title: string
   stance: string
@@ -20,7 +23,7 @@ interface ResearchEntryAdminEntry extends AdminStrapiEntry {
 
 interface ResearchEntriesManagePageProps {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ search?: string; page?: string; status?: string }>
+  searchParams: Promise<{ search?: string; page?: string; pageSize?: string; status?: string }>
 }
 
 const labels: Record<Locale, {
@@ -36,6 +39,8 @@ const labels: Record<Locale, {
   previous: string
   next: string
   pagination: string
+  totalSummary: string
+  perPage: string
   updatedAt: string
   publishStatus: string
   stance: string
@@ -54,6 +59,8 @@ const labels: Record<Locale, {
     previous: '上一页',
     next: '下一页',
     pagination: '第 {page} / {pageCount} 页',
+    totalSummary: '共 {total} 条',
+    perPage: '每页',
     updatedAt: '更新时间',
     publishStatus: '发布状态',
     stance: '立场',
@@ -72,6 +79,8 @@ const labels: Record<Locale, {
     previous: 'Previous',
     next: 'Next',
     pagination: 'Page {page} / {pageCount}',
+    totalSummary: '{total} items',
+    perPage: 'Per page',
     updatedAt: 'Updated',
     publishStatus: 'Publication',
     stance: 'Stance',
@@ -90,6 +99,8 @@ const labels: Record<Locale, {
     previous: '前へ',
     next: '次へ',
     pagination: '{page} / {pageCount} ページ',
+    totalSummary: '全 {total} 件',
+    perPage: '1 ページ',
     updatedAt: '更新日時',
     publishStatus: '公開状態',
     stance: 'スタンス',
@@ -114,12 +125,17 @@ export default async function ResearchEntriesManagePage({ params, searchParams }
   const session = await requireAdminSession(locale, `/${locale}/manage/research-entries`)
   const t = labels[locale as Locale] || labels['zh-Hans']
   const actionLabels = getAdminActionLabels(locale as Locale)
-  const page = Number(query.page || '1')
+  // 钳制：?page=abc 会变成 NaN，界面上就成了「第 NaN 页」
+  const page = Math.max(1, Number(query.page || '1') || 1)
+  const pageSize = PAGE_SIZE_OPTIONS.includes(Number(query.pageSize))
+    ? Number(query.pageSize)
+    : PAGE_SIZE_OPTIONS[0]!
   const status = query.status === 'published' || query.status === 'draft' ? query.status : 'all'
 
   const response = await listAdminCollection<ResearchEntryAdminEntry>(session, 'research-entries', {
     locale,
     page,
+    pageSize,
     search: query.search,
     status,
   })
@@ -129,6 +145,17 @@ export default async function ResearchEntriesManagePage({ params, searchParams }
     if (query.search) p.set('search', query.search)
     if (status !== 'all') p.set('status', status)
     p.set('page', String(nextPage))
+    const qs = p.toString()
+    return `/${locale}/manage/research-entries${qs ? `?${qs}` : ''}`
+  }
+
+  // 换每页条数时回到第一页：原页码在新分页下多半越界
+  const buildPageSizeHref = (nextPageSize: number) => {
+    const p = new URLSearchParams()
+    if (query.search) p.set('search', query.search)
+    if (status !== 'all') p.set('status', status)
+    p.set('page', '1')
+    if (nextPageSize !== PAGE_SIZE_OPTIONS[0]) p.set('pageSize', String(nextPageSize))
     const qs = p.toString()
     return `/${locale}/manage/research-entries${qs ? `?${qs}` : ''}`
   }
@@ -221,11 +248,17 @@ export default async function ResearchEntriesManagePage({ params, searchParams }
       <AdminPagination
         page={response.meta.pagination.page}
         pageCount={response.meta.pagination.pageCount}
+        total={response.meta.pagination.total}
+        pageSize={pageSize}
         buildHref={buildHref}
+        buildPageSizeHref={buildPageSizeHref}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
         labels={{
           previous: t.previous,
           next: t.next,
           summary: t.pagination,
+          totalSummary: t.totalSummary,
+          perPage: t.perPage,
         }}
       />
     </div>

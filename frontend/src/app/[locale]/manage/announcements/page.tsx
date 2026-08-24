@@ -12,6 +12,9 @@ import { getAdminActionLabels } from '@/lib/admin-panel-labels'
 import { type AdminStrapiEntry, listAdminCollection } from '@/lib/server/admin-content'
 import { requireAdminSession } from '@/lib/server/admin-auth'
 
+/** 每页条数选项；首项为默认值（不写进 URL）。 */
+const PAGE_SIZE_OPTIONS = [12, 24, 50]
+
 interface AnnouncementAdminEntry extends AdminStrapiEntry {
   title: string
   priority: number
@@ -21,7 +24,7 @@ interface AnnouncementAdminEntry extends AdminStrapiEntry {
 
 interface AnnouncementsManagePageProps {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ search?: string; page?: string; status?: string }>
+  searchParams: Promise<{ search?: string; page?: string; pageSize?: string; status?: string }>
 }
 
 const labels: Record<Locale, {
@@ -37,6 +40,8 @@ const labels: Record<Locale, {
   previous: string
   next: string
   pagination: string
+  totalSummary: string
+  perPage: string
   active: string
   inactive: string
   pinned: string
@@ -57,6 +62,8 @@ const labels: Record<Locale, {
     previous: '上一页',
     next: '下一页',
     pagination: '第 {page} / {pageCount} 页',
+    totalSummary: '共 {total} 条',
+    perPage: '每页',
     active: '启用',
     inactive: '停用',
     pinned: '置顶',
@@ -77,6 +84,8 @@ const labels: Record<Locale, {
     previous: 'Previous',
     next: 'Next',
     pagination: 'Page {page} / {pageCount}',
+    totalSummary: '{total} items',
+    perPage: 'Per page',
     active: 'Active',
     inactive: 'Inactive',
     pinned: 'Pinned',
@@ -97,6 +106,8 @@ const labels: Record<Locale, {
     previous: '前へ',
     next: '次へ',
     pagination: '{page} / {pageCount} ページ',
+    totalSummary: '全 {total} 件',
+    perPage: '1 ページ',
     active: '有効',
     inactive: '無効',
     pinned: '固定',
@@ -126,12 +137,17 @@ export default async function AnnouncementsManagePage({ params, searchParams }: 
   const session = await requireAdminSession(locale, `/${locale}/manage/announcements`)
   const t = labels[locale as Locale] || labels['zh-Hans']
   const actionLabels = getAdminActionLabels(locale as Locale)
-  const page = Number(query.page || '1')
+  // 钳制：?page=abc 会变成 NaN，界面上就成了「第 NaN 页」
+  const page = Math.max(1, Number(query.page || '1') || 1)
+  const pageSize = PAGE_SIZE_OPTIONS.includes(Number(query.pageSize))
+    ? Number(query.pageSize)
+    : PAGE_SIZE_OPTIONS[0]!
   const status = query.status === 'published' || query.status === 'draft' ? query.status : 'all'
 
   const response = await listAdminCollection<AnnouncementAdminEntry>(session, 'announcements', {
     locale,
     page,
+    pageSize,
     search: query.search,
     status,
   })
@@ -141,6 +157,17 @@ export default async function AnnouncementsManagePage({ params, searchParams }: 
     if (query.search) params.set('search', query.search)
     if (status !== 'all') params.set('status', status)
     params.set('page', String(nextPage))
+    const qs = params.toString()
+    return `/${locale}/manage/announcements${qs ? `?${qs}` : ''}`
+  }
+
+  // 换每页条数时回到第一页：原页码在新分页下多半越界
+  const buildPageSizeHref = (nextPageSize: number) => {
+    const params = new URLSearchParams()
+    if (query.search) params.set('search', query.search)
+    if (status !== 'all') params.set('status', status)
+    params.set('page', '1')
+    if (nextPageSize !== PAGE_SIZE_OPTIONS[0]) params.set('pageSize', String(nextPageSize))
     const qs = params.toString()
     return `/${locale}/manage/announcements${qs ? `?${qs}` : ''}`
   }
@@ -243,11 +270,17 @@ export default async function AnnouncementsManagePage({ params, searchParams }: 
       <AdminPagination
         page={response.meta.pagination.page}
         pageCount={response.meta.pagination.pageCount}
+        total={response.meta.pagination.total}
+        pageSize={pageSize}
         buildHref={buildHref}
+        buildPageSizeHref={buildPageSizeHref}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
         labels={{
           previous: t.previous,
           next: t.next,
           summary: t.pagination,
+          totalSummary: t.totalSummary,
+          perPage: t.perPage,
         }}
       />
     </div>
