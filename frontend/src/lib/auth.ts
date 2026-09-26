@@ -58,6 +58,7 @@ export async function fetchSession(): Promise<User | null> {
     cache: 'no-store',
   });
 
+  // 未登录时接口返回 200 { user: null }；401 分支保留以兼容旧部署
   if (response.status === 401) {
     return null;
   }
