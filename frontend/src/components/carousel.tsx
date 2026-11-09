@@ -98,6 +98,8 @@ export function Carousel({
   const t = labels[locale] || labels['zh-Hans']
   const [currentIndex, setCurrentIndex] = React.useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = React.useState(true)
+  const [canLoadInactiveCovers, setCanLoadInactiveCovers] = React.useState(false)
+  const allowInactiveCovers = React.useCallback(() => setCanLoadInactiveCovers(true), [])
 
   // 合并所有内容为统一格式
   const items: CarouselItem[] = React.useMemo(() => {
@@ -184,6 +186,8 @@ export function Carousel({
     )
   }
 
+  const deferInactiveCovers = items[0].coverImage && !canLoadInactiveCovers
+
   return (
     <div
       className={cn(
@@ -200,20 +204,22 @@ export function Carousel({
             key={`${item.type}-${item.id}`}
             href={item.href}
             className={cn(
-              'absolute inset-0 transition-all duration-500 cursor-pointer',
+              'absolute inset-0 transition-opacity duration-500 motion-reduce:transition-none cursor-pointer',
               index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
             )}
           >
             {/* 背景图片 */}
-            {item.coverImage ? (
+            {item.coverImage && (!deferInactiveCovers || index === 0 || index === currentIndex) ? (
               <div className="absolute inset-0">
                 <Image
                   src={getMediaUrl(item.coverImage.url)}
                   alt={item.coverImage.alternativeText || item.title}
                   fill
-                  priority={index === 0}
+                  preload={index === 0}
+                  onLoad={allowInactiveCovers}
+                  onError={allowInactiveCovers}
                   sizes="(max-width: 768px) 100vw, 1200px"
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover motion-safe:transition-transform duration-700 motion-safe:group-hover:scale-105"
                 />
                 {/* 渐变遮罩 */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />

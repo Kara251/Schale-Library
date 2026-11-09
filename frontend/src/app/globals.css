@@ -3,19 +3,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* BlueakaBeta2GBK 蓝色档案字体 - 中英文共用 */
+/* 保留现有 BlueakaBeta2GBK 的字体匹配顺序。 */
 @font-face {
   font-family: 'BlueakaBeta2GBK';
-  src: url('/fonts/BlueakaBeta2GBK-DemiBold.ttf') format('truetype');
-  font-weight: 400 500 600;
+  src: url('/fonts/BlueakaBeta2GBK-DemiBold.woff2') format('woff2');
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
   font-family: 'BlueakaBeta2GBK';
-  src: url('/fonts/BlueakaBeta2GBK-Bold.ttf') format('truetype');
-  font-weight: 700 800 900;
+  src: url('/fonts/BlueakaBeta2GBK-Bold.woff2') format('woff2');
   font-style: normal;
   font-display: swap;
 }
