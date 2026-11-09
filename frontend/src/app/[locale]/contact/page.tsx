@@ -8,6 +8,8 @@ interface ContactPageProps {
     params: Promise<{ locale: string }>
 }
 
+const CONTACT_EMAIL = 'marisaonly@outlook.com'
+
 const content: Record<Locale, {
     title: string
     subtitle: string
@@ -88,8 +90,8 @@ export default async function ContactPage({ params }: ContactPageProps) {
                                         <div>
                                             <h2 className="text-xl font-bold mb-2">{t.emailTitle}</h2>
                                             <p className="text-muted-foreground mb-2">{t.emailDesc}</p>
-                                            <a href="mailto:kara@bakivo.com" className="text-primary hover:underline">
-                                                kara@bakivo.com
+                                            <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">
+                                                {CONTACT_EMAIL}
                                             </a>
                                         </div>
                                     </div>
